@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Slider } from '../components/ui/slider';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
+import PropertyCard from '../components/PropertyCard';
 
 const PropertiesPage = () => {
   const { t } = useLanguage();
@@ -25,7 +26,7 @@ const PropertiesPage = () => {
 
   const properties = [
     {
-      id: 1,
+      id: '1',
       title: 'Casa Moderna no Centro',
       price: 850000,
       location: 'São Paulo, SP',
@@ -36,7 +37,7 @@ const PropertiesPage = () => {
       image: 'https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop'
     },
     {
-      id: 2,
+      id: '2',
       title: 'Apartamento Luxo Vista Mar',
       price: 1200000,
       location: 'Rio de Janeiro, RJ',
@@ -47,7 +48,7 @@ const PropertiesPage = () => {
       image: 'https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=400&h=300&fit=crop'
     },
     {
-      id: 3,
+      id: '3',
       title: 'Cobertura Duplex',
       price: 2100000,
       location: 'Belo Horizonte, MG',
@@ -58,7 +59,7 @@ const PropertiesPage = () => {
       image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=400&h=300&fit=crop'
     },
     {
-      id: 4,
+      id: '4',
       title: 'Studio Moderno',
       price: 350000,
       location: 'Curitiba, PR',
@@ -69,7 +70,7 @@ const PropertiesPage = () => {
       image: 'https://images.unsplash.com/photo-1496307653780-42ee777d4833?w=400&h=300&fit=crop'
     },
     {
-      id: 5,
+      id: '5',
       title: 'Casa de Campo',
       price: 750000,
       location: 'Campos do Jordão, SP',
@@ -80,7 +81,7 @@ const PropertiesPage = () => {
       image: 'https://images.unsplash.com/photo-1449157291145-7efd050a4d0e?w=400&h=300&fit=crop'
     },
     {
-      id: 6,
+      id: '6',
       title: 'Loft Industrial',
       price: 680000,
       location: 'Porto Alegre, RS',
@@ -233,62 +234,7 @@ const PropertiesPage = () => {
         {/* Properties Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {properties.map((property) => (
-            <Card key={property.id} className="group hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-slate-800">
-              <div className="relative overflow-hidden">
-                <img
-                  src={property.image}
-                  alt={property.title}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                  {formatPrice(property.price)}
-                </div>
-                <div className="absolute top-4 left-4 bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm font-medium">
-                  {property.type}
-                </div>
-              </div>
-              <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">
-                  {property.title}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4 flex items-center">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  {property.location}
-                </p>
-                
-                <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  <div className="flex items-center space-x-4">
-                    <span className="flex items-center">
-                      <Square className="w-4 h-4 mr-1" />
-                      {property.area}m²
-                    </span>
-                    <span className="flex items-center">
-                      <Bed className="w-4 h-4 mr-1" />
-                      {property.bedrooms}
-                    </span>
-                    <span className="flex items-center">
-                      <Bath className="w-4 h-4 mr-1" />
-                      {property.bathrooms}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="flex space-x-2">
-                  <Button 
-                    className="flex-1 bg-blue-600 hover:bg-blue-700"
-                    onClick={() => navigate(`/property/${property.id}`)}
-                  >
-                    Ver Detalhes
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    {t('properties.contact')}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <PropertyCard key={property.id} property={property} />
           ))}
         </div>
 

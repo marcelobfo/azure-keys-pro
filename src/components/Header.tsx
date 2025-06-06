@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, User, LogOut, Settings, Home, Search, MapPin, Phone, Moon, Sun } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import {
 const Header = () => {
   const { language, setLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  const { user, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -23,6 +25,11 @@ const Header = () => {
     { code: 'en', name: 'English' },
     { code: 'es', name: 'Español' }
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <header className="bg-white dark:bg-slate-900 shadow-lg border-b border-blue-100 dark:border-slate-700 sticky top-0 z-50">
@@ -49,6 +56,11 @@ const Header = () => {
             <Link to="/contact" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               {t('nav.contact')}
             </Link>
+            {user && (
+              <Link to="/dashboard" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                Dashboard
+              </Link>
+            )}
           </nav>
 
           {/* Right side controls */}
@@ -84,29 +96,33 @@ const Header = () => {
             </DropdownMenu>
 
             {/* User Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300">
-                  <User className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => navigate('/login')}>
-                  {t('nav.login')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/dashboard')}>
-                  {t('nav.dashboard')}
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="w-4 h-4 mr-2" />
-                  {t('dashboard.settings')}
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <LogOut className="w-4 h-4 mr-2" />
-                  {t('nav.logout')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300">
+                    <User className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="w-4 h-4 mr-2" />
+                    {t('dashboard.settings')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    {t('nav.logout')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button onClick={() => navigate('/auth')} variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300">
+                <User className="w-4 h-4 mr-2" />
+                {t('nav.login')}
+              </Button>
+            )}
 
             {/* Mobile menu button */}
             <Button
@@ -145,6 +161,24 @@ const Header = () => {
               >
                 {t('nav.contact')}
               </Link>
+              {user && (
+                <Link
+                  to="/dashboard"
+                  className="px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+              )}
+              {!user && (
+                <Link
+                  to="/auth"
+                  className="px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {t('nav.login')}
+                </Link>
+              )}
             </div>
           </div>
         )}
