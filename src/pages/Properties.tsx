@@ -132,7 +132,7 @@ const PropertiesPage = () => {
                 <SelectValue placeholder={t('properties.filter.type')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os tipos</SelectItem>
+                <SelectItem value="all">Todos os tipos</SelectItem>
                 <SelectItem value="Casa">Casa</SelectItem>
                 <SelectItem value="Apartamento">Apartamento</SelectItem>
                 <SelectItem value="Cobertura">Cobertura</SelectItem>
@@ -146,7 +146,7 @@ const PropertiesPage = () => {
                 <SelectValue placeholder={t('properties.filter.city')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as cidades</SelectItem>
+                <SelectItem value="all">Todas as cidades</SelectItem>
                 <SelectItem value="São Paulo">São Paulo, SP</SelectItem>
                 <SelectItem value="Rio de Janeiro">Rio de Janeiro, RJ</SelectItem>
                 <SelectItem value="Belo Horizonte">Belo Horizonte, MG</SelectItem>
@@ -205,7 +205,7 @@ const PropertiesPage = () => {
                     <SelectValue placeholder="Quartos" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Qualquer</SelectItem>
+                    <SelectItem value="any">Qualquer</SelectItem>
                     <SelectItem value="1">1 quarto</SelectItem>
                     <SelectItem value="2">2 quartos</SelectItem>
                     <SelectItem value="3">3 quartos</SelectItem>
@@ -219,7 +219,7 @@ const PropertiesPage = () => {
                     <SelectValue placeholder="Banheiros" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Qualquer</SelectItem>
+                    <SelectItem value="any">Qualquer</SelectItem>
                     <SelectItem value="1">1 banheiro</SelectItem>
                     <SelectItem value="2">2 banheiros</SelectItem>
                     <SelectItem value="3">3+ banheiros</SelectItem>
