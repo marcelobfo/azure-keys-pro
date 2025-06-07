@@ -220,28 +220,6 @@ const Header = () => {
       </div>
     </header>
   );
-
-  function getRoleLabel(role: string) {
-    switch (role) {
-      case 'admin': return 'Admin';
-      case 'corretor': return 'Corretor';
-      default: return 'Usuário';
-    }
-  }
-
-  function getRoleBadgeVariant(role: string) {
-    switch (role) {
-      case 'admin': return 'destructive' as const;
-      case 'corretor': return 'default' as const;
-      default: return 'secondary' as const;
-    }
-  }
-
-  const navItems = [
-    { href: '/', label: 'Início', icon: Home },
-    { href: '/properties', label: 'Imóveis', icon: Home },
-    { href: '/contact', label: 'Contato', icon: Phone },
-  ];
 };
 
 export default Header;
