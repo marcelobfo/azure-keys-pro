@@ -24,7 +24,14 @@ export const useNotifications = () => {
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      setupRealtimeSubscription();
+      const channel = setupRealtimeSubscription();
+      
+      // Cleanup function
+      return () => {
+        if (channel) {
+          supabase.removeChannel(channel);
+        }
+      };
     } else {
       setNotifications([]);
       setUnreadCount(0);
@@ -45,17 +52,21 @@ export const useNotifications = () => {
     if (error) {
       console.error('Error fetching notifications:', error);
     } else {
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.read).length || 0);
+      const typedData = (data || []).map(item => ({
+        ...item,
+        type: item.type as 'property_alert' | 'lead_assigned' | 'system'
+      }));
+      setNotifications(typedData);
+      setUnreadCount(typedData.filter(n => !n.read).length);
     }
     setLoading(false);
   };
 
   const setupRealtimeSubscription = () => {
-    if (!user) return;
+    if (!user) return null;
 
     const channel = supabase
-      .channel('notifications-changes')
+      .channel(`notifications-${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -65,7 +76,11 @@ export const useNotifications = () => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          const newNotification = payload.new as Notification;
+          const newNotification = {
+            ...payload.new,
+            type: payload.new.type as 'property_alert' | 'lead_assigned' | 'system'
+          } as Notification;
+          
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
           
@@ -78,9 +93,7 @@ export const useNotifications = () => {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return channel;
   };
 
   const markAsRead = async (notificationId: string) => {

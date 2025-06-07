@@ -51,7 +51,13 @@ export const useProfile = () => {
     if (error) {
       console.error('Error fetching profile:', error);
     } else {
-      setProfile(data);
+      const typedProfile: UserProfile = {
+        ...data,
+        notification_preferences: typeof data.notification_preferences === 'object' && data.notification_preferences !== null
+          ? data.notification_preferences as UserProfile['notification_preferences']
+          : { email: true, push: true, property_alerts: true }
+      };
+      setProfile(typedProfile);
     }
     setLoading(false);
   };
@@ -74,12 +80,18 @@ export const useProfile = () => {
       });
       return { error };
     } else {
-      setProfile(data);
+      const typedProfile: UserProfile = {
+        ...data,
+        notification_preferences: typeof data.notification_preferences === 'object' && data.notification_preferences !== null
+          ? data.notification_preferences as UserProfile['notification_preferences']
+          : { email: true, push: true, property_alerts: true }
+      };
+      setProfile(typedProfile);
       toast({
         title: "Perfil atualizado",
         description: "Suas informações foram atualizadas com sucesso!",
       });
-      return { data };
+      return { data: typedProfile };
     }
   };
 
