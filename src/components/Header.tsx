@@ -1,185 +1,224 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, User, LogOut, Settings, Home, Search, MapPin, Phone, Moon, Sun } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
-import { Button } from './ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { Moon, Sun, User, LogOut, Settings, Heart, Home, Phone, Menu, X } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
+import { Badge } from '@/components/ui/badge';
+import NotificationDropdown from './NotificationDropdown';
 
 const Header = () => {
-  const { language, setLanguage, t } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const { language, setLanguage } = useLanguage();
   const { user, signOut } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { profile } = useProfile();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const languages = [
-    { code: 'pt', name: 'Português' },
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Español' }
-  ];
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'pt' ? 'en' : 'pt');
+  };
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Admin';
+      case 'corretor': return 'Corretor';
+      default: return 'Usuário';
+    }
+  };
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'admin': return 'destructive';
+      case 'corretor': return 'default';
+      default: return 'secondary';
+    }
+  };
+
+  const navItems = [
+    { href: '/', label: 'Início', icon: Home },
+    { href: '/properties', label: 'Imóveis', icon: Home },
+    { href: '/contact', label: 'Contato', icon: Phone },
+  ];
+
   return (
-    <header className="bg-white dark:bg-slate-900 shadow-lg border-b border-blue-100 dark:border-slate-700 sticky top-0 z-50">
+    <header className="bg-white dark:bg-slate-900 shadow-sm border-b border-gray-200 dark:border-slate-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
-              <Home className="w-6 h-6 text-white" />
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Home className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-              RealEstate Pro
+            <span className="text-xl font-bold text-gray-900 dark:text-white">
+              ImobiLovable
             </span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-              {t('nav.home')}
-            </Link>
-            <Link to="/properties" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-              {t('nav.properties')}
-            </Link>
-            <Link to="/contact" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-              {t('nav.contact')}
-            </Link>
-            {user && (
-              <Link to="/dashboard" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                Dashboard
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                to={item.href}
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                {item.label}
               </Link>
-            )}
+            ))}
           </nav>
 
-          {/* Right side controls */}
+          {/* Actions */}
           <div className="flex items-center space-x-4">
             {/* Theme Toggle */}
             <Button
-              variant="ghost"
-              size="sm"
+              variant="outline"
+              size="icon"
               onClick={toggleTheme}
-              className="text-gray-600 dark:text-gray-300"
+              className="hidden sm:flex"
             >
-              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+              {theme === 'light' ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              )}
             </Button>
 
-            {/* Language Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300">
-                  {language.toUpperCase()}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {languages.map((lang) => (
-                  <DropdownMenuItem
-                    key={lang.code}
-                    onClick={() => setLanguage(lang.code as any)}
-                    className={language === lang.code ? 'bg-blue-50 dark:bg-blue-900' : ''}
-                  >
-                    {lang.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Language Toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleLanguage}
+              className="hidden sm:flex"
+            >
+              {language === 'pt' ? 'EN' : 'PT'}
+            </Button>
+
+            {/* Notifications (only for authenticated users) */}
+            {user && <NotificationDropdown />}
 
             {/* User Menu */}
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300">
-                    <User className="w-4 h-4" />
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline">
+                      {profile?.full_name || 'Usuário'}
+                    </span>
+                    {profile?.role && (
+                      <Badge variant={getRoleBadgeVariant(profile.role)} className="ml-1">
+                        {getRoleLabel(profile.role)}
+                      </Badge>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                    <User className="mr-2 h-4 w-4" />
                     Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="w-4 h-4 mr-2" />
-                    {t('dashboard.settings')}
+                  <DropdownMenuItem onClick={() => navigate('/profile/settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Configurações
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/favorites')}>
+                    <Heart className="mr-2 h-4 w-4" />
+                    Favoritos
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="w-4 h-4 mr-2" />
-                    {t('nav.logout')}
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button onClick={() => navigate('/auth')} variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300">
-                <User className="w-4 h-4 mr-2" />
-                {t('nav.login')}
-              </Button>
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" onClick={() => navigate('/auth')}>
+                  Entrar
+                </Button>
+                <Button onClick={() => navigate('/auth')}>
+                  Cadastrar
+                </Button>
+              </div>
             )}
 
-            {/* Mobile menu button */}
+            {/* Mobile Menu Toggle */}
             <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden text-gray-600 dark:text-gray-300"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              variant="outline"
+              size="icon"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden"
             >
-              <Menu className="w-5 h-5" />
+              {isMobileMenuOpen ? (
+                <X className="h-4 w-4" />
+              ) : (
+                <Menu className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200 dark:border-slate-700">
-            <div className="flex flex-col space-y-2">
-              <Link
-                to="/"
-                className="px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('nav.home')}
-              </Link>
-              <Link
-                to="/properties"
-                className="px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('nav.properties')}
-              </Link>
-              <Link
-                to="/contact"
-                className="px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('nav.contact')}
-              </Link>
-              {user && (
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-200 dark:border-slate-700 py-4">
+            <nav className="flex flex-col space-y-4">
+              {navItems.map((item) => (
                 <Link
-                  to="/dashboard"
-                  className="px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
+                  key={item.href}
+                  to={item.href}
+                  className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Dashboard
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.label}</span>
                 </Link>
-              )}
-              {!user && (
-                <Link
-                  to="/auth"
-                  className="px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
+              ))}
+              
+              <div className="flex items-center space-x-4 pt-4 border-t border-gray-200 dark:border-slate-700">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={toggleTheme}
                 >
-                  {t('nav.login')}
-                </Link>
-              )}
-            </div>
+                  {theme === 'light' ? (
+                    <Moon className="h-4 w-4" />
+                  ) : (
+                    <Sun className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleLanguage}
+                >
+                  {language === 'pt' ? 'EN' : 'PT'}
+                </Button>
+              </div>
+            </nav>
           </div>
         )}
       </div>

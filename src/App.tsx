@@ -14,6 +14,7 @@ import PropertiesPage from './pages/Properties';
 import ContactPage from './pages/Contact';
 import AuthPage from './pages/Auth';
 import Dashboard from './pages/Dashboard';
+import ProfileSettings from './components/ProfileSettings';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
               <Routes>
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile/settings" element={<Layout><ProfileSettings /></Layout>} />
                 <Route path="/" element={<Layout><HomePage /></Layout>} />
                 <Route path="/properties" element={<Layout><PropertiesPage /></Layout>} />
                 <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
