@@ -19,16 +19,12 @@ import { Badge } from '@/components/ui/badge';
 import NotificationDropdown from './NotificationDropdown';
 
 const Header = () => {
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
 
   const toggleLanguage = () => {
     setLanguage(language === 'pt' ? 'en' : 'pt');
@@ -224,6 +220,28 @@ const Header = () => {
       </div>
     </header>
   );
+
+  function getRoleLabel(role: string) {
+    switch (role) {
+      case 'admin': return 'Admin';
+      case 'corretor': return 'Corretor';
+      default: return 'Usuário';
+    }
+  }
+
+  function getRoleBadgeVariant(role: string) {
+    switch (role) {
+      case 'admin': return 'destructive' as const;
+      case 'corretor': return 'default' as const;
+      default: return 'secondary' as const;
+    }
+  }
+
+  const navItems = [
+    { href: '/', label: 'Início', icon: Home },
+    { href: '/properties', label: 'Imóveis', icon: Home },
+    { href: '/contact', label: 'Contato', icon: Phone },
+  ];
 };
 
 export default Header;
