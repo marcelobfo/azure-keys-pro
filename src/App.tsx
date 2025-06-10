@@ -1,48 +1,59 @@
 
-import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from './contexts/ThemeContext';
-import { LanguageProvider } from './contexts/LanguageContext';
-import { AuthProvider } from './contexts/AuthContext';
-import Layout from './components/Layout';
-import HomePage from './pages/Home';
-import PropertiesPage from './pages/Properties';
-import ContactPage from './pages/Contact';
-import AuthPage from './pages/Auth';
-import Dashboard from './pages/Dashboard';
-import ProfileSettings from './components/ProfileSettings';
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import Index from "./pages/Index";
+import Home from "./pages/Home";
+import Properties from "./pages/Properties";
+import Contact from "./pages/Contact";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import ManageProperties from "./pages/ManageProperties";
+import CreateProperty from "./pages/CreateProperty";
+import EditProperty from "./pages/EditProperty";
+import LeadsManagement from "./pages/LeadsManagement";
+import VisitsManagement from "./pages/VisitsManagement";
+import ScheduleVisit from "./pages/ScheduleVisit";
+import WebhookSettings from "./pages/WebhookSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <ThemeProvider>
-        <LanguageProvider>
-          <AuthProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <TooltipProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/" element={<Index />} />
+                <Route path="/home" element={<Home />} />
+                <Route path="/properties" element={<Properties />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/auth" element={<Auth />} />
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/profile/settings" element={<Layout><ProfileSettings /></Layout>} />
-                <Route path="/" element={<Layout><HomePage /></Layout>} />
-                <Route path="/properties" element={<Layout><PropertiesPage /></Layout>} />
-                <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="/manage-properties" element={<ManageProperties />} />
+                <Route path="/properties/create" element={<CreateProperty />} />
+                <Route path="/properties/edit/:id" element={<EditProperty />} />
+                <Route path="/leads-management" element={<LeadsManagement />} />
+                <Route path="/visits-management" element={<VisitsManagement />} />
+                <Route path="/schedule-visit/:propertyId" element={<ScheduleVisit />} />
+                <Route path="/webhook-settings" element={<WebhookSettings />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-          </AuthProvider>
-        </LanguageProvider>
-      </ThemeProvider>
-    </TooltipProvider>
+          </TooltipProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
