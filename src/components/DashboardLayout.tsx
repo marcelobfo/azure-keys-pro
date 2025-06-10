@@ -65,16 +65,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
 
     if (userRole === 'corretor' || userRole === 'admin') {
       baseItems.splice(1, 0, 
-        { icon: Building, label: 'Meus Imóveis', href: '/properties/manage' },
-        { icon: MessageSquare, label: 'Leads', href: '/leads' },
-        { icon: Calendar, label: 'Visitas', href: '/visits' }
+        { icon: Building, label: 'Meus Imóveis', href: '/manage-properties' },
+        { icon: MessageSquare, label: 'Leads', href: '/leads-management' },
+        { icon: Calendar, label: 'Visitas', href: '/visits-management' }
       );
     }
 
     if (userRole === 'admin') {
       baseItems.splice(-1, 0,
         { icon: Users, label: 'Usuários', href: '/admin/users' },
-        { icon: Settings, label: 'Configurações', href: '/admin/settings' }
+        { icon: Settings, label: 'Configurações', href: '/webhook-settings' }
       );
     }
 
@@ -135,6 +135,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
               key={item.href}
               to={item.href}
               className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+              onClick={() => setSidebarOpen(false)}
             >
               <item.icon className="w-5 h-5" />
               <span>{item.label}</span>
@@ -144,9 +145,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-0">
+      <div className="flex-1 flex flex-col min-h-screen">
         {/* Top Bar */}
-        <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4">
+        <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button
@@ -219,8 +220,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
         </header>
 
         {/* Page Content */}
-        <main className="p-6">
-          {children}
+        <main className="flex-1 p-6 bg-gray-50 dark:bg-slate-900 overflow-auto">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
 
