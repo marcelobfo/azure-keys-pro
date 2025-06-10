@@ -84,7 +84,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   const menuItems = getMenuItems();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex w-full">
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
         lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 
@@ -98,7 +98,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
               <Home className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-bold text-gray-900 dark:text-white">
-              ImobiLovable
+              Maresia Litoral
             </span>
           </Link>
           <Button
@@ -145,7 +145,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen w-full">
         {/* Top Bar */}
         <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 flex-shrink-0">
           <div className="flex items-center justify-between">

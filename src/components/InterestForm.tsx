@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Heart } from 'lucide-react';
+import { Phone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface InterestFormProps {
@@ -69,14 +69,17 @@ const InterestForm = ({ propertyId, propertyTitle }: InterestFormProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full">
-          <Heart className="h-4 w-4 mr-2" />
-          Tenho Interesse
+        <Button variant="outline" className="flex-1">
+          <Phone className="h-4 w-4 mr-2" />
+          Contato
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Demonstrar Interesse</DialogTitle>
+          <DialogTitle>Entrar em Contato</DialogTitle>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Interessado em: {propertyTitle}
+          </p>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -6,6 +6,7 @@ import { Heart, MapPin, Bed, Bath, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useLanguage } from '@/contexts/LanguageContext';
+import InterestForm from './InterestForm';
 
 interface Property {
   id: string;
@@ -104,12 +105,10 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
           >
             Ver Detalhes
           </Button>
-          <Button 
-            variant="outline"
-            className="flex-1"
-          >
-            {t('properties.contact')}
-          </Button>
+          <InterestForm 
+            propertyId={property.id}
+            propertyTitle={property.title}
+          />
         </div>
       </CardContent>
     </Card>
