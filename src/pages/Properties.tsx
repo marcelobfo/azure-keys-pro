@@ -1,28 +1,16 @@
 
 import React, { useState } from 'react';
-import { Search, Filter, MapPin, Home, Bed, Bath, Square } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card, CardContent } from '../components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Slider } from '../components/ui/slider';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import PropertyCard from '../components/PropertyCard';
+import PropertyFilters from '../components/PropertyFilters';
+import { usePropertyFilters } from '../hooks/usePropertyFilters';
 
 const PropertiesPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    search: '',
-    type: '',
-    city: '',
-    priceRange: [0, 2000000],
-    areaRange: [0, 500],
-    bedrooms: '',
-    bathrooms: ''
-  });
 
   const properties = [
     {
@@ -93,13 +81,7 @@ const PropertiesPage = () => {
     }
   ];
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0
-    }).format(price);
-  };
+  const { filters, setFilters, filteredProperties, clearFilters } = usePropertyFilters(properties);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
@@ -115,135 +97,48 @@ const PropertiesPage = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6 mb-8">
-          {/* Basic Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder={t('home.search.placeholder')}
-                value={filters.search}
-                onChange={(e) => setFilters({...filters, search: e.target.value})}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select value={filters.type} onValueChange={(value) => setFilters({...filters, type: value})}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('properties.filter.type')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os tipos</SelectItem>
-                <SelectItem value="Casa">Casa</SelectItem>
-                <SelectItem value="Apartamento">Apartamento</SelectItem>
-                <SelectItem value="Cobertura">Cobertura</SelectItem>
-                <SelectItem value="Studio">Studio</SelectItem>
-                <SelectItem value="Loft">Loft</SelectItem>
-              </SelectContent>
-            </Select>
+        <PropertyFilters
+          filters={filters}
+          setFilters={setFilters}
+          clearFilters={clearFilters}
+          showAdvanced={showAdvancedFilters}
+          setShowAdvanced={setShowAdvancedFilters}
+        />
 
-            <Select value={filters.city} onValueChange={(value) => setFilters({...filters, city: value})}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('properties.filter.city')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as cidades</SelectItem>
-                <SelectItem value="São Paulo">São Paulo, SP</SelectItem>
-                <SelectItem value="Rio de Janeiro">Rio de Janeiro, RJ</SelectItem>
-                <SelectItem value="Belo Horizonte">Belo Horizonte, MG</SelectItem>
-                <SelectItem value="Curitiba">Curitiba, PR</SelectItem>
-                <SelectItem value="Porto Alegre">Porto Alegre, RS</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button
-              variant="outline"
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className="flex items-center space-x-2"
-            >
-              <Filter className="w-4 h-4" />
-              <span>{t('properties.filter.advanced')}</span>
-            </Button>
-          </div>
-
-          {/* Advanced Filters */}
-          {showAdvancedFilters && (
-            <div className="border-t border-gray-200 dark:border-slate-700 pt-6 mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Price Range */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('properties.filter.price')}: {formatPrice(filters.priceRange[0])} - {formatPrice(filters.priceRange[1])}
-                  </label>
-                  <Slider
-                    value={filters.priceRange}
-                    onValueChange={(value) => setFilters({...filters, priceRange: value})}
-                    max={5000000}
-                    min={0}
-                    step={50000}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Area Range */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('properties.filter.area')}: {filters.areaRange[0]}m² - {filters.areaRange[1]}m²
-                  </label>
-                  <Slider
-                    value={filters.areaRange}
-                    onValueChange={(value) => setFilters({...filters, areaRange: value})}
-                    max={1000}
-                    min={0}
-                    step={10}
-                    className="w-full"
-                  />
-                </div>
-
-                {/* Bedrooms */}
-                <Select value={filters.bedrooms} onValueChange={(value) => setFilters({...filters, bedrooms: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Quartos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="any">Qualquer</SelectItem>
-                    <SelectItem value="1">1 quarto</SelectItem>
-                    <SelectItem value="2">2 quartos</SelectItem>
-                    <SelectItem value="3">3 quartos</SelectItem>
-                    <SelectItem value="4">4+ quartos</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* Bathrooms */}
-                <Select value={filters.bathrooms} onValueChange={(value) => setFilters({...filters, bathrooms: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Banheiros" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="any">Qualquer</SelectItem>
-                    <SelectItem value="1">1 banheiro</SelectItem>
-                    <SelectItem value="2">2 banheiros</SelectItem>
-                    <SelectItem value="3">3+ banheiros</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
+        {/* Results Count */}
+        <div className="mb-6">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Encontrados {filteredProperties.length} imóveis
+          </p>
         </div>
 
         {/* Properties Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {properties.map((property) => (
+          {filteredProperties.map((property) => (
             <PropertyCard key={property.id} property={property} />
           ))}
         </div>
 
+        {/* No Results */}
+        {filteredProperties.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
+              Nenhum imóvel encontrado com os filtros selecionados.
+            </p>
+            <Button onClick={clearFilters} variant="outline">
+              Limpar Filtros
+            </Button>
+          </div>
+        )}
+
         {/* Load More */}
-        <div className="text-center mt-12">
-          <Button variant="outline" size="lg">
-            Carregar Mais Imóveis
-          </Button>
-        </div>
+        {filteredProperties.length > 0 && (
+          <div className="text-center mt-12">
+            <Button variant="outline" size="lg">
+              Carregar Mais Imóveis
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
