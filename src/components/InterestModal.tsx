@@ -4,18 +4,20 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { MessageCircle } from 'lucide-react';
 
-interface InterestFormProps {
-  propertyId?: string;
-  propertyTitle?: string;
+interface InterestModalProps {
+  propertyId: string;
+  propertyTitle: string;
 }
 
-const InterestForm: React.FC<InterestFormProps> = ({ propertyId, propertyTitle }) => {
+const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -36,9 +38,9 @@ const InterestForm: React.FC<InterestFormProps> = ({ propertyId, propertyTitle }
             email: formData.email,
             phone: formData.phone,
             message: formData.message,
-            property_id: propertyId || null,
+            property_id: propertyId,
             status: 'new',
-            source: propertyId ? 'property_interest' : 'contact_form'
+            source: 'property_interest'
           }
         ])
         .select();
@@ -58,6 +60,7 @@ const InterestForm: React.FC<InterestFormProps> = ({ propertyId, propertyTitle }
         phone: '',
         message: ''
       });
+      setOpen(false);
 
     } catch (error: any) {
       console.error('Erro ao enviar interesse:', error);
@@ -79,16 +82,20 @@ const InterestForm: React.FC<InterestFormProps> = ({ propertyId, propertyTitle }
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Demonstrar Interesse</CardTitle>
-        {propertyTitle && (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <MessageCircle className="w-4 h-4 mr-1" />
+          Interesse
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Demonstrar Interesse</DialogTitle>
           <p className="text-sm text-gray-600 dark:text-gray-300">
             {propertyTitle}
           </p>
-        )}
-      </CardHeader>
-      <CardContent>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="name">Nome Completo *</Label>
@@ -134,13 +141,23 @@ const InterestForm: React.FC<InterestFormProps> = ({ propertyId, propertyTitle }
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Enviando...' : 'Enviar Interesse'}
-          </Button>
+          <div className="flex justify-end space-x-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setOpen(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Enviando...' : 'Enviar Interesse'}
+            </Button>
+          </div>
         </form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export default InterestForm;
+export default InterestModal;

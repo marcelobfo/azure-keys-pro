@@ -37,7 +37,7 @@ const PropertiesPage = () => {
       const { data, error } = await supabase
         .from('properties')
         .select('*')
-        .eq('status', 'active')
+        .eq('status', 'available')
         .order('created_at', { ascending: false });
 
       if (error) {

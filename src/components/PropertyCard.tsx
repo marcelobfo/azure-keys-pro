@@ -6,7 +6,8 @@ import { Heart, MapPin, Bed, Bath, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useLanguage } from '@/contexts/LanguageContext';
-import InterestForm from './InterestForm';
+import InterestModal from './InterestModal';
+import ScheduleVisitModal from './ScheduleVisitModal';
 
 interface Property {
   id: string;
@@ -98,17 +99,23 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
           </div>
         </div>
         
-        <div className="flex space-x-2">
+        <div className="space-y-2">
           <Button 
-            className="flex-1 bg-blue-600 hover:bg-blue-700"
+            className="w-full bg-blue-600 hover:bg-blue-700"
             onClick={() => navigate(`/property/${property.id}`)}
           >
             Ver Detalhes
           </Button>
-          <InterestForm 
-            propertyId={property.id}
-            propertyTitle={property.title}
-          />
+          <div className="flex space-x-2">
+            <InterestModal 
+              propertyId={property.id}
+              propertyTitle={property.title}
+            />
+            <ScheduleVisitModal 
+              propertyId={property.id}
+              propertyTitle={property.title}
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -1,32 +1,95 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Heart, MapPin, Bed, Bath, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+
+interface FavoriteProperty {
+  id: string;
+  title: string;
+  price: number;
+  location: string;
+  area: number;
+  bedrooms: number;
+  bathrooms: number;
+  image: string;
+}
 
 const Favorites = () => {
   const { user } = useAuth();
+  const [favoriteProperties, setFavoriteProperties] = useState<FavoriteProperty[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchFavorites();
+    }
+  }, [user]);
+
+  const fetchFavorites = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('favorites')
+        .select(`
+          property_id,
+          properties (
+            id,
+            title,
+            price,
+            location,
+            area,
+            bedrooms,
+            bathrooms,
+            images
+          )
+        `)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error fetching favorites:', error);
+        return;
+      }
+
+      const favorites = data
+        ?.filter(item => item.properties)
+        ?.map(item => ({
+          id: item.properties.id,
+          title: item.properties.title,
+          price: item.properties.price,
+          location: item.properties.location,
+          area: item.properties.area || 0,
+          bedrooms: item.properties.bedrooms || 0,
+          bathrooms: item.properties.bathrooms || 0,
+          image: item.properties.images?.[0] || '/placeholder.svg'
+        })) || [];
+
+      setFavoriteProperties(favorites);
+    } catch (error) {
+      console.error('Error in fetchFavorites:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Mock data - você pode conectar com o hook useFavorites depois
-  const favoriteProperties = [
-    {
-      id: '1',
-      title: 'Casa Moderna no Centro',
-      price: 450000,
-      location: 'Centro, Balneário Camboriú',
-      area: 120,
-      bedrooms: 3,
-      bathrooms: 2,
-      image: '/placeholder.svg'
-    }
-  ];
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -91,7 +154,7 @@ const Favorites = () => {
                     </span>
                   </div>
                   
-                  <Button className="w-full">
+                  <Button className="w-full" onClick={() => window.location.href = `/property/${property.id}`}>
                     Ver Detalhes
                   </Button>
                 </CardContent>

@@ -33,7 +33,8 @@ const Contact = () => {
             email: formData.email,
             phone: formData.phone,
             message: formData.message,
-            status: 'new'
+            status: 'new',
+            source: 'contact_form'
           }
         ])
         .select();
@@ -47,7 +48,6 @@ const Contact = () => {
         description: "Entraremos em contato em breve.",
       });
 
-      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -87,7 +87,6 @@ const Contact = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Contact Form */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
@@ -149,7 +148,6 @@ const Contact = () => {
             </Card>
           </div>
 
-          {/* Contact Information */}
           <div className="space-y-6">
             <Card>
               <CardHeader>

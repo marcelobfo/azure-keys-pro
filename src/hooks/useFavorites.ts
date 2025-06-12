@@ -22,18 +22,23 @@ export const useFavorites = () => {
   const fetchFavorites = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('favorites')
-      .select('property_id')
-      .eq('user_id', user.id);
+    try {
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('property_id')
+        .eq('user_id', user.id);
 
-    if (error) {
-      console.error('Error fetching favorites:', error);
-    } else {
-      const favoriteIds = new Set(data?.map(item => item.property_id) || []);
-      setFavorites(favoriteIds);
+      if (error) {
+        console.error('Error fetching favorites:', error);
+      } else {
+        const favoriteIds = new Set(data?.map(item => item.property_id) || []);
+        setFavorites(favoriteIds);
+      }
+    } catch (error) {
+      console.error('Error in fetchFavorites:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const toggleFavorite = async (propertyId: string) => {
@@ -48,53 +53,56 @@ export const useFavorites = () => {
 
     const isFavorited = favorites.has(propertyId);
 
-    if (isFavorited) {
-      // Remove from favorites
-      const { error } = await supabase
-        .from('favorites')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('property_id', propertyId);
+    try {
+      if (isFavorited) {
+        // Remove from favorites
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('property_id', propertyId);
 
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao remover dos favoritos",
-          variant: "destructive",
-        });
-      } else {
+        if (error) {
+          throw error;
+        }
+
         setFavorites(prev => {
           const newSet = new Set(prev);
           newSet.delete(propertyId);
           return newSet;
         });
+        
         toast({
           title: "Removido dos favoritos",
           description: "Imóvel removido da sua lista de favoritos",
         });
-      }
-    } else {
-      // Add to favorites
-      const { error } = await supabase
-        .from('favorites')
-        .insert({
-          user_id: user.id,
-          property_id: propertyId,
-        });
-
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao adicionar aos favoritos",
-          variant: "destructive",
-        });
       } else {
+        // Add to favorites
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: user.id,
+            property_id: propertyId,
+          });
+
+        if (error) {
+          throw error;
+        }
+
         setFavorites(prev => new Set(prev).add(propertyId));
+        
         toast({
           title: "Adicionado aos favoritos",
           description: "Imóvel adicionado à sua lista de favoritos",
         });
       }
+    } catch (error: any) {
+      console.error('Error toggling favorite:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao alterar favorito: " + error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -105,5 +113,6 @@ export const useFavorites = () => {
     loading,
     toggleFavorite,
     isFavorite,
+    refetch: fetchFavorites,
   };
 };

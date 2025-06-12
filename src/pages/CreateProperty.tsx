@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout';
+import ImageUpload from '@/components/ImageUpload';
 
 const CreateProperty = () => {
   const navigate = useNavigate();
@@ -29,7 +30,8 @@ const CreateProperty = () => {
     bedrooms: '',
     bathrooms: '',
     features: '',
-    images: ''
+    images: [] as string[],
+    status: 'available'
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,11 +53,6 @@ const CreateProperty = () => {
         .map(f => f.trim())
         .filter(f => f.length > 0);
 
-      const imagesArray = formData.images
-        .split(',')
-        .map(img => img.trim())
-        .filter(img => img.length > 0);
-
       const { data, error } = await supabase
         .from('properties')
         .insert([
@@ -71,9 +68,9 @@ const CreateProperty = () => {
             bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
             bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
             features: featuresArray,
-            images: imagesArray,
+            images: formData.images,
             user_id: user.id,
-            status: 'active'
+            status: formData.status
           }
         ])
         .select();
@@ -104,6 +101,13 @@ const CreateProperty = () => {
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const handleImagesChange = (images: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      images
     }));
   };
 
@@ -150,6 +154,20 @@ const CreateProperty = () => {
                       <SelectItem value="studio">Studio</SelectItem>
                       <SelectItem value="loft">Loft</SelectItem>
                       <SelectItem value="terreno">Terreno</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="status">Status *</Label>
+                  <Select value={formData.status} onValueChange={(value) => handleChange('status', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available">Disponível</SelectItem>
+                      <SelectItem value="unavailable">Indisponível</SelectItem>
+                      <SelectItem value="sold">Vendido</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -256,9 +274,14 @@ const CreateProperty = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Detalhes Adicionais</CardTitle>
+              <CardTitle>Imagens e Características</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <ImageUpload 
+                images={formData.images}
+                onChange={handleImagesChange}
+              />
+
               <div>
                 <Label htmlFor="features">Características (separadas por vírgula)</Label>
                 <Textarea
@@ -266,17 +289,6 @@ const CreateProperty = () => {
                   value={formData.features}
                   onChange={(e) => handleChange('features', e.target.value)}
                   placeholder="Piscina, Garagem, Jardim, Churrasqueira"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="images">URLs das Imagens (separadas por vírgula)</Label>
-                <Textarea
-                  id="images"
-                  value={formData.images}
-                  onChange={(e) => handleChange('images', e.target.value)}
-                  placeholder="https://exemplo.com/imagem1.jpg, https://exemplo.com/imagem2.jpg"
                   rows={3}
                 />
               </div>
