@@ -21,6 +21,10 @@ import VisitsManagement from "./pages/VisitsManagement";
 import ScheduleVisit from "./pages/ScheduleVisit";
 import WebhookSettings from "./pages/WebhookSettings";
 import NotFound from "./pages/NotFound";
+import Favorites from "./pages/Favorites";
+import ProfileSettings from "./pages/ProfileSettings";
+import Alerts from "./pages/Alerts";
+import AdminUsers from "./pages/AdminUsers";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +51,10 @@ const App = () => (
                 <Route path="/visits-management" element={<VisitsManagement />} />
                 <Route path="/schedule-visit/:propertyId" element={<ScheduleVisit />} />
                 <Route path="/webhook-settings" element={<WebhookSettings />} />
+                <Route path="/favorites" element={<Favorites />} />
+                <Route path="/profile/settings" element={<ProfileSettings />} />
+                <Route path="/alerts" element={<Alerts />} />
+                <Route path="/admin/users" element={<AdminUsers />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

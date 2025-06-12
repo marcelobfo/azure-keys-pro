@@ -3,141 +3,139 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Phone } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface InterestFormProps {
   propertyId: string;
   propertyTitle: string;
 }
 
-const InterestForm = ({ propertyId, propertyTitle }: InterestFormProps) => {
+const InterestForm: React.FC<InterestFormProps> = ({ propertyId, propertyTitle }) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    whatsapp: '',
+    phone: '',
     message: ''
   });
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
-      // Send to webhook
-      await fetch('/api/webhook/interest-form', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          propertyId,
-          propertyTitle,
-          contact: formData,
-          timestamp: new Date().toISOString()
-        })
-      });
+      // Salvar lead no banco de dados
+      const { error } = await supabase
+        .from('leads')
+        .insert({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          message: formData.message,
+          property_id: propertyId,
+          status: 'new'
+        });
 
-      toast({
-        title: "Interesse registrado!",
-        description: "Entraremos em contato em breve.",
-      });
+      if (error) {
+        console.error('Erro ao salvar lead:', error);
+        toast({
+          title: "Erro ao enviar",
+          description: "Houve um problema ao enviar sua mensagem. Tente novamente.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Mensagem enviada!",
+          description: "Entraremos em contato em breve.",
+        });
 
-      setFormData({ name: '', email: '', whatsapp: '', message: '' });
-      setIsOpen(false);
+        // Limpar formulário e fechar modal
+        setFormData({ name: '', email: '', phone: '', message: '' });
+        setIsOpen(false);
+      }
     } catch (error) {
+      console.error('Erro ao enviar formulário:', error);
       toast({
         title: "Erro ao enviar",
-        description: "Tente novamente em alguns minutos.",
+        description: "Houve um problema ao enviar sua mensagem. Tente novamente.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex-1">
-          <Phone className="h-4 w-4 mr-2" />
-          Contato
+        <Button size="sm" className="bg-green-600 hover:bg-green-700">
+          <MessageSquare className="w-4 h-4 mr-2" />
+          Tenho Interesse
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Entrar em Contato</DialogTitle>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Interessado em: {propertyTitle}
+          <DialogTitle>Tenho Interesse</DialogTitle>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            {propertyTitle}
           </p>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="name">Nome Completo *</Label>
             <Input
               id="name"
               value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              placeholder="Seu nome completo"
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
               required
             />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email *</Label>
+          
+          <div>
+            <Label htmlFor="email">E-mail *</Label>
             <Input
               id="email"
               type="email"
               value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              placeholder="seu@email.com"
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
               required
             />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="whatsapp">WhatsApp *</Label>
+          
+          <div>
+            <Label htmlFor="phone">WhatsApp</Label>
             <Input
-              id="whatsapp"
-              value={formData.whatsapp}
-              onChange={(e) => handleInputChange('whatsapp', e.target.value)}
-              placeholder="(11) 99999-9999"
-              required
+              id="phone"
+              value={formData.phone}
+              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              placeholder="(47) 99999-9999"
             />
           </div>
-
-          <div className="space-y-2">
+          
+          <div>
             <Label htmlFor="message">Mensagem</Label>
             <Textarea
               id="message"
               value={formData.message}
-              onChange={(e) => handleInputChange('message', e.target.value)}
+              onChange={(e) => setFormData({...formData, message: e.target.value})}
               placeholder="Gostaria de mais informações sobre este imóvel..."
               rows={3}
             />
           </div>
-
-          <div className="flex justify-end space-x-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsOpen(false)}
-            >
+          
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Enviando...' : 'Enviar Interesse'}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Enviando..." : "Enviar Mensagem"}
             </Button>
           </div>
         </form>
