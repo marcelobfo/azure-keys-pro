@@ -14,11 +14,11 @@ interface Property {
   title: string;
   price: number;
   location: string;
-  area: number | null;
-  bedrooms: number | null;
-  bathrooms: number | null;
-  property_type: string;
-  images: string[] | null;
+  area: number;
+  bedrooms: number;
+  bathrooms: number;
+  type: string;
+  image: string;
 }
 
 const PropertiesPage = () => {
@@ -44,14 +44,14 @@ const PropertiesPage = () => {
         throw error;
       }
 
-      const formattedProperties = data?.map(property => ({
+      const formattedProperties: Property[] = data?.map(property => ({
         id: property.id,
         title: property.title,
         price: property.price,
         location: property.location,
-        area: property.area,
-        bedrooms: property.bedrooms,
-        bathrooms: property.bathrooms,
+        area: property.area || 0,
+        bedrooms: property.bedrooms || 0,
+        bathrooms: property.bathrooms || 0,
         type: property.property_type,
         image: property.images?.[0] || '/placeholder.svg'
       })) || [];
