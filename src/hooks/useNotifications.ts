@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -20,24 +20,31 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      const channel = setupRealtimeSubscription();
-      
-      // Cleanup function
-      return () => {
-        if (channel) {
-          supabase.removeChannel(channel);
-        }
-      };
+      setupRealtimeSubscription();
     } else {
       setNotifications([]);
       setUnreadCount(0);
       setLoading(false);
+      // Clean up subscription when user logs out
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     }
-  }, [user]);
+
+    // Cleanup function
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [user?.id]); // Only depend on user.id to avoid unnecessary re-subscriptions
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -63,10 +70,18 @@ export const useNotifications = () => {
   };
 
   const setupRealtimeSubscription = () => {
-    if (!user) return null;
+    if (!user) return;
 
+    // Remove existing channel if it exists
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    // Create new channel with unique name
+    const channelName = `notifications-${user.id}-${Date.now()}`;
     const channel = supabase
-      .channel(`notifications-${user.id}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -93,7 +108,7 @@ export const useNotifications = () => {
       )
       .subscribe();
 
-    return channel;
+    channelRef.current = channel;
   };
 
   const markAsRead = async (notificationId: string) => {
