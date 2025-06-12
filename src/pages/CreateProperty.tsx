@@ -1,24 +1,22 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
-import DashboardLayout from '@/components/DashboardLayout';
-import { useProfile } from '@/hooks/useProfile';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import Layout from '@/components/Layout';
 
 const CreateProperty = () => {
-  const { profile } = useProfile();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -30,305 +28,277 @@ const CreateProperty = () => {
     area: '',
     bedrooms: '',
     bathrooms: '',
-    features: [] as string[],
-    images: [] as string[]
+    features: '',
+    images: ''
   });
-
-  const [newFeature, setNewFeature] = useState('');
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const addFeature = () => {
-    if (newFeature.trim() && !formData.features.includes(newFeature.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        features: [...prev.features, newFeature.trim()]
-      }));
-      setNewFeature('');
-    }
-  };
-
-  const removeFeature = (feature: string) => {
-    setFormData(prev => ({
-      ...prev,
-      features: prev.features.filter(f => f !== feature)
-    }));
-  };
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files) {
-      // Simulate image upload - in real app, upload to storage
-      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...newImages]
-      }));
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    if (!user) {
+      toast({
+        title: "Erro",
+        description: "Você precisa estar logado para criar uma propriedade.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      const featuresArray = formData.features
+        .split(',')
+        .map(f => f.trim())
+        .filter(f => f.length > 0);
+
+      const imagesArray = formData.images
+        .split(',')
+        .map(img => img.trim())
+        .filter(img => img.length > 0);
+
+      const { data, error } = await supabase
+        .from('properties')
+        .insert([
+          {
+            title: formData.title,
+            description: formData.description,
+            price: parseFloat(formData.price),
+            location: formData.location,
+            city: formData.city,
+            state: formData.state,
+            property_type: formData.property_type,
+            area: formData.area ? parseFloat(formData.area) : null,
+            bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
+            bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
+            features: featuresArray,
+            images: imagesArray,
+            user_id: user.id,
+            status: 'active'
+          }
+        ])
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
       toast({
-        title: "Imóvel cadastrado com sucesso!",
-        description: "O imóvel foi adicionado ao seu portfólio.",
+        title: "Sucesso!",
+        description: "Propriedade criada com sucesso!",
       });
-      
+
       navigate('/manage-properties');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erro ao criar propriedade:', error);
       toast({
-        title: "Erro ao cadastrar imóvel",
-        description: "Tente novamente em alguns minutos.",
+        title: "Erro",
+        description: `Erro ao criar propriedade: ${error.message}`,
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   return (
-    <DashboardLayout title="Cadastrar Imóvel" userRole={profile?.role || 'user'}>
-      <div className="space-y-6">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/manage-properties')}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-          <h1 className="text-2xl font-bold">Cadastrar Novo Imóvel</h1>
+    <Layout>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Cadastrar Novo Imóvel
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
+            Preencha as informações do imóvel
+          </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações do Imóvel</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações Básicas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="title">Título *</Label>
                   <Input
                     id="title"
                     value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="Ex: Casa Moderna no Centro"
+                    onChange={(e) => handleChange('title', e.target.value)}
+                    placeholder="Ex: Casa moderna no centro"
                     required
                   />
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="property_type">Tipo *</Label>
-                  <Select onValueChange={(value) => handleInputChange('property_type', value)}>
+
+                <div>
+                  <Label htmlFor="property_type">Tipo de Imóvel *</Label>
+                  <Select onValueChange={(value) => handleChange('property_type', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Casa">Casa</SelectItem>
-                      <SelectItem value="Apartamento">Apartamento</SelectItem>
-                      <SelectItem value="Terreno">Terreno</SelectItem>
-                      <SelectItem value="Comercial">Comercial</SelectItem>
+                      <SelectItem value="casa">Casa</SelectItem>
+                      <SelectItem value="apartamento">Apartamento</SelectItem>
+                      <SelectItem value="cobertura">Cobertura</SelectItem>
+                      <SelectItem value="studio">Studio</SelectItem>
+                      <SelectItem value="loft">Loft</SelectItem>
+                      <SelectItem value="terreno">Terreno</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Descreva as principais características do imóvel..."
-                  rows={4}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="price">Preço (R$) *</Label>
                   <Input
                     id="price"
                     type="number"
                     value={formData.price}
-                    onChange={(e) => handleInputChange('price', e.target.value)}
-                    placeholder="500000"
+                    onChange={(e) => handleChange('price', e.target.value)}
+                    placeholder="850000"
                     required
                   />
                 </div>
-                
-                <div className="space-y-2">
+
+                <div>
                   <Label htmlFor="area">Área (m²)</Label>
                   <Input
                     id="area"
                     type="number"
                     value={formData.area}
-                    onChange={(e) => handleInputChange('area', e.target.value)}
-                    placeholder="120"
+                    onChange={(e) => handleChange('area', e.target.value)}
+                    placeholder="180"
                   />
                 </div>
-                
-                <div className="space-y-2">
+
+                <div>
                   <Label htmlFor="bedrooms">Quartos</Label>
                   <Input
                     id="bedrooms"
                     type="number"
                     value={formData.bedrooms}
-                    onChange={(e) => handleInputChange('bedrooms', e.target.value)}
+                    onChange={(e) => handleChange('bedrooms', e.target.value)}
                     placeholder="3"
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="bathrooms">Banheiros</Label>
                   <Input
                     id="bathrooms"
                     type="number"
                     value={formData.bathrooms}
-                    onChange={(e) => handleInputChange('bathrooms', e.target.value)}
+                    onChange={(e) => handleChange('bathrooms', e.target.value)}
                     placeholder="2"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="city">Cidade *</Label>
-                  <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    placeholder="São Paulo"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="state">Estado</Label>
-                  <Input
-                    id="state"
-                    value={formData.state}
-                    onChange={(e) => handleInputChange('state', e.target.value)}
-                    placeholder="SP"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div>
+                <Label htmlFor="description">Descrição</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleChange('description', e.target.value)}
+                  placeholder="Descreva o imóvel..."
+                  rows={4}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Localização</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
                 <Label htmlFor="location">Endereço Completo *</Label>
                 <Input
                   id="location"
                   value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
+                  onChange={(e) => handleChange('location', e.target.value)}
                   placeholder="Rua das Flores, 123 - Centro"
                   required
                 />
               </div>
 
-              <div className="space-y-4">
-                <Label>Características</Label>
-                <div className="flex space-x-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="city">Cidade *</Label>
                   <Input
-                    value={newFeature}
-                    onChange={(e) => setNewFeature(e.target.value)}
-                    placeholder="Ex: Piscina, Garagem, etc."
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => handleChange('city', e.target.value)}
+                    placeholder="São Paulo"
+                    required
                   />
-                  <Button type="button" onClick={addFeature}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.features.map((feature) => (
-                    <Badge key={feature} variant="secondary" className="px-3 py-1">
-                      {feature}
-                      <button
-                        type="button"
-                        onClick={() => removeFeature(feature)}
-                        className="ml-2 hover:text-red-600"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+
+                <div>
+                  <Label htmlFor="state">Estado</Label>
+                  <Input
+                    id="state"
+                    value={formData.state}
+                    onChange={(e) => handleChange('state', e.target.value)}
+                    placeholder="SP"
+                  />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Detalhes Adicionais</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="features">Características (separadas por vírgula)</Label>
+                <Textarea
+                  id="features"
+                  value={formData.features}
+                  onChange={(e) => handleChange('features', e.target.value)}
+                  placeholder="Piscina, Garagem, Jardim, Churrasqueira"
+                  rows={3}
+                />
               </div>
 
-              <div className="space-y-4">
-                <Label>Imagens</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-600 mb-4">Clique para selecionar imagens ou arraste aqui</p>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <Label htmlFor="image-upload" className="cursor-pointer">
-                    <Button type="button" variant="outline" asChild>
-                      <span>Selecionar Imagens</span>
-                    </Button>
-                  </Label>
-                </div>
-                
-                {formData.images.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {formData.images.map((image, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={image}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <div>
+                <Label htmlFor="images">URLs das Imagens (separadas por vírgula)</Label>
+                <Textarea
+                  id="images"
+                  value={formData.images}
+                  onChange={(e) => handleChange('images', e.target.value)}
+                  placeholder="https://exemplo.com/imagem1.jpg, https://exemplo.com/imagem2.jpg"
+                  rows={3}
+                />
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="flex justify-end space-x-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate('/manage-properties')}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'Cadastrando...' : 'Cadastrar Imóvel'}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+          <div className="flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/manage-properties')}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Salvando...' : 'Salvar Propriedade'}
+            </Button>
+          </div>
+        </form>
       </div>
-    </DashboardLayout>
+    </Layout>
   );
 };
 

@@ -1,91 +1,84 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import PropertyCard from '../components/PropertyCard';
 import PropertyFilters from '../components/PropertyFilters';
 import { usePropertyFilters } from '../hooks/usePropertyFilters';
+import { supabase } from '@/integrations/supabase/client';
+import Layout from '@/components/Layout';
+
+interface Property {
+  id: string;
+  title: string;
+  price: number;
+  location: string;
+  area: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  property_type: string;
+  images: string[] | null;
+}
 
 const PropertiesPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const properties = [
-    {
-      id: '1',
-      title: 'Casa Moderna no Centro',
-      price: 850000,
-      location: 'São Paulo, SP',
-      area: 180,
-      bedrooms: 3,
-      bathrooms: 2,
-      type: 'Casa',
-      image: 'https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop'
-    },
-    {
-      id: '2',
-      title: 'Apartamento Luxo Vista Mar',
-      price: 1200000,
-      location: 'Rio de Janeiro, RJ',
-      area: 120,
-      bedrooms: 2,
-      bathrooms: 2,
-      type: 'Apartamento',
-      image: 'https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=400&h=300&fit=crop'
-    },
-    {
-      id: '3',
-      title: 'Cobertura Duplex',
-      price: 2100000,
-      location: 'Belo Horizonte, MG',
-      area: 250,
-      bedrooms: 4,
-      bathrooms: 3,
-      type: 'Cobertura',
-      image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=400&h=300&fit=crop'
-    },
-    {
-      id: '4',
-      title: 'Studio Moderno',
-      price: 350000,
-      location: 'Curitiba, PR',
-      area: 45,
-      bedrooms: 1,
-      bathrooms: 1,
-      type: 'Studio',
-      image: 'https://images.unsplash.com/photo-1496307653780-42ee777d4833?w=400&h=300&fit=crop'
-    },
-    {
-      id: '5',
-      title: 'Casa de Campo',
-      price: 750000,
-      location: 'Campos do Jordão, SP',
-      area: 300,
-      bedrooms: 4,
-      bathrooms: 3,
-      type: 'Casa',
-      image: 'https://images.unsplash.com/photo-1449157291145-7efd050a4d0e?w=400&h=300&fit=crop'
-    },
-    {
-      id: '6',
-      title: 'Loft Industrial',
-      price: 680000,
-      location: 'Porto Alegre, RS',
-      area: 85,
-      bedrooms: 1,
-      bathrooms: 1,
-      type: 'Loft',
-      image: 'https://images.unsplash.com/photo-1459767129954-1b1c1f9b9ace?w=400&h=300&fit=crop'
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  const fetchProperties = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      const formattedProperties = data?.map(property => ({
+        id: property.id,
+        title: property.title,
+        price: property.price,
+        location: property.location,
+        area: property.area,
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+        type: property.property_type,
+        image: property.images?.[0] || '/placeholder.svg'
+      })) || [];
+
+      setProperties(formattedProperties);
+    } catch (error) {
+      console.error('Erro ao buscar propriedades:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const { filters, setFilters, filteredProperties, clearFilters } = usePropertyFilters(properties);
 
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <Layout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
@@ -140,7 +133,7 @@ const PropertiesPage = () => {
           </div>
         )}
       </div>
-    </div>
+    </Layout>
   );
 };
 

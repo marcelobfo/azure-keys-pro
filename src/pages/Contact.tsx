@@ -1,209 +1,224 @@
 
 import React, { useState } from 'react';
-import { Phone, Mail, MapPin, Clock, Send } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Textarea } from '../components/ui/textarea';
-import { Card, CardContent } from '../components/ui/card';
-import { useLanguage } from '../contexts/LanguageContext';
-import { useToast } from '../hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { MapPin, Phone, Mail, Clock } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import Layout from '@/components/Layout';
 
-const ContactPage = () => {
-  const { t } = useLanguage();
+const Contact = () => {
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    subject: '',
     message: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Contact form submitted:', formData);
-    
-    toast({
-      title: "Mensagem enviada!",
-      description: "Entraremos em contato em breve.",
-    });
+    setLoading(true);
 
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      subject: '',
-      message: ''
-    });
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .insert([
+          {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            message: formData.message,
+            status: 'new'
+          }
+        ])
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Mensagem enviada!",
+        description: "Entraremos em contato em breve.",
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        message: ''
+      });
+
+    } catch (error: any) {
+      console.error('Erro ao enviar mensagem:', error);
+      toast({
+        title: "Erro",
+        description: `Erro ao enviar mensagem: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const contactInfo = [
-    {
-      icon: Phone,
-      title: 'Telefone',
-      value: '+55 (11) 99999-9999',
-      description: 'Segunda a Sexta, 8h às 18h'
-    },
-    {
-      icon: Mail,
-      title: 'E-mail',
-      value: 'contato@realestatepro.com',
-      description: 'Resposta em até 24h'
-    },
-    {
-      icon: MapPin,
-      title: 'Endereço',
-      value: 'Av. Paulista, 1000',
-      description: 'São Paulo, SP - 01310-100'
-    },
-    {
-      icon: Clock,
-      title: 'Horário',
-      value: 'Seg - Sex: 8h às 18h',
-      description: 'Sáb: 9h às 14h'
-    }
-  ];
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            {t('contact.title')}
+    <Layout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-12 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Entre em Contato
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
+          <p className="text-xl text-gray-600 dark:text-gray-300">
             Estamos aqui para ajudar você a encontrar o imóvel perfeito
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Contact Form */}
-          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-              Envie uma Mensagem
-            </h2>
-            
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('contact.name')}
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    required
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('contact.email')}
-                  </label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    required
-                    className="w-full"
-                  />
-                </div>
-              </div>
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Envie uma Mensagem</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name">Nome Completo *</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => handleChange('name', e.target.value)}
+                        placeholder="Seu nome completo"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">E-mail *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleChange('email', e.target.value)}
+                        placeholder="seu@email.com"
+                        required
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('contact.phone')}
-                  </label>
-                  <Input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    placeholder="(11) 99999-9999"
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Assunto
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.subject}
-                    onChange={(e) => setFormData({...formData, subject: e.target.value})}
-                    className="w-full"
-                  />
-                </div>
-              </div>
+                  <div>
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => handleChange('phone', e.target.value)}
+                      placeholder="(11) 99999-9999"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('contact.message')}
-                </label>
-                <Textarea
-                  value={formData.message}
-                  onChange={(e) => setFormData({...formData, message: e.target.value})}
-                  required
-                  rows={6}
-                  className="w-full resize-none"
-                />
-              </div>
+                  <div>
+                    <Label htmlFor="message">Mensagem *</Label>
+                    <Textarea
+                      id="message"
+                      value={formData.message}
+                      onChange={(e) => handleChange('message', e.target.value)}
+                      placeholder="Como podemos ajudar você?"
+                      rows={5}
+                      required
+                    />
+                  </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-3">
-                <Send className="w-5 h-5 mr-2" />
-                {t('contact.send')}
-              </Button>
-            </form>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? 'Enviando...' : 'Enviar Mensagem'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Contact Information */}
-          <div>
-            <div className="grid grid-cols-1 gap-6 mb-8">
-              {contactInfo.map((info, index) => (
-                <Card key={index} className="bg-white dark:bg-slate-800">
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                        <info.icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                          {info.title}
-                        </h3>
-                        <p className="text-gray-900 dark:text-white font-medium">
-                          {info.value}
-                        </p>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm">
-                          {info.description}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Map */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                Nossa Localização
-              </h3>
-              <div className="w-full h-64 bg-gray-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Mapa interativo será carregado aqui
-                  </p>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Informações de Contato</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-start space-x-3">
+                  <MapPin className="w-5 h-5 text-blue-600 mt-1" />
+                  <div>
+                    <h4 className="font-medium">Endereço</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Rua das Flores, 123<br />
+                      Centro, São Paulo - SP<br />
+                      CEP: 01234-567
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </div>
+
+                <div className="flex items-start space-x-3">
+                  <Phone className="w-5 h-5 text-blue-600 mt-1" />
+                  <div>
+                    <h4 className="font-medium">Telefone</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      (11) 3456-7890<br />
+                      (11) 99999-9999
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <Mail className="w-5 h-5 text-blue-600 mt-1" />
+                  <div>
+                    <h4 className="font-medium">E-mail</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      contato@imobiliaria.com<br />
+                      vendas@imobiliaria.com
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3">
+                  <Clock className="w-5 h-5 text-blue-600 mt-1" />
+                  <div>
+                    <h4 className="font-medium">Horário de Funcionamento</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Segunda a Sexta: 8h às 18h<br />
+                      Sábado: 8h às 12h<br />
+                      Domingo: Fechado
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Localização</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                  <p className="text-gray-500 dark:text-gray-400">Mapa em breve</p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 
-export default ContactPage;
+export default Contact;
