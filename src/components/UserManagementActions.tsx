@@ -45,18 +45,20 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
     setLoading(true);
 
     try {
+      // Generate a UUID for the new user
+      const userId = crypto.randomUUID();
+      
       // Criar usuário diretamente na tabela profiles (simulando criação)
       // Nota: Em produção, seria necessário usar admin API ou função do servidor
       const { data, error } = await supabase
         .from('profiles')
-        .insert([
-          {
-            full_name: formData.full_name,
-            email: formData.email,
-            role: formData.role,
-            phone: formData.phone || null
-          }
-        ]);
+        .insert({
+          id: userId,
+          full_name: formData.full_name,
+          email: formData.email,
+          role: formData.role,
+          phone: formData.phone || null
+        });
 
       if (error) {
         throw error;
