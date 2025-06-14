@@ -17,7 +17,6 @@ const UserDashboard = () => {
   const { alerts } = usePropertyAlerts();
   const navigate = useNavigate();
 
-  // Atividade & recomendações podem seguir mock, feeds principais são dinâmicos
   if (loading) {
     return (
       <DashboardLayout title="Dashboard" userRole="user">
@@ -35,53 +34,6 @@ const UserDashboard = () => {
   const handleViewProperty = (propertyId: string) => {
     navigate(`/property/${propertyId}`);
   };
-
-  // MOCK TEMPORÁRIO para evitar erro de build:
-  const recentActivities = [
-    {
-      id: 'activity-1',
-      type: 'favorite',
-      title: 'Favoritou "Casa Moderna no Centro"',
-      description: 'Salvou um imóvel nos favoritos',
-      time: 'Hoje',
-      propertyId: '1',
-    },
-    {
-      id: 'activity-2',
-      type: 'alert',
-      title: 'Criou um alerta',
-      description: 'Configuração de alerta para apartamentos em SP',
-      time: 'Ontem',
-      propertyId: null,
-    },
-    {
-      id: 'activity-3',
-      type: 'view',
-      title: 'Visualizou imóvel',
-      description: 'Visitou a página "Apartamento Vista Mar"',
-      time: '2 dias atrás',
-      propertyId: '2',
-    },
-  ];
-
-  const recommendations = [
-    {
-      id: 'rec-1',
-      image: '/placeholder.svg',
-      title: 'Cobertura Exclusiva',
-      price: 950000,
-      location: 'Florianópolis, SC',
-      reason: 'Baseado nos seus favoritos',
-    },
-    {
-      id: 'rec-2',
-      image: '/placeholder.svg',
-      title: 'Casa Pé na Areia',
-      price: 1250000,
-      location: 'Balneário Camboriú, SC',
-      reason: 'Nova no mercado!',
-    },
-  ];
 
   return (
     <DashboardLayout title="Meu Dashboard" userRole="user">
@@ -108,7 +60,6 @@ const UserDashboard = () => {
               <p className="text-xs text-muted-foreground">Imóveis salvos</p>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Alertas Ativos</CardTitle>
@@ -119,14 +70,13 @@ const UserDashboard = () => {
               <p className="text-xs text-muted-foreground">Notificações configuradas</p>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Buscas Salvas</CardTitle>
               <Search className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">5</div>
+              <div className="text-2xl font-bold">0</div>
               <p className="text-xs text-muted-foreground">Filtros salvos</p>
             </CardContent>
           </Card>
@@ -156,28 +106,21 @@ const UserDashboard = () => {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer"
-                       onClick={() => handleViewProperty('1')}>
-                    <div>
-                      <h4 className="font-medium">Casa Moderna no Centro</h4>
-                      <p className="text-sm text-muted-foreground">R$ 450.000 • São Paulo, SP</p>
+                  {/* Renderize imóveis favoritos reais se disponíveis */}
+                  {[...favorites.values()].slice(0, 2).map((favId) => (
+                    <div key={favId}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer"
+                      onClick={() => handleViewProperty(favId)}>
+                      <div>
+                        <h4 className="font-medium">Imóvel Favorito</h4>
+                        <p className="text-sm text-muted-foreground">Veja detalhes completos</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="secondary">Favorito</Badge>
+                        <Eye className="w-4 h-4 text-gray-400" />
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="secondary">Casa</Badge>
-                      <Eye className="w-4 h-4 text-gray-400" />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer"
-                       onClick={() => handleViewProperty('2')}>
-                    <div>
-                      <h4 className="font-medium">Apartamento Vista Mar</h4>
-                      <p className="text-sm text-muted-foreground">R$ 650.000 • Rio de Janeiro, RJ</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="secondary">Apartamento</Badge>
-                      <Eye className="w-4 h-4 text-gray-400" />
-                    </div>
-                  </div>
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -227,7 +170,7 @@ const UserDashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Recent Activities */}
+          {/* Recent Activities (removidas, sem dados fictícios) */}
           <Card>
             <CardHeader>
               <CardTitle>Atividade Recente</CardTitle>
@@ -236,59 +179,24 @@ const UserDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} 
-                       className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer"
-                       onClick={() => activity.propertyId && handleViewProperty(activity.propertyId)}>
-                    <div className="flex items-center space-x-3">
-                      {activity.type === 'favorite' && <Heart className="w-4 h-4 text-red-500" />}
-                      {activity.type === 'alert' && <Bell className="w-4 h-4 text-blue-500" />}
-                      {activity.type === 'view' && <Eye className="w-4 h-4 text-green-500" />}
-                      <div>
-                        <h4 className="font-medium">{activity.title}</h4>
-                        <p className="text-sm text-muted-foreground">{activity.description}</p>
-                      </div>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{activity.time}</span>
-                  </div>
-                ))}
-              </div>
+              <p className="text-sm text-center text-muted-foreground py-8">
+                Nenhuma atividade recente cadastrada.
+              </p>
             </CardContent>
           </Card>
 
-          {/* Recommendations */}
+          {/* Recommendations (removidas demos) */}
           <Card>
             <CardHeader>
               <CardTitle>Recomendações</CardTitle>
               <CardDescription>
-                Imóveis que podem te interessar
+                Veja novos imóveis recomendados para você.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {recommendations.map((property) => (
-                  <div key={property.id} 
-                       className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer"
-                       onClick={() => handleViewProperty(property.id)}>
-                    <div className="flex items-center space-x-3">
-                      <img 
-                        src={property.image} 
-                        alt={property.title}
-                        className="w-12 h-12 rounded-lg object-cover"
-                      />
-                      <div>
-                        <h4 className="font-medium">{property.title}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          R$ {property.price.toLocaleString()} • {property.location}
-                        </p>
-                        <p className="text-xs text-blue-600">{property.reason}</p>
-                      </div>
-                    </div>
-                    <Eye className="w-4 h-4 text-gray-400" />
-                  </div>
-                ))}
-              </div>
+              <p className="text-sm text-center text-muted-foreground py-8">
+                Ainda não há recomendações disponíveis.
+              </p>
             </CardContent>
           </Card>
         </div>

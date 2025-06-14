@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,7 +50,6 @@ const AdminDashboard = () => {
               <p className="text-xs text-muted-foreground">+12% em relação ao mês passado</p>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Imóveis Ativos</CardTitle>
@@ -62,8 +60,7 @@ const AdminDashboard = () => {
               <p className="text-xs text-muted-foreground">+8% em relação ao mês passado</p>
             </CardContent>
           </Card>
-
-          <Card>
+          <Card className="cursor-default">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Leads Gerados</CardTitle>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -73,8 +70,7 @@ const AdminDashboard = () => {
               <p className="text-xs text-muted-foreground">+23% em relação ao mês passado</p>
             </CardContent>
           </Card>
-
-          <Card>
+          <Card className="cursor-default">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -119,7 +115,7 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/leads')}>
+          <Card className="cursor-not-allowed">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 Gerenciamento de Leads
@@ -144,9 +140,6 @@ const AdminDashboard = () => {
                   <Badge>67</Badge>
                 </div>
               </div>
-              <Button className="w-full mt-4" variant="outline">
-                Gerenciar Leads
-              </Button>
             </CardContent>
           </Card>
 
@@ -248,16 +241,20 @@ const AdminDashboard = () => {
             <CardContent>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm">Sistema</span>
-                  <Badge variant="default">Online</Badge>
+                  <span className="text-sm">Editar Home</span>
+                  <Badge variant="default">Banner / Primeira Dobra</Badge>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm">Backup</span>
-                  <Badge>Automático</Badge>
+                  <span className="text-sm">Modelos de Layout Extras</span>
+                  <Badge>Novos Layouts</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Configuração do Chat</span>
+                  <Badge>Chat</Badge>
                 </div>
               </div>
               <Button className="w-full mt-4" variant="outline">
-                Configurações
+                Acessar Configurações
               </Button>
             </CardContent>
           </Card>

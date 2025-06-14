@@ -207,18 +207,33 @@ export type Database = {
           area: number | null
           bathrooms: number | null
           bedrooms: number | null
+          broker_creci: string | null
+          broker_name: string | null
+          built_area: number | null
           city: string
+          condo_fee: number | null
           created_at: string | null
           description: string | null
           features: string[] | null
           id: string
           images: string[] | null
+          infra: Json | null
+          iptu_fee: number | null
+          is_featured: boolean | null
+          latitude: number | null
           location: string
+          longitude: number | null
+          negotiation_notes: string | null
           price: number
           property_type: string
+          purpose: string | null
+          reference_point: string | null
+          rental_price: number | null
           state: string | null
           status: string | null
+          suites: number | null
           title: string
+          total_area: number | null
           updated_at: string | null
           user_id: string | null
         }
@@ -226,18 +241,33 @@ export type Database = {
           area?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
+          broker_creci?: string | null
+          broker_name?: string | null
+          built_area?: number | null
           city: string
+          condo_fee?: number | null
           created_at?: string | null
           description?: string | null
           features?: string[] | null
           id?: string
           images?: string[] | null
+          infra?: Json | null
+          iptu_fee?: number | null
+          is_featured?: boolean | null
+          latitude?: number | null
           location: string
+          longitude?: number | null
+          negotiation_notes?: string | null
           price: number
           property_type: string
+          purpose?: string | null
+          reference_point?: string | null
+          rental_price?: number | null
           state?: string | null
           status?: string | null
+          suites?: number | null
           title: string
+          total_area?: number | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -245,18 +275,33 @@ export type Database = {
           area?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
+          broker_creci?: string | null
+          broker_name?: string | null
+          built_area?: number | null
           city?: string
+          condo_fee?: number | null
           created_at?: string | null
           description?: string | null
           features?: string[] | null
           id?: string
           images?: string[] | null
+          infra?: Json | null
+          iptu_fee?: number | null
+          is_featured?: boolean | null
+          latitude?: number | null
           location?: string
+          longitude?: number | null
+          negotiation_notes?: string | null
           price?: number
           property_type?: string
+          purpose?: string | null
+          reference_point?: string | null
+          rental_price?: number | null
           state?: string | null
           status?: string | null
+          suites?: number | null
           title?: string
+          total_area?: number | null
           updated_at?: string | null
           user_id?: string | null
         }
