@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
+import { supabase } from '@/integrations/supabase/client';
 
 const ChatSettings = () => {
   const { user } = useAuth();
@@ -37,47 +38,84 @@ const ChatSettings = () => {
 
   const fetchChatConfig = async () => {
     try {
-      // Simular busca de configuração - em produção seria do banco
-      console.log('Buscando configuração do chat para company:', profile?.company);
-      
-      // Para agora, mantém os valores padrão
-      setFormData({
-        api_provider: 'openai',
-        api_key: '',
-        welcome_message: 'Olá! Como posso ajudá-lo hoje?',
-        active: true,
-        custom_responses: {
-          greeting: 'Olá! Bem-vindo à nossa imobiliária!',
-          contact_info: 'Para entrar em contato, ligue para (11) 99999-9999 ou envie um email para contato@imobiliaria.com',
-          business_hours: 'Funcionamos de segunda a sexta das 8h às 18h, e sábados das 8h às 12h.'
-        }
-      });
+      const { data, error } = await supabase
+        .from('chat_configurations')
+        .select('*')
+        .eq('company', profile?.company)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        setFormData({
+          api_provider: data.api_provider || 'openai',
+          api_key: '', // Never show the actual key
+          welcome_message: data.welcome_message || 'Olá! Como posso ajudá-lo hoje?',
+          active: data.active ?? true,
+          custom_responses: typeof data.custom_responses === 'object' && data.custom_responses 
+            ? data.custom_responses as any
+            : {
+                greeting: 'Olá! Bem-vindo à nossa imobiliária!',
+                contact_info: 'Para entrar em contato, ligue para (11) 99999-9999 ou envie um email para contato@imobiliaria.com',
+                business_hours: 'Funcionamos de segunda a sexta das 8h às 18h, e sábados das 8h às 12h.'
+              }
+        });
+      }
     } catch (error: any) {
       console.error('Erro ao buscar configuração:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar configurações do chat",
+        variant: "destructive",
+      });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!profile?.company) {
+      toast({
+        title: "Erro",
+        description: "Empresa não identificada",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       const configData = {
-        company: profile?.company,
+        company: profile.company,
         api_provider: formData.api_provider,
-        api_key_encrypted: formData.api_key, // Em produção, criptografar
+        api_key_encrypted: formData.api_key || null,
         welcome_message: formData.welcome_message,
         active: formData.active,
         custom_responses: formData.custom_responses
       };
 
-      // Simular salvamento - em produção seria salvo no banco
-      console.log('Salvando configuração do chat:', configData);
+      const { error } = await supabase
+        .from('chat_configurations')
+        .upsert(configData, { 
+          onConflict: 'company',
+          ignoreDuplicates: false 
+        });
+
+      if (error) {
+        throw error;
+      }
 
       toast({
         title: "Sucesso!",
         description: "Configurações do chat salvas com sucesso!",
       });
+
+      // Clear API key field after saving
+      setFormData(prev => ({ ...prev, api_key: '' }));
+
     } catch (error: any) {
       console.error('Erro ao salvar configuração:', error);
       toast({
@@ -107,7 +145,6 @@ const ChatSettings = () => {
     }));
   };
 
-  // Get role for DashboardLayout - convert super_admin to admin for compatibility
   const dashboardRole = profile?.role === 'super_admin' ? 'admin' : (profile?.role || 'user');
 
   return (

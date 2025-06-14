@@ -18,15 +18,15 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange }) => {
 
   const uploadImage = async (file: File) => {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}.${fileExt}`;
+    const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
     const filePath = `properties/${fileName}`;
 
-    const { error } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('property-images')
       .upload(filePath, file);
 
-    if (error) {
-      throw error;
+    if (uploadError) {
+      throw uploadError;
     }
 
     const { data: { publicUrl } } = supabase.storage
@@ -60,6 +60,10 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange }) => {
       });
     } finally {
       setUploading(false);
+      // Reset input
+      if (event.target) {
+        event.target.value = '';
+      }
     }
   };
 

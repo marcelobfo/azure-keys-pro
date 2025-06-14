@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      chat_configurations: {
+        Row: {
+          active: boolean | null
+          api_key_encrypted: string | null
+          api_provider: string
+          company: string
+          created_at: string | null
+          custom_responses: Json | null
+          id: string
+          updated_at: string | null
+          welcome_message: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          api_key_encrypted?: string | null
+          api_provider?: string
+          company: string
+          created_at?: string | null
+          custom_responses?: Json | null
+          id?: string
+          updated_at?: string | null
+          welcome_message?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          api_key_encrypted?: string | null
+          api_provider?: string
+          company?: string
+          created_at?: string | null
+          custom_responses?: Json | null
+          id?: string
+          updated_at?: string | null
+          welcome_message?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string | null
@@ -270,6 +306,56 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      visits: {
+        Row: {
+          client_email: string
+          client_name: string
+          client_phone: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          property_id: string | null
+          status: string | null
+          updated_at: string | null
+          visit_date: string
+          visit_time: string
+        }
+        Insert: {
+          client_email: string
+          client_name: string
+          client_phone: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          property_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          visit_date: string
+          visit_time: string
+        }
+        Update: {
+          client_email?: string
+          client_name?: string
+          client_phone?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          property_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          visit_date?: string
+          visit_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visits_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

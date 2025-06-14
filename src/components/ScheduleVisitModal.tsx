@@ -6,6 +6,7 @@ import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { Calendar } from 'lucide-react';
 
 interface ScheduleVisitModalProps {
@@ -28,24 +29,42 @@ const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({ propertyId, pro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.client_name.trim() || !formData.client_email.trim() || !formData.visit_date || !formData.visit_time) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Nome, email, data e horário são obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Simular salvamento - em produção seria salvo no banco
-      console.log('Agendamento de visita:', {
+      const visitData = {
         property_id: propertyId,
-        client_name: formData.client_name,
-        client_email: formData.client_email,
-        client_phone: formData.client_phone,
+        client_name: formData.client_name.trim(),
+        client_email: formData.client_email.trim(),
+        client_phone: formData.client_phone.trim(),
         visit_date: formData.visit_date,
         visit_time: formData.visit_time,
-        notes: formData.notes,
+        notes: formData.notes.trim() || null,
         status: 'scheduled'
-      });
+      };
+
+      const { data, error } = await supabase
+        .from('visits')
+        .insert([visitData])
+        .select();
+
+      if (error) {
+        throw error;
+      }
 
       toast({
         title: "Visita agendada!",
-        description: "Entraremos em contato para confirmar o agendamento.",
+        description: "Visita agendada com sucesso!",
       });
 
       setFormData({

@@ -11,9 +11,10 @@ import { supabase } from '@/integrations/supabase/client';
 interface InterestFormProps {
   propertyId?: string;
   propertyTitle?: string;
+  onSuccess?: () => void;
 }
 
-const InterestForm: React.FC<InterestFormProps> = ({ propertyId, propertyTitle }) => {
+const InterestForm: React.FC<InterestFormProps> = ({ propertyId, propertyTitle, onSuccess }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,22 +26,31 @@ const InterestForm: React.FC<InterestFormProps> = ({ propertyId, propertyTitle }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.name.trim() || !formData.email.trim()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Nome e email são obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const leadData = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || null,
+        message: formData.message.trim() || null,
+        property_id: propertyId || null,
+        status: 'new'
+      };
+
       const { data, error } = await supabase
         .from('leads')
-        .insert([
-          {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            message: formData.message,
-            property_id: propertyId || null,
-            status: 'new',
-            source: propertyId ? 'property_interest' : 'contact_form'
-          }
-        ])
+        .insert([leadData])
         .select();
 
       if (error) {
@@ -52,12 +62,17 @@ const InterestForm: React.FC<InterestFormProps> = ({ propertyId, propertyTitle }
         description: "Entraremos em contato em breve.",
       });
 
+      // Reset form
       setFormData({
         name: '',
         email: '',
         phone: '',
         message: ''
       });
+
+      if (onSuccess) {
+        onSuccess();
+      }
 
     } catch (error: any) {
       console.error('Erro ao enviar interesse:', error);

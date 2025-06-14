@@ -27,22 +27,31 @@ const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.name.trim() || !formData.email.trim()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Nome e email são obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const leadData = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || null,
+        message: formData.message.trim() || null,
+        property_id: propertyId,
+        status: 'new'
+      };
+
       const { data, error } = await supabase
         .from('leads')
-        .insert([
-          {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            message: formData.message,
-            property_id: propertyId,
-            status: 'new',
-            source: 'property_interest'
-          }
-        ])
+        .insert([leadData])
         .select();
 
       if (error) {
@@ -98,9 +107,9 @@ const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="name">Nome Completo *</Label>
+            <Label htmlFor="modal-name">Nome Completo *</Label>
             <Input
-              id="name"
+              id="modal-name"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
               placeholder="Seu nome completo"
@@ -109,9 +118,9 @@ const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle
           </div>
 
           <div>
-            <Label htmlFor="email">E-mail *</Label>
+            <Label htmlFor="modal-email">E-mail *</Label>
             <Input
-              id="email"
+              id="modal-email"
               type="email"
               value={formData.email}
               onChange={(e) => handleChange('email', e.target.value)}
@@ -121,9 +130,9 @@ const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle
           </div>
 
           <div>
-            <Label htmlFor="phone">Telefone</Label>
+            <Label htmlFor="modal-phone">Telefone</Label>
             <Input
-              id="phone"
+              id="modal-phone"
               value={formData.phone}
               onChange={(e) => handleChange('phone', e.target.value)}
               placeholder="(11) 99999-9999"
@@ -131,9 +140,9 @@ const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle
           </div>
 
           <div>
-            <Label htmlFor="message">Mensagem</Label>
+            <Label htmlFor="modal-message">Mensagem</Label>
             <Textarea
-              id="message"
+              id="modal-message"
               value={formData.message}
               onChange={(e) => handleChange('message', e.target.value)}
               placeholder="Gostaria de mais informações sobre este imóvel..."
