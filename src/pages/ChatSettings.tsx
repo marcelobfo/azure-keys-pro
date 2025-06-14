@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +30,7 @@ const ChatSettings = () => {
   });
 
   useEffect(() => {
-    if (user && profile?.company_id) {
+    if (user && profile?.company) {
       fetchChatConfig();
     }
   }, [user, profile]);
@@ -37,7 +38,7 @@ const ChatSettings = () => {
   const fetchChatConfig = async () => {
     try {
       // Simular busca de configuração - em produção seria do banco
-      console.log('Buscando configuração do chat para company_id:', profile?.company_id);
+      console.log('Buscando configuração do chat para company:', profile?.company);
       
       // Para agora, mantém os valores padrão
       setFormData({
@@ -62,7 +63,7 @@ const ChatSettings = () => {
 
     try {
       const configData = {
-        company_id: profile?.company_id,
+        company: profile?.company,
         api_provider: formData.api_provider,
         api_key_encrypted: formData.api_key, // Em produção, criptografar
         welcome_message: formData.welcome_message,

@@ -13,7 +13,6 @@ export interface UserProfile {
   avatar_url: string | null;
   bio: string | null;
   company: string | null;
-  company_id: string | null;
   website: string | null;
   social_links: any;
   notification_preferences: {
@@ -54,7 +53,6 @@ export const useProfile = () => {
     } else {
       const typedProfile: UserProfile = {
         ...data,
-        company_id: data.company_id || null,
         notification_preferences: typeof data.notification_preferences === 'object' && data.notification_preferences !== null
           ? data.notification_preferences as UserProfile['notification_preferences']
           : { email: true, push: true, property_alerts: true }
@@ -103,7 +101,6 @@ export const useProfile = () => {
     } else {
       const typedProfile: UserProfile = {
         ...data,
-        company_id: data.company_id || null,
         notification_preferences: typeof data.notification_preferences === 'object' && data.notification_preferences !== null
           ? data.notification_preferences as UserProfile['notification_preferences']
           : { email: true, push: true, property_alerts: true }
