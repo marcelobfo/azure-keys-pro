@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -74,7 +73,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
     if (userRole === 'admin') {
       baseItems.splice(-1, 0,
         { icon: Users, label: 'Usuários', href: '/admin/users' },
-        { icon: Settings, label: 'Configurações', href: '/webhook-settings' }
+        { icon: Settings, label: 'Configurações', href: '/admin/site-settings' }
       );
     }
 

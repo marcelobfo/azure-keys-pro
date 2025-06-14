@@ -352,6 +352,27 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          id: number
+          key: string
+          updated_at: string | null
+          value: string | null
+        }
+        Insert: {
+          id?: number
+          key: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Update: {
+          id?: number
+          key?: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
       visits: {
         Row: {
           client_email: string

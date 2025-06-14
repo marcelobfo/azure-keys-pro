@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from '@/pages/Home';
@@ -30,6 +29,7 @@ import ChatSettings from '@/pages/ChatSettings';
 import Index from '@/pages/Index';
 import PropertyDetail from '@/pages/PropertyDetail';
 import VisitsManagement from '@/pages/VisitsManagement';
+import AdminSiteSettings from '@/pages/AdminSiteSettings';
 
 const queryClient = new QueryClient();
 
@@ -62,6 +62,7 @@ function App() {
                 <Route path="/admin/*" element={<AdminDashboard />} />
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/admin/site-settings" element={<AdminSiteSettings />} />
                 <Route path="/admin/settings" element={<WebhookSettings />} />
 
                 {/* Corretor Routes */}
