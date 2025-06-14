@@ -26,6 +26,8 @@ interface UserManagementActionsProps {
   user?: User;
 }
 
+type UserRole = 'user' | 'corretor' | 'admin';
+
 export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdded }) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -34,7 +36,7 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
     email: '',
     password: '',
     full_name: '',
-    role: 'user',
+    role: 'user' as UserRole,
     phone: ''
   });
 
@@ -82,7 +84,7 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
         email: '',
         password: '',
         full_name: '',
-        role: 'user',
+        role: 'user' as UserRole,
         phone: ''
       });
       setOpen(false);
@@ -98,6 +100,10 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRoleChange = (value: string) => {
+    setFormData(prev => ({ ...prev, role: value as UserRole }));
   };
 
   return (
@@ -153,7 +159,7 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
           </div>
           <div>
             <Label htmlFor="role">Função</Label>
-            <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
+            <Select value={formData.role} onValueChange={handleRoleChange}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

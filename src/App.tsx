@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from '@/pages/Home';
@@ -23,16 +24,18 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Toaster } from '@/components/ui/toaster';
-import { QueryClient } from 'react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ScheduleVisit from '@/pages/ScheduleVisit';
 import ChatSettings from '@/pages/ChatSettings';
 import Index from '@/pages/Index';
 import PropertyDetail from '@/pages/PropertyDetail';
 import VisitsManagement from '@/pages/VisitsManagement';
 
+const queryClient = new QueryClient();
+
 function App() {
   return (
-    <QueryClient>
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <LanguageProvider>
           <ThemeProvider>
@@ -81,7 +84,7 @@ function App() {
           </ThemeProvider>
         </LanguageProvider>
       </AuthProvider>
-    </QueryClient>
+    </QueryClientProvider>
   );
 }
 
