@@ -8,11 +8,12 @@ export interface UserProfile {
   id: string;
   email: string | null;
   full_name: string | null;
-  role: 'user' | 'corretor' | 'admin';
+  role: 'user' | 'corretor' | 'admin' | 'super_admin';
   phone: string | null;
   avatar_url: string | null;
   bio: string | null;
   company: string | null;
+  company_id: string | null;
   website: string | null;
   social_links: any;
   notification_preferences: {
@@ -95,10 +96,10 @@ export const useProfile = () => {
     }
   };
 
-  const hasRole = (requiredRole: 'user' | 'corretor' | 'admin') => {
+  const hasRole = (requiredRole: 'user' | 'corretor' | 'admin' | 'super_admin') => {
     if (!profile) return false;
     
-    const roleHierarchy = { user: 0, corretor: 1, admin: 2 };
+    const roleHierarchy = { user: 0, corretor: 1, admin: 2, super_admin: 3 };
     return roleHierarchy[profile.role] >= roleHierarchy[requiredRole];
   };
 

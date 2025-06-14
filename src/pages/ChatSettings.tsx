@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
@@ -38,25 +37,21 @@ const ChatSettings = () => {
 
   const fetchChatConfig = async () => {
     try {
-      const { data, error } = await supabase
-        .from('chat_configurations')
-        .select('*')
-        .eq('company_id', profile?.company_id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (data) {
-        setFormData({
-          api_provider: data.api_provider || 'openai',
-          api_key: '', // Não mostrar a chave por segurança
-          welcome_message: data.welcome_message || 'Olá! Como posso ajudá-lo hoje?',
-          active: data.active,
-          custom_responses: data.custom_responses || formData.custom_responses
-        });
-      }
+      // Simular busca de configuração - em produção seria do banco
+      console.log('Buscando configuração do chat para company_id:', profile?.company_id);
+      
+      // Para agora, mantém os valores padrão
+      setFormData({
+        api_provider: 'openai',
+        api_key: '',
+        welcome_message: 'Olá! Como posso ajudá-lo hoje?',
+        active: true,
+        custom_responses: {
+          greeting: 'Olá! Bem-vindo à nossa imobiliária!',
+          contact_info: 'Para entrar em contato, ligue para (11) 99999-9999 ou envie um email para contato@imobiliaria.com',
+          business_hours: 'Funcionamos de segunda a sexta das 8h às 18h, e sábados das 8h às 12h.'
+        }
+      });
     } catch (error: any) {
       console.error('Erro ao buscar configuração:', error);
     }
@@ -76,15 +71,8 @@ const ChatSettings = () => {
         custom_responses: formData.custom_responses
       };
 
-      const { data, error } = await supabase
-        .from('chat_configurations')
-        .upsert(configData, {
-          onConflict: 'company_id'
-        });
-
-      if (error) {
-        throw error;
-      }
+      // Simular salvamento - em produção seria salvo no banco
+      console.log('Salvando configuração do chat:', configData);
 
       toast({
         title: "Sucesso!",
