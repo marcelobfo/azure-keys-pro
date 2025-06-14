@@ -47,6 +47,8 @@ const HomePage = () => {
     }
   ];
 
+  // Não há mais propriedades em destaque sendo exibidas!
+
   return (
     <Layout>
       <div className="min-h-screen">
@@ -60,7 +62,6 @@ const HomePage = () => {
             <p className="text-xl md:text-2xl mb-8 text-blue-100">
               {t('home.hero.subtitle')}
             </p>
-            
             {/* Search Bar */}
             <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
               <div className="flex bg-white rounded-lg shadow-lg p-2">
@@ -88,46 +89,11 @@ const HomePage = () => {
                 {t('home.features.title')}
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-300">
-                Confira nossas melhores oportunidades
+                {/* Mensagem caso não haja imóveis */}
+                Nenhum imóvel de destaque no momento.
               </p>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredProperties.map((property) => (
-                <Card key={property.id} className="group hover:shadow-xl transition-all duration-300 overflow-hidden">
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={property.image}
-                      alt={property.title}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                      {property.price}
-                    </div>
-                  </div>
-                  <CardContent className="p-6">
-                    <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">
-                      {property.title}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-4 flex items-center">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {property.location}
-                    </p>
-                    <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
-                      <span>{property.area}</span>
-                      <span>{property.bedrooms} quartos</span>
-                    </div>
-                    <Button 
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                      onClick={() => navigate(`/property/${property.id}`)}
-                    >
-                      Ver Detalhes
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {/* Aqui futuramente serão exibidos imóveis de verdade; não mostra nada por enquanto */}
           </div>
         </section>
 
@@ -142,7 +108,6 @@ const HomePage = () => {
                 <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
                   {t('home.about.text')}
                 </p>
-                
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                   <div className="text-center p-6 bg-white dark:bg-slate-700 rounded-lg shadow-md">
                     <Home className="w-12 h-12 text-blue-600 mx-auto mb-4" />
@@ -161,7 +126,6 @@ const HomePage = () => {
                   </div>
                 </div>
               </div>
-              
               <div className="relative">
                 <img
                   src="https://images.unsplash.com/photo-1496307653780-42ee777d4833?w=600&h=400&fit=crop"
