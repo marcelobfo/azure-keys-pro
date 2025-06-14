@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,7 +48,12 @@ const ManageProperties = () => {
         throw error;
       }
 
-      setProperties(data || []);
+      // Tratamento: garantir que preços negativos não sejam exibidos,
+      // e converter tipos corretamente (evita bugs de -1 vindo como valor default)
+      setProperties((data || []).map(item => ({
+        ...item,
+        price: (item.price != null && Number(item.price) > 0) ? Number(item.price) : 0
+      })));
     } catch (error: any) {
       console.error('Erro ao buscar propriedades:', error);
       toast({
@@ -187,7 +191,9 @@ const ManageProperties = () => {
                 <CardContent className="p-4">
                   <h3 className="font-semibold text-lg mb-2">{property.title}</h3>
                   <p className="text-2xl font-bold text-blue-600 mb-2">
-                    R$ {property.price.toLocaleString()}
+                    {property.price > 0
+                      ? `R$ ${property.price.toLocaleString('pt-BR')}`
+                      : 'Preço não informado'}
                   </p>
                   <div className="flex items-center text-sm text-muted-foreground mb-3">
                     <MapPin className="h-4 w-4 mr-1" />
@@ -208,15 +214,24 @@ const ManageProperties = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/property/${property.id}`)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/property/${property.id}`)}>
                       <Eye className="h-4 w-4 mr-1" />
                       Ver
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/edit-property/${property.id}`)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/edit-property/${property.id}`)}>
                       <Edit className="h-4 w-4 mr-1" />
                       Editar
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => deleteProperty(property.id)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deleteProperty(property.id)}>
                       <Trash2 className="h-4 w-4 mr-1" />
                       Excluir
                     </Button>
