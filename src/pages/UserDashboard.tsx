@@ -36,6 +36,53 @@ const UserDashboard = () => {
     navigate(`/property/${propertyId}`);
   };
 
+  // MOCK TEMPORÁRIO para evitar erro de build:
+  const recentActivities = [
+    {
+      id: 'activity-1',
+      type: 'favorite',
+      title: 'Favoritou "Casa Moderna no Centro"',
+      description: 'Salvou um imóvel nos favoritos',
+      time: 'Hoje',
+      propertyId: '1',
+    },
+    {
+      id: 'activity-2',
+      type: 'alert',
+      title: 'Criou um alerta',
+      description: 'Configuração de alerta para apartamentos em SP',
+      time: 'Ontem',
+      propertyId: null,
+    },
+    {
+      id: 'activity-3',
+      type: 'view',
+      title: 'Visualizou imóvel',
+      description: 'Visitou a página "Apartamento Vista Mar"',
+      time: '2 dias atrás',
+      propertyId: '2',
+    },
+  ];
+
+  const recommendations = [
+    {
+      id: 'rec-1',
+      image: '/placeholder.svg',
+      title: 'Cobertura Exclusiva',
+      price: 950000,
+      location: 'Florianópolis, SC',
+      reason: 'Baseado nos seus favoritos',
+    },
+    {
+      id: 'rec-2',
+      image: '/placeholder.svg',
+      title: 'Casa Pé na Areia',
+      price: 1250000,
+      location: 'Balneário Camboriú, SC',
+      reason: 'Nova no mercado!',
+    },
+  ];
+
   return (
     <DashboardLayout title="Meu Dashboard" userRole="user">
       <div className="space-y-8">
