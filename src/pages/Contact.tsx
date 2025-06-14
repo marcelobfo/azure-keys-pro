@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,8 +32,7 @@ const Contact = () => {
             email: formData.email,
             phone: formData.phone,
             message: formData.message,
-            status: 'new',
-            source: 'contact_form'
+            status: 'new'
           }
         ])
         .select();

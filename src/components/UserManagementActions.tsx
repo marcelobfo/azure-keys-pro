@@ -45,34 +45,21 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
     setLoading(true);
 
     try {
-      // Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: formData.full_name
-        }
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      // Atualizar perfil
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
+      // Criar usuário diretamente na tabela profiles (simulando criação)
+      // Nota: Em produção, seria necessário usar admin API ou função do servidor
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([
+          {
             full_name: formData.full_name,
+            email: formData.email,
             role: formData.role,
             phone: formData.phone || null
-          })
-          .eq('id', authData.user.id);
+          }
+        ]);
 
-        if (profileError) {
-          console.error('Erro ao atualizar perfil:', profileError);
-        }
+      if (error) {
+        throw error;
       }
 
       toast({
@@ -192,7 +179,10 @@ export const DeleteUserDialog: React.FC<{ userId: string; userName: string; onUs
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
 
       if (error) {
         throw error;

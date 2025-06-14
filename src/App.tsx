@@ -54,6 +54,7 @@ function App() {
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<ProfileSettings />} />
+                <Route path="/profile-settings" element={<ProfileSettings />} />
                 <Route path="/alerts" element={<Alerts />} />
                 <Route path="/leads-management" element={<LeadsManagement />} />
 

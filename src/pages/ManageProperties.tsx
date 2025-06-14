@@ -90,10 +90,10 @@ const ManageProperties = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
-        return <Badge variant="default">Ativo</Badge>;
-      case 'inactive':
-        return <Badge variant="secondary">Inativo</Badge>;
+      case 'available':
+        return <Badge variant="default">Disponível</Badge>;
+      case 'unavailable':
+        return <Badge variant="secondary">Indisponível</Badge>;
       case 'sold':
         return <Badge variant="outline">Vendido</Badge>;
       default:
@@ -120,7 +120,7 @@ const ManageProperties = () => {
             <h2 className="text-2xl font-bold">Meus Imóveis</h2>
             <p className="text-muted-foreground">Gerencie todos os seus imóveis cadastrados</p>
           </div>
-          <Button onClick={() => navigate('/properties/create')}>
+          <Button onClick={() => navigate('/create-property')}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Imóvel
           </Button>
@@ -136,7 +136,7 @@ const ManageProperties = () => {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{properties.filter(p => p.status === 'active').length}</div>
+              <div className="text-2xl font-bold">{properties.filter(p => p.status === 'available').length}</div>
               <p className="text-sm text-muted-foreground">Imóveis Ativos</p>
             </CardContent>
           </Card>
@@ -164,7 +164,7 @@ const ManageProperties = () => {
               <p className="text-gray-600 dark:text-gray-300 mb-4">
                 Comece adicionando seu primeiro imóvel
               </p>
-              <Button onClick={() => navigate('/properties/create')}>
+              <Button onClick={() => navigate('/create-property')}>
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar Primeiro Imóvel
               </Button>
@@ -208,11 +208,11 @@ const ManageProperties = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/property/${property.id}`)}>
                       <Eye className="h-4 w-4 mr-1" />
                       Ver
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/properties/edit/${property.id}`)}>
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/edit-property/${property.id}`)}>
                       <Edit className="h-4 w-4 mr-1" />
                       Editar
                     </Button>

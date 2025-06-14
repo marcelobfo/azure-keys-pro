@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { ptBR } from 'date-fns/locale';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const ScheduleVisit = () => {
   const { propertyId } = useParams();
@@ -53,25 +55,24 @@ const ScheduleVisit = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Send webhook notification
-      await fetch('/api/webhook/visit-scheduled', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          propertyId,
-          date: date.toISOString(),
-          time: formData.time,
-          client: {
-            name: formData.clientName,
-            email: formData.clientEmail,
-            phone: formData.clientPhone
-          },
-          notes: formData.notes
-        })
-      });
+      const { data, error } = await supabase
+        .from('visits')
+        .insert([
+          {
+            property_id: propertyId || null,
+            client_name: formData.clientName,
+            client_email: formData.clientEmail,
+            client_phone: formData.clientPhone,
+            visit_date: format(date, 'yyyy-MM-dd'),
+            visit_time: formData.time,
+            notes: formData.notes,
+            status: 'scheduled'
+          }
+        ]);
+
+      if (error) {
+        throw error;
+      }
 
       toast({
         title: "Visita agendada com sucesso!",
@@ -79,7 +80,8 @@ const ScheduleVisit = () => {
       });
       
       navigate('/visits-management');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erro ao agendar visita:', error);
       toast({
         title: "Erro ao agendar visita",
         description: "Tente novamente em alguns minutos.",
