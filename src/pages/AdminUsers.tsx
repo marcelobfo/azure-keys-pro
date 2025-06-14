@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,46 +7,78 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/useProfile';
 import { Navigate } from 'react-router-dom';
-import { Search, UserPlus, Edit, Trash2, Filter } from 'lucide-react';
+import { Search, Edit, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AddUserDialog, DeleteUserDialog } from '@/components/UserManagementActions';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  phone?: string;
+  created_at: string;
+  status: string;
+}
 
 const AdminUsers = () => {
   const { profile, loading } = useProfile();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [users, setUsers] = useState<User[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
 
-  // Mock data - você pode conectar com dados reais depois
-  const [users] = useState([
-    {
-      id: '1',
-      full_name: 'João Silva',
-      email: 'joao@email.com',
-      role: 'corretor',
-      phone: '(47) 99999-9999',
-      created_at: '2024-01-15',
-      status: 'active'
-    },
-    {
-      id: '2',
-      full_name: 'Maria Santos',
-      email: 'maria@email.com',
-      role: 'user',
-      phone: '(47) 88888-8888',
-      created_at: '2024-01-20',
-      status: 'active'
-    },
-    {
-      id: '3',
-      full_name: 'Admin User',
-      email: 'admin@email.com',
-      role: 'admin',
-      phone: '(47) 77777-7777',
-      created_at: '2024-01-01',
-      status: 'active'
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setUsersLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      const formattedUsers: User[] = data?.map(user => ({
+        id: user.id,
+        full_name: user.full_name || 'Nome não informado',
+        email: user.email || 'Email não informado',
+        role: user.role || 'user',
+        phone: user.phone,
+        created_at: user.created_at,
+        status: 'active'
+      })) || [];
+
+      setUsers(formattedUsers);
+    } catch (error: any) {
+      console.error('Erro ao buscar usuários:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar usuários",
+        variant: "destructive",
+      });
+    } finally {
+      setUsersLoading(false);
     }
-  ]);
+  };
 
-  if (loading) {
+  const handleUserAdded = () => {
+    fetchUsers();
+  };
+
+  const handleUserDeleted = (userId: string) => {
+    setUsers(prev => prev.filter(user => user.id !== userId));
+  };
+
+  if (loading || usersLoading) {
     return (
       <DashboardLayout title="Gerenciar Usuários" userRole="admin">
         <div className="flex justify-center items-center h-64">
@@ -111,10 +143,7 @@ const AdminUsers = () => {
               </SelectContent>
             </Select>
           </div>
-          <Button>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Adicionar Usuário
-          </Button>
+          <AddUserDialog onUserAdded={handleUserAdded} />
         </div>
 
         {/* Stats Cards */}
@@ -184,9 +213,11 @@ const AdminUsers = () => {
                           <Button variant="outline" size="sm">
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="outline" size="sm">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <DeleteUserDialog 
+                            userId={user.id}
+                            userName={user.full_name}
+                            onUserDeleted={handleUserDeleted}
+                          />
                         </div>
                       </td>
                     </tr>

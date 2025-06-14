@@ -1,68 +1,88 @@
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Home from '@/pages/Home';
+import PropertiesPage from '@/pages/Properties';
+import Contact from '@/pages/Contact';
+import Favorites from '@/pages/Favorites';
+import Auth from '@/pages/Auth';
+import Login from '@/pages/Login';
+import Dashboard from '@/pages/Dashboard';
+import ProfileSettings from '@/pages/ProfileSettings';
+import Alerts from '@/pages/Alerts';
+import LeadsManagement from '@/pages/LeadsManagement';
+import AdminDashboard from '@/pages/AdminDashboard';
+import AdminUsers from '@/pages/AdminUsers';
+import WebhookSettings from '@/pages/WebhookSettings';
+import CorretorDashboard from '@/pages/CorretorDashboard';
+import CreateProperty from '@/pages/CreateProperty';
+import ManageProperties from '@/pages/ManageProperties';
+import EditProperty from '@/pages/EditProperty';
+import UserDashboard from '@/pages/UserDashboard';
+import NotFound from '@/pages/NotFound';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { Toaster } from '@/components/ui/toaster';
+import { QueryClient } from 'react-query';
+import ScheduleVisit from '@/pages/ScheduleVisit';
+import ChatSettings from '@/pages/ChatSettings';
+import Index from '@/pages/Index';
+import PropertyDetail from '@/pages/PropertyDetail';
+import VisitsManagement from '@/pages/VisitsManagement';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/contexts/ThemeContext";
-import { LanguageProvider } from "@/contexts/LanguageContext";
-import { AuthProvider } from "@/contexts/AuthContext";
-import Index from "./pages/Index";
-import Home from "./pages/Home";
-import Properties from "./pages/Properties";
-import Contact from "./pages/Contact";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import ManageProperties from "./pages/ManageProperties";
-import CreateProperty from "./pages/CreateProperty";
-import EditProperty from "./pages/EditProperty";
-import LeadsManagement from "./pages/LeadsManagement";
-import VisitsManagement from "./pages/VisitsManagement";
-import ScheduleVisit from "./pages/ScheduleVisit";
-import WebhookSettings from "./pages/WebhookSettings";
-import NotFound from "./pages/NotFound";
-import Favorites from "./pages/Favorites";
-import ProfileSettings from "./pages/ProfileSettings";
-import Alerts from "./pages/Alerts";
-import AdminUsers from "./pages/AdminUsers";
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <LanguageProvider>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+function App() {
+  return (
+    <QueryClient>
+      <AuthProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            <Router>
               <Routes>
+                {/* Public Routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/home" element={<Home />} />
-                <Route path="/properties" element={<Properties />} />
+                <Route path="/properties" element={<PropertiesPage />} />
+                <Route path="/property/:id" element={<PropertyDetail />} />
                 <Route path="/contact" element={<Contact />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/manage-properties" element={<ManageProperties />} />
-                <Route path="/properties/create" element={<CreateProperty />} />
-                <Route path="/properties/edit/:id" element={<EditProperty />} />
-                <Route path="/leads-management" element={<LeadsManagement />} />
-                <Route path="/visits-management" element={<VisitsManagement />} />
-                <Route path="/schedule-visit/:propertyId" element={<ScheduleVisit />} />
-                <Route path="/webhook-settings" element={<WebhookSettings />} />
                 <Route path="/favorites" element={<Favorites />} />
-                <Route path="/profile/settings" element={<ProfileSettings />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/login" element={<Login />} />
+
+                {/* Protected Routes */}
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<ProfileSettings />} />
                 <Route path="/alerts" element={<Alerts />} />
+                <Route path="/leads-management" element={<LeadsManagement />} />
+
+                {/* Admin Routes */}
+                <Route path="/admin/*" element={<AdminDashboard />} />
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/admin/settings" element={<WebhookSettings />} />
+
+                {/* Corretor Routes */}
+                <Route path="/corretor/*" element={<CorretorDashboard />} />
+                <Route path="/create-property" element={<CreateProperty />} />
+                <Route path="/manage-properties" element={<ManageProperties />} />
+                <Route path="/edit-property/:id" element={<EditProperty />} />
+                <Route path="/visits-management" element={<VisitsManagement />} />
+                <Route path="/schedule-visit" element={<ScheduleVisit />} />
+                <Route path="/schedule-visit/:propertyId" element={<ScheduleVisit />} />
+                <Route path="/chat-settings" element={<ChatSettings />} />
+
+                {/* User Routes */}
+                <Route path="/user/*" element={<UserDashboard />} />
+
+                {/* 404 Route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
-      </LanguageProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+            </Router>
+            <Toaster />
+          </ThemeProvider>
+        </LanguageProvider>
+      </AuthProvider>
+    </QueryClient>
+  );
+}
 
 export default App;
