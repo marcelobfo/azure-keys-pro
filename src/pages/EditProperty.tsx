@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -139,8 +138,9 @@ const EditProperty = () => {
   };
 
   if (loading) {
+    const dashboardRole = profile?.role === 'super_admin' ? 'admin' : (profile?.role || 'user');
     return (
-      <DashboardLayout title="Editar Imóvel" userRole={profile?.role || 'user'}>
+      <DashboardLayout title="Editar Imóvel" userRole={dashboardRole}>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
@@ -151,8 +151,10 @@ const EditProperty = () => {
     );
   }
 
+  const dashboardRole = profile?.role === 'super_admin' ? 'admin' : (profile?.role || 'user');
+
   return (
-    <DashboardLayout title="Editar Imóvel" userRole={profile?.role || 'user'}>
+    <DashboardLayout title="Editar Imóvel" userRole={dashboardRole}>
       <div className="space-y-6">
         <div className="flex items-center space-x-4">
           <Button

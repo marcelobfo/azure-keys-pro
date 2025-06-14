@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +10,7 @@ import { useProfile } from '@/hooks/useProfile';
 const VisitsManagement = () => {
   const { profile } = useProfile();
   const navigate = useNavigate();
+  
   const [visits] = useState([
     {
       id: '1',
@@ -86,8 +86,10 @@ const VisitsManagement = () => {
     return tomorrow.toDateString() === visitDate;
   };
 
+  const dashboardRole = profile?.role === 'super_admin' ? 'admin' : (profile?.role || 'user');
+
   return (
-    <DashboardLayout title="Gerenciar Visitas" userRole={profile?.role || 'user'}>
+    <DashboardLayout title="Gerenciar Visitas" userRole={dashboardRole}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

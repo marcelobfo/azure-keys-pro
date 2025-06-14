@@ -54,6 +54,7 @@ export const useProfile = () => {
     } else {
       const typedProfile: UserProfile = {
         ...data,
+        company_id: data.company_id || null,
         notification_preferences: typeof data.notification_preferences === 'object' && data.notification_preferences !== null
           ? data.notification_preferences as UserProfile['notification_preferences']
           : { email: true, push: true, property_alerts: true }
@@ -66,9 +67,28 @@ export const useProfile = () => {
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return { error: 'Not authenticated' };
 
+    // Filter out properties that don't exist in the database schema
+    const dbUpdates = {
+      full_name: updates.full_name,
+      phone: updates.phone,
+      bio: updates.bio,
+      company: updates.company,
+      website: updates.website,
+      notification_preferences: updates.notification_preferences,
+      avatar_url: updates.avatar_url,
+      social_links: updates.social_links
+    };
+
+    // Remove undefined values
+    Object.keys(dbUpdates).forEach(key => {
+      if (dbUpdates[key as keyof typeof dbUpdates] === undefined) {
+        delete dbUpdates[key as keyof typeof dbUpdates];
+      }
+    });
+
     const { data, error } = await supabase
       .from('profiles')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', user.id)
       .select()
       .single();
@@ -83,6 +103,7 @@ export const useProfile = () => {
     } else {
       const typedProfile: UserProfile = {
         ...data,
+        company_id: data.company_id || null,
         notification_preferences: typeof data.notification_preferences === 'object' && data.notification_preferences !== null
           ? data.notification_preferences as UserProfile['notification_preferences']
           : { email: true, push: true, property_alerts: true }

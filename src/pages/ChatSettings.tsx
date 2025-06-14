@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -107,8 +106,11 @@ const ChatSettings = () => {
     }));
   };
 
+  // Get role for DashboardLayout - convert super_admin to admin for compatibility
+  const dashboardRole = profile?.role === 'super_admin' ? 'admin' : (profile?.role || 'user');
+
   return (
-    <DashboardLayout title="Configurações do Chat" userRole={profile?.role || 'user'}>
+    <DashboardLayout title="Configurações do Chat" userRole={dashboardRole}>
       <div className="space-y-6">
         <Card>
           <CardHeader>

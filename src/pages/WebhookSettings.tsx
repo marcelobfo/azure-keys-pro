@@ -163,8 +163,11 @@ const WebhookSettings = () => {
     }));
   };
 
+  // Convert role for DashboardLayout compatibility
+  const dashboardRole = profile?.role === 'super_admin' ? 'admin' : (profile?.role || 'admin');
+
   return (
-    <DashboardLayout title="Configurações de Webhook" userRole={profile?.role || 'admin'}>
+    <DashboardLayout title="Configurações de Webhook" userRole={dashboardRole}>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Configurações de Webhook</h1>

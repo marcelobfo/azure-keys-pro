@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,8 +75,11 @@ const CorretorDashboard = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Convert role for DashboardLayout compatibility
+  const dashboardRole = profile.role === 'super_admin' ? 'admin' : profile.role;
+
   return (
-    <DashboardLayout title="Dashboard do Corretor" userRole={profile.role}>
+    <DashboardLayout title="Dashboard do Corretor" userRole={dashboardRole}>
       <div className="space-y-8">
         {/* Welcome Message */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">

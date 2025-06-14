@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -91,8 +90,10 @@ const ScheduleVisit = () => {
     }
   };
 
+  const dashboardRole = profile?.role === 'super_admin' ? 'admin' : (profile?.role || 'user');
+
   return (
-    <DashboardLayout title="Agendar Visita" userRole={profile?.role || 'user'}>
+    <DashboardLayout title="Agendar Visita" userRole={dashboardRole}>
       <div className="space-y-6">
         <div className="flex items-center space-x-4">
           <Button
