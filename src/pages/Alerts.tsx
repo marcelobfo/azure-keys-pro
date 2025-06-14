@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,21 +9,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, Plus, Trash2 } from 'lucide-react';
+import { usePropertyAlerts } from '@/hooks/usePropertyAlerts';
 
 const Alerts = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [alerts, setAlerts] = useState([
-    {
-      id: '1',
-      property_type: 'casa',
-      city: 'Balneário Camboriú',
-      min_price: 400000,
-      max_price: 800000,
-      min_bedrooms: 2,
-      active: true
-    }
-  ]);
+
+  // Hook de alertas dinâmicos
+  const {
+    alerts,
+    createAlert,
+    deleteAlert: deletePropAlert,
+    loading: alertsLoading
+  } = usePropertyAlerts();
 
   const [newAlert, setNewAlert] = useState({
     property_type: '',
@@ -39,21 +36,21 @@ const Alerts = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  const handleCreateAlert = (e: React.FormEvent) => {
+  // Corrige para criar alerta real no banco
+  const handleCreateAlert = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const alert = {
-      id: Date.now().toString(),
-      property_type: newAlert.property_type,
-      city: newAlert.city,
-      min_price: newAlert.min_price ? parseFloat(newAlert.min_price) : undefined,
-      max_price: newAlert.max_price ? parseFloat(newAlert.max_price) : undefined,
-      min_bedrooms: newAlert.min_bedrooms ? parseInt(newAlert.min_bedrooms) : undefined,
-      max_bedrooms: newAlert.max_bedrooms ? parseInt(newAlert.max_bedrooms) : undefined,
-      active: true
+    const alertData = {
+      property_type: newAlert.property_type || null,
+      city: newAlert.city || null,
+      min_price: newAlert.min_price ? parseFloat(newAlert.min_price) : null,
+      max_price: newAlert.max_price ? parseFloat(newAlert.max_price) : null,
+      min_bedrooms: newAlert.min_bedrooms ? parseInt(newAlert.min_bedrooms) : null,
+      max_bedrooms: newAlert.max_bedrooms ? parseInt(newAlert.max_bedrooms) : null,
+      min_area: null,
+      max_area: null,
+      active: true,
     };
-
-    setAlerts([...alerts, alert]);
+    await createAlert(alertData);
     setNewAlert({
       property_type: '',
       city: '',
@@ -62,19 +59,11 @@ const Alerts = () => {
       min_bedrooms: '',
       max_bedrooms: ''
     });
-
-    toast({
-      title: "Alerta criado",
-      description: "Você será notificado quando novos imóveis corresponderem aos seus critérios.",
-    });
   };
 
-  const deleteAlert = (id: string) => {
-    setAlerts(alerts.filter(alert => alert.id !== id));
-    toast({
-      title: "Alerta removido",
-      description: "O alerta foi removido com sucesso.",
-    });
+  // Corrige para deletar alerta real do banco:
+  const handleDeleteAlert = async (id: string) => {
+    await deletePropAlert(id);
   };
 
   return (
@@ -187,7 +176,9 @@ const Alerts = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {alerts.length === 0 ? (
+              {alertsLoading ? (
+                <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+              ) : alerts.length === 0 ? (
                 <div className="text-center py-8">
                   <Bell className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 dark:text-gray-300">
@@ -201,11 +192,14 @@ const Alerts = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-medium">
-                            {alert.property_type} em {alert.city}
+                            {alert.property_type || 'Qualquer tipo'} em {alert.city || 'Qualquer cidade'}
                           </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-300">
-                            R$ {alert.min_price?.toLocaleString()} - R$ {alert.max_price?.toLocaleString()}
-                          </p>
+                          {(alert.min_price || alert.max_price) && (
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                              {alert.min_price && `R$ ${Number(alert.min_price).toLocaleString()}`}
+                              {alert.max_price && ` - R$ ${Number(alert.max_price).toLocaleString()}`}
+                            </p>
+                          )}
                           {alert.min_bedrooms && (
                             <p className="text-sm text-gray-600 dark:text-gray-300">
                               {alert.min_bedrooms}+ quartos
@@ -215,7 +209,7 @@ const Alerts = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => deleteAlert(alert.id)}
+                          onClick={() => handleDeleteAlert(alert.id)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

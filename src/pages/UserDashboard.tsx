@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -9,60 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Heart, Bell, Search, Plus, Eye, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
+import { useAuth } from '@/contexts/AuthContext';
 
 const UserDashboard = () => {
+  const { user } = useAuth();
   const { profile, loading } = useProfile();
   const { favorites } = useFavorites();
   const { alerts } = usePropertyAlerts();
   const navigate = useNavigate();
 
-  // Mock data for recent activities
-  const recentActivities = [
-    {
-      id: 1,
-      type: 'favorite',
-      title: 'Favoritou um imóvel',
-      description: 'Casa Moderna no Centro',
-      time: '2h atrás',
-      propertyId: '1'
-    },
-    {
-      id: 2,
-      type: 'alert',
-      title: 'Criou um alerta',
-      description: 'Apartamentos em São Paulo',
-      time: '1 dia atrás'
-    },
-    {
-      id: 3,
-      type: 'view',
-      title: 'Visualizou um imóvel',
-      description: 'Apartamento Vista Mar',
-      time: '2 dias atrás',
-      propertyId: '2'
-    }
-  ];
-
-  // Mock data for recommendations based on viewed properties
-  const recommendations = [
-    {
-      id: '7',
-      title: 'Cobertura Duplex Luxo',
-      price: 1200000,
-      location: 'Rio de Janeiro, RJ',
-      image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=400&h=300&fit=crop',
-      reason: 'Baseado em imóveis visualizados'
-    },
-    {
-      id: '8',
-      title: 'Apartamento Moderno',
-      price: 380000,
-      location: 'São Paulo, SP',
-      image: 'https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=400&h=300&fit=crop',
-      reason: 'Similar aos seus favoritos'
-    }
-  ];
-
+  // Atividade & recomendações podem seguir mock, feeds principais são dinâmicos
   if (loading) {
     return (
       <DashboardLayout title="Dashboard" userRole="user">

@@ -1,65 +1,88 @@
-import React from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Home, MessageSquare, Users, Plus, Calendar, Eye, TrendingUp, Clock } from 'lucide-react';
+import { Home, MessageSquare, Plus, Calendar, Eye, TrendingUp, Clock } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CorretorDashboard = () => {
   const { profile, loading, hasRole } = useProfile();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const [properties, setProperties] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
+  const [visits, setVisits] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    propertyCount: 0,
+    leadCount: 0,
+    visitCount: 0,
+    newProperties: 0,
+    newLeads: 0,
+    commissions: 0,
+  });
 
-  // Mock data for quick access
-  const upcomingVisits = [
-    {
-      id: '1',
-      property: 'Casa Moderna no Centro',
-      client: 'João Silva',
-      date: 'Hoje',
-      time: '14:30'
-    },
-    {
-      id: '2',
-      property: 'Apartamento Vista Mar',
-      client: 'Maria Santos',
-      date: 'Amanhã',
-      time: '10:00'
-    }
-  ];
-
-  const recentLeads = [
-    {
-      id: '1',
-      name: 'Pedro Oliveira',
-      property: 'Casa Moderna no Centro',
-      status: 'new'
-    },
-    {
-      id: '2',
-      name: 'Ana Costa',
-      property: 'Apartamento Vista Mar',
-      status: 'qualified'
-    }
-  ];
-
-  const myProperties = [
-    {
-      id: '1',
-      title: 'Casa Moderna no Centro',
-      price: 450000,
-      views: 245,
-      leads: 12
-    },
-    {
-      id: '2',
-      title: 'Apartamento Vista Mar',
-      price: 650000,
-      views: 189,
-      leads: 8
-    }
-  ];
+  // Fetch dynamic data
+  useEffect(() => {
+    if (!user) return;
+    // Fetch properties
+    supabase
+      .from('properties')
+      .select('*')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        setProperties(data || []);
+        setStats(prev => ({ ...prev, propertyCount: (data || []).length }));
+      });
+    // Fetch leads
+    supabase
+      .from('leads')
+      .select('*')
+      .eq('assigned_to', user.id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setLeads(data || []);
+        setStats(prev => ({
+          ...prev,
+          leadCount: (data || []).length,
+          newLeads: (data || []).filter(l => {
+            const today = new Date();
+            const created = new Date(l.created_at);
+            return (
+              created.getFullYear() === today.getFullYear() &&
+              created.getMonth() === today.getMonth() &&
+              created.getDate() === today.getDate()
+            );
+          }).length,
+        }));
+      });
+    // Fetch visits agendadas
+    supabase
+      .from('visits')
+      .select('*, property_id, client_name, visit_date, visit_time, notes') // pode customizar os campos
+      .order('visit_date', { ascending: false })
+      .then(({ data }) => {
+        setVisits((data || []).filter(v => v.property_id && properties.find(p => p.id === v.property_id)));
+        setStats(prev => ({
+          ...prev,
+          visitCount: (data || []).length,
+        }));
+      });
+    // Comissões e imóveis novos (mock simples)
+    setStats(prev => ({
+      ...prev,
+      newProperties: properties.filter((p) => {
+        const created = new Date(p.created_at);
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        return created >= sevenDaysAgo;
+      }).length,
+      commissions: 15200, // Mock valor
+    }));
+  }, [user, properties.length]);
 
   if (loading) {
     return (
@@ -70,18 +93,14 @@ const CorretorDashboard = () => {
       </DashboardLayout>
     );
   }
-
   if (!profile || !hasRole('corretor')) {
     return <Navigate to="/dashboard" replace />;
   }
-
-  // Convert role for DashboardLayout compatibility
   const dashboardRole = profile.role === 'super_admin' ? 'admin' : profile.role;
 
   return (
     <DashboardLayout title="Dashboard do Corretor" userRole={dashboardRole}>
       <div className="space-y-8">
-        {/* Welcome Message */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
           <h2 className="text-2xl font-bold mb-2">
             Bem-vindo, {profile?.full_name || 'Corretor'}!
@@ -99,54 +118,50 @@ const CorretorDashboard = () => {
               <Home className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">24</div>
-              <p className="text-xs text-muted-foreground">3 novos esta semana</p>
+              <div className="text-2xl font-bold">{stats.propertyCount}</div>
+              <p className="text-xs text-muted-foreground">{stats.newProperties} novos esta semana</p>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Leads Ativos</CardTitle>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">18</div>
-              <p className="text-xs text-muted-foreground">5 novos hoje</p>
+              <div className="text-2xl font-bold">{stats.leadCount}</div>
+              <p className="text-xs text-muted-foreground">{stats.newLeads} novos hoje</p>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Visitas Agendadas</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">7</div>
+              <div className="text-2xl font-bold">{stats.visitCount}</div>
               <p className="text-xs text-muted-foreground">Esta semana</p>
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Comissões</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">R$ 15.2k</div>
+              <div className="text-2xl font-bold">R$ {stats.commissions.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">Este mês</p>
             </CardContent>
           </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Manage Properties */}
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/properties/manage')}>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/manage-properties')}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 Gerenciar Imóveis
                 <Button size="sm" onClick={(e) => {
                   e.stopPropagation();
-                  navigate('/properties/create');
+                  navigate('/create-property');
                 }}>
                   <Plus className="h-4 w-4 mr-2" />
                   Adicionar Imóvel
@@ -157,33 +172,37 @@ const CorretorDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {myProperties.map((property) => (
-                  <div key={property.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700">
-                    <div>
-                      <h4 className="font-medium">{property.title}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        R$ {property.price.toLocaleString()} • {property.views} visualizações • {property.leads} leads
-                      </p>
+              {properties.length === 0 ? (
+                <p className="text-center text-muted-foreground py-3">Você não possui imóveis cadastrados ainda.</p>
+              ) : (
+                <div className="space-y-3">
+                  {properties.map((property) => (
+                    <div key={property.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700">
+                      <div>
+                        <h4 className="font-medium">{property.title}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          R$ {Number(property.price).toLocaleString()} • {property.views || 0} visualizações • {property.leads || 0} leads
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/property/${property.id}`);
+                        }}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/property/${property.id}`);
-                      }}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Recent Leads */}
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/leads')}>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/leads-management')}>
             <CardHeader>
               <CardTitle>Leads Recentes</CardTitle>
               <CardDescription>
@@ -191,24 +210,30 @@ const CorretorDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {recentLeads.map((lead) => (
-                  <div key={lead.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700">
-                    <div>
-                      <h4 className="font-medium">{lead.name}</h4>
-                      <p className="text-sm text-muted-foreground">Interessado em {lead.property}</p>
+              {leads.length === 0 ? (
+                <div className="p-3 text-center text-muted-foreground">Nenhum lead atribuído ainda.</div>
+              ) : (
+                <div className="space-y-3">
+                  {leads.slice(0, 5).map((lead) => (
+                    <div key={lead.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700">
+                      <div>
+                        <h4 className="font-medium">{lead.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Interessado em {lead.property_id}
+                        </p>
+                      </div>
+                      <Badge variant={lead.status === 'new' ? 'default' : 'secondary'}>
+                        {lead.status === 'new' ? 'Novo' : 'Qualificado'}
+                      </Badge>
                     </div>
-                    <Badge variant={lead.status === 'new' ? 'default' : 'secondary'}>
-                      {lead.status === 'new' ? 'Novo' : 'Qualificado'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Upcoming Visits */}
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/visits')}>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/visits-management')}>
             <CardHeader>
               <CardTitle>Próximas Visitas</CardTitle>
               <CardDescription>
@@ -216,25 +241,35 @@ const CorretorDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {upcomingVisits.map((visit) => (
-                  <div key={visit.id} 
-                       className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer">
-                    <div>
-                      <h4 className="font-medium">Visita - {visit.property}</h4>
-                      <p className="text-sm text-muted-foreground">{visit.date}, {visit.time} • {visit.client}</p>
+              {visits.length === 0 ? (
+                <div className="p-3 text-center text-muted-foreground">Nenhuma visita agendada.</div>
+              ) : (
+                <div className="space-y-3">
+                  {visits.slice(0, 5).map((visit) => (
+                    <div key={visit.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer">
+                      <div>
+                        <h4 className="font-medium">
+                          {visit.property_id ? `Visita - ${properties.find(p => p.id === visit.property_id)?.title ?? 'Imóvel'}` : 'Visita'}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          {visit.visit_date}, {visit.visit_time} • {visit.client_name}
+                          <br />
+                          Responsável: {profile.full_name}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="default">
+                          {visit.status ?? 'agendada'}
+                        </Badge>
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={visit.date === 'Hoje' ? 'destructive' : 'default'}>
-                        {visit.date}
-                      </Badge>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
