@@ -26,6 +26,8 @@ interface Property {
   features: string[];
   status: string;
   created_at: string;
+  virtual_tour_url: string;
+  video_url: string;
 }
 
 const PropertyDetail = () => {
@@ -111,9 +113,7 @@ const PropertyDetail = () => {
             Voltar
           </Button>
         </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Imagens e detalhes principais */}
           <div className="lg:col-span-2">
             <div className="mb-4">
               {property.images && property.images.length > 0 ? (
@@ -152,7 +152,6 @@ const PropertyDetail = () => {
               )}
             </div>
 
-            {/* Detalhes */}
             <Card>
               <CardContent className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -201,6 +200,27 @@ const PropertyDetail = () => {
                   </p>
                 </div>
 
+                {(property.virtual_tour_url || property.video_url) && (
+                  <div className="mb-6 space-y-3">
+                    {property.virtual_tour_url && (
+                      <div>
+                        <h4 className="font-semibold">Tour Virtual</h4>
+                        <a href={property.virtual_tour_url} target="_blank" rel="noopener" className="text-blue-700 underline break-words">
+                          {property.virtual_tour_url}
+                        </a>
+                      </div>
+                    )}
+                    {property.video_url && (
+                      <div>
+                        <h4 className="font-semibold">Vídeo</h4>
+                        <a href={property.video_url} target="_blank" rel="noopener" className="text-blue-700 underline break-words">
+                          {property.video_url}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {property.features && property.features.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold mb-3">Características</h3>
@@ -218,9 +238,7 @@ const PropertyDetail = () => {
             </Card>
           </div>
 
-          {/* Sidebar aprimorado */}
           <div className="space-y-6">
-            {/* Interessado Card */}
             <div className="rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm p-6 flex flex-col gap-4 animate-fade-in">
               <h3 className="text-lg font-semibold mb-2">Interessado?</h3>
               <div className="flex gap-2 mb-3">
@@ -245,7 +263,6 @@ const PropertyDetail = () => {
               </Button>
             </div>
 
-            {/* Informações do Imóvel Card */}
             <div className="rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm p-6 animate-fade-in">
               <h3 className="text-lg font-semibold mb-4">Informações do Imóvel</h3>
               <div className="grid grid-cols-2 gap-y-2 gap-x-6 text-sm">

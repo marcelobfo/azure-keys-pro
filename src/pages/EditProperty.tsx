@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -36,6 +35,8 @@ const EditProperty = () => {
     features: [] as string[],
     images: [] as string[],
     is_featured: false, // Novo campo
+    virtual_tour_url: '',
+    video_url: '',
   });
 
   const [newFeature, setNewFeature] = useState('');
@@ -67,6 +68,8 @@ const EditProperty = () => {
           features: Array.isArray(data.features) ? data.features : [],
           images: Array.isArray(data.images) ? data.images : [],
           is_featured: Boolean(data.is_featured),
+          virtual_tour_url: data.virtual_tour_url ?? '',
+          video_url: data.video_url ?? '',
         });
       } catch (error) {
         toast({
@@ -144,6 +147,8 @@ const EditProperty = () => {
           features: formData.features,
           images: formData.images,
           is_featured: formData.is_featured, // Novo campo
+          virtual_tour_url: formData.virtual_tour_url,
+          video_url: formData.video_url,
         })
         .eq('id', id);
 
@@ -385,7 +390,29 @@ const EditProperty = () => {
                   </div>
                 )}
               </div>
-              
+
+              {/* NOVOS CAMPOS */}
+              <div className="space-y-2">
+                <Label htmlFor="virtual_tour_url">Link do Tour Virtual</Label>
+                <Input
+                  id="virtual_tour_url"
+                  value={formData.virtual_tour_url || ""}
+                  onChange={e => handleInputChange('virtual_tour_url', e.target.value)}
+                  placeholder="https://meu-tour.app/tour/12345"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="video_url">Link do Vídeo</Label>
+                <Input
+                  id="video_url"
+                  value={formData.video_url || ""}
+                  onChange={e => handleInputChange('video_url', e.target.value)}
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+              </div>
+
+              {/* FIM NOVOS CAMPOS */}
+
               {/* Campo de destaque */}
               <div>
                 <Label className="flex items-center space-x-2">

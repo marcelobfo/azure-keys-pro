@@ -236,6 +236,8 @@ export type Database = {
           total_area: number | null
           updated_at: string | null
           user_id: string | null
+          video_url: string | null
+          virtual_tour_url: string | null
         }
         Insert: {
           area?: number | null
@@ -270,6 +272,8 @@ export type Database = {
           total_area?: number | null
           updated_at?: string | null
           user_id?: string | null
+          video_url?: string | null
+          virtual_tour_url?: string | null
         }
         Update: {
           area?: number | null
@@ -304,6 +308,8 @@ export type Database = {
           total_area?: number | null
           updated_at?: string | null
           user_id?: string | null
+          video_url?: string | null
+          virtual_tour_url?: string | null
         }
         Relationships: []
       }

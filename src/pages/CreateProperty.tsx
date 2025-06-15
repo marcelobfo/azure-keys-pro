@@ -51,7 +51,9 @@ const CreateProperty = () => {
     broker_name: '',
     broker_creci: '',
     infra: [] as string[],
-    status: 'available'
+    status: 'available',
+    virtual_tour_url: '',
+    video_url: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,7 +106,9 @@ const CreateProperty = () => {
             negotiation_notes: formData.negotiation_notes,
             broker_name: formData.broker_name,
             broker_creci: formData.broker_creci,
-            infra: formData.infra
+            infra: formData.infra,
+            virtual_tour_url: formData.virtual_tour_url,
+            video_url: formData.video_url
           }
         ])
         .select();
@@ -506,6 +510,33 @@ const CreateProperty = () => {
                 images={formData.images}
                 onChange={handleImagesChange}
               />
+            </CardContent>
+          </Card>
+
+          {/* Campos extra: Tour Virtual e Vídeo */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Mídia Avançada (Opcional)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="virtual_tour_url">Link do Tour Virtual</Label>
+                <Input
+                  id="virtual_tour_url"
+                  value={formData.virtual_tour_url || ""}
+                  onChange={e => handleChange('virtual_tour_url', e.target.value)}
+                  placeholder="https://meu-tour.app/tour/12345"
+                />
+              </div>
+              <div>
+                <Label htmlFor="video_url">Link do Vídeo</Label>
+                <Input
+                  id="video_url"
+                  value={formData.video_url || ""}
+                  onChange={e => handleChange('video_url', e.target.value)}
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+              </div>
             </CardContent>
           </Card>
 
