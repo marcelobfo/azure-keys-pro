@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/useProfile';
 import { Navigate } from 'react-router-dom';
@@ -12,16 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AddUserDialog, DeleteUserDialog } from '@/components/UserManagementActions';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Switch } from '@/components/ui/switch';
 
 interface User {
   id: string;
   full_name: string;
   email: string;
-  role: string;
+  role: 'user' | 'corretor' | 'admin';
   phone?: string;
   created_at: string;
-  status: string;
 }
 
 const AdminUsers = () => {
@@ -45,18 +42,15 @@ const AdminUsers = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      const formattedUsers: User[] = data?.map(user => ({
+      const formattedUsers: User[] = data?.map((user: any) => ({
         id: user.id,
         full_name: user.full_name || 'Nome não informado',
         email: user.email || 'Email não informado',
-        role: user.role || 'user',
+        role: (user.role ?? 'user') as 'user' | 'corretor' | 'admin',
         phone: user.phone,
         created_at: user.created_at,
-        status: user.status || 'ativo',
       })) || [];
 
       setUsers(formattedUsers);
@@ -80,36 +74,8 @@ const AdminUsers = () => {
     setUsers(prev => prev.filter(user => user.id !== userId));
   };
 
-  // Atualizar status do usuário
-  const handleToggleStatus = async (user: User) => {
-    setUpdatingUserId(user.id);
-    const newStatus = user.status === 'ativo' ? 'inativo' : 'ativo';
-    const { error } = await supabase
-      .from('profiles')
-      .update({ status: newStatus })
-      .eq('id', user.id);
-
-    if (!error) {
-      toast({
-        title: `Usuário ${newStatus === "ativo" ? "ativado" : "desativado"}!`,
-        description: `Status do usuário atualizado com sucesso.`,
-      });
-      setUsers(prev =>
-        prev.map(u =>
-          u.id === user.id ? { ...u, status: newStatus } : u
-        )
-      );
-    } else {
-      toast({
-        title: "Erro ao atualizar status",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-    setUpdatingUserId(null);
-  };
-
-  const handleRoleChange = async (user: User, value: string) => {
+  // Atualizar role do usuário
+  const handleRoleChange = async (user: User, value: 'user' | 'corretor' | 'admin') => {
     setUpdatingUserId(user.id);
     const { error } = await supabase
       .from('profiles')
@@ -148,22 +114,6 @@ const AdminUsers = () => {
   if (!profile || profile.role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
-
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin': return 'Administrador';
-      case 'corretor': return 'Corretor';
-      default: return 'Usuário';
-    }
-  };
-
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'admin': return 'destructive' as const;
-      case 'corretor': return 'default' as const;
-      default: return 'secondary' as const;
-    }
-  };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -245,7 +195,6 @@ const AdminUsers = () => {
                     <th className="text-left p-4">Email</th>
                     <th className="text-left p-4">Role</th>
                     <th className="text-left p-4">Telefone</th>
-                    <th className="text-left p-4">Status</th>
                     <th className="text-left p-4">Data de Cadastro</th>
                     <th className="text-left p-4">Ações</th>
                   </tr>
@@ -262,7 +211,7 @@ const AdminUsers = () => {
                       <td className="p-4">
                         <Select
                           value={user.role}
-                          onValueChange={(value) => handleRoleChange(user, value)}
+                          onValueChange={(value) => handleRoleChange(user, value as 'user' | 'corretor' | 'admin')}
                           disabled={updatingUserId === user.id}
                         >
                           <SelectTrigger className="w-36">
@@ -276,18 +225,6 @@ const AdminUsers = () => {
                         </Select>
                       </td>
                       <td className="p-4">{user.phone || '-'}</td>
-                      <td className="p-4">
-                        <Switch
-                          checked={user.status === 'ativo'}
-                          onCheckedChange={() => handleToggleStatus(user)}
-                          disabled={updatingUserId === user.id}
-                        />
-                        <span className={`ml-2 text-xs font-medium rounded px-2 py-0.5 ${
-                          user.status === 'ativo' ? 'bg-green-200 text-green-700' : 'bg-gray-200 text-gray-700'
-                        }`}>
-                          {user.status === 'ativo' ? 'Ativo' : 'Inativo'}
-                        </span>
-                      </td>
                       <td className="p-4">{new Date(user.created_at).toLocaleDateString('pt-BR')}</td>
                       <td className="p-4">
                         <div className="flex space-x-2">
