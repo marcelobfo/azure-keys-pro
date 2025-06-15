@@ -261,7 +261,7 @@ const HomePage = () => {
                           'https://images.unsplash.com/photo-1496307653780-42ee777d4833?w=600&h=400&fit=crop'
                         }
                         alt={property.title}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-60 object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
                         {property.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}
@@ -270,8 +270,8 @@ const HomePage = () => {
                         {property.property_type}
                       </div>
                     </div>
-                    <CardContent className="p-5">
-                      <h3 className="text-lg font-semibold mb-2 group-hover:text-blue-600 transition-colors">
+                    <CardContent className="p-6">
+                      <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">
                         {property.title}
                       </h3>
                       <p className="text-gray-600 dark:text-gray-300 mb-2 flex items-center truncate">
