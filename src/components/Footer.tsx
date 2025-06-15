@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Home, Phone, MapPin, Mail, Instagram, Facebook, Whatsapp } from 'lucide-react';
+import { Home, Phone, MapPin, Mail, Instagram, Facebook, MessageCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -42,7 +42,7 @@ const Footer = () => {
     {
       key: 'footer_whatsapp',
       url: settings['footer_whatsapp'],
-      icon: <Whatsapp className="w-4 h-4" />,
+      icon: <MessageCircle className="w-4 h-4" />, // Use generic message icon for WhatsApp
     },
     {
       key: 'footer_facebook',
@@ -138,3 +138,4 @@ const Footer = () => {
 };
 
 export default Footer;
+
