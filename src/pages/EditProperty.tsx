@@ -410,7 +410,6 @@ const EditProperty = () => {
                   placeholder="https://youtube.com/watch?v=..."
                 />
               </div>
-
               {/* FIM NOVOS CAMPOS */}
 
               {/* Campo de destaque */}
