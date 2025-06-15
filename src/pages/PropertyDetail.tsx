@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
 import InterestModal from '@/components/InterestModal';
 import ScheduleVisitModal from '@/components/ScheduleVisitModal';
+import { useFavorites } from '@/hooks/useFavorites';
 
 interface Property {
   id: string;
@@ -37,6 +39,11 @@ const PropertyDetail = () => {
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Favorito: redireciona se não autenticado
+  const { toggleFavorite, isFavorite } = useFavorites(() => {
+    navigate('/auth');
+  });
 
   useEffect(() => {
     if (id) {
@@ -75,6 +82,14 @@ const PropertyDetail = () => {
       style: 'currency',
       currency: 'BRL'
     }).format(price);
+  };
+
+  // Tradução do status
+  const getStatusLabel = (status: string) => {
+    if (status === "active") return "Disponível";
+    if (status === "sold") return "Vendido";
+    if (status === "pending") return "Pendente";
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   if (loading) {
@@ -254,12 +269,25 @@ const PropertyDetail = () => {
                   label="Agendar Visita"
                 />
               </div>
+              {/* Botão de Favorito */}
               <Button 
-                variant="outline" 
-                className="w-full flex items-center justify-center gap-2"
+                variant={isFavorite(property.id) ? "default" : "outline"} 
+                className={`w-full flex items-center justify-center gap-2 ${
+                  isFavorite(property.id)
+                    ? "bg-red-500 hover:bg-red-600 text-white"
+                    : ""
+                }`}
+                onClick={() => toggleFavorite(property.id)}
               >
-                <Heart className="w-4 h-4 mr-2" />
-                Adicionar aos Favoritos
+                <Heart
+                  className={`w-4 h-4 mr-2 ${
+                    isFavorite(property.id) ? "fill-current text-white" : ""
+                  }`}
+                  fill={isFavorite(property.id) ? "currentColor" : "none"}
+                />
+                {isFavorite(property.id)
+                  ? "Remover dos Favoritos"
+                  : "Adicionar aos Favoritos"}
               </Button>
             </div>
 
@@ -271,7 +299,7 @@ const PropertyDetail = () => {
                 <span className="font-medium text-gray-600 dark:text-gray-400">Status:</span>
                 <span className="text-right">
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border border-blue-300">
-                    {property.status}
+                    {getStatusLabel(property.status)}
                   </span>
                 </span>
                 <span className="font-medium text-gray-600 dark:text-gray-400">Cidade:</span>
@@ -296,3 +324,4 @@ const PropertyDetail = () => {
 };
 
 export default PropertyDetail;
+
