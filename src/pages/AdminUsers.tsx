@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AddUserDialog, DeleteUserDialog } from '@/components/UserManagementActions';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import UserStatsCards from '@/components/UserStatsCards';
+import UserFilters from '@/components/UserFilters';
+import UserRow from '@/components/UserRow';
 
 interface User {
   id: string;
@@ -127,59 +129,17 @@ const AdminUsers = () => {
       <div className="space-y-6">
         {/* Header Actions */}
         <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Buscar usuários..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64"
-              />
-            </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-40">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filtrar por role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="corretor">Corretor</SelectItem>
-                <SelectItem value="user">Usuário</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <UserFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            roleFilter={roleFilter}
+            setRoleFilter={setRoleFilter}
+          />
           <AddUserDialog onUserAdded={handleUserAdded} />
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold">{users.length}</div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Total de Usuários</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold">{users.filter(u => u.role === 'admin').length}</div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Administradores</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold">{users.filter(u => u.role === 'corretor').length}</div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Corretores</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-2xl font-bold">{users.filter(u => u.role === 'user').length}</div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Usuários</p>
-            </CardContent>
-          </Card>
-        </div>
+        <UserStatsCards users={users} />
 
         {/* Users Table */}
         <Card>
@@ -201,44 +161,13 @@ const AdminUsers = () => {
                 </thead>
                 <tbody>
                   {filteredUsers.map((user) => (
-                    <tr key={user.id} className="border-b hover:bg-gray-50 dark:hover:bg-slate-700">
-                      <td className="p-4">
-                        <div>
-                          <div className="font-medium">{user.full_name}</div>
-                        </div>
-                      </td>
-                      <td className="p-4">{user.email}</td>
-                      <td className="p-4">
-                        <Select
-                          value={user.role}
-                          onValueChange={(value) => handleRoleChange(user, value as 'user' | 'corretor' | 'admin')}
-                          disabled={updatingUserId === user.id}
-                        >
-                          <SelectTrigger className="w-36">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">Administrador</SelectItem>
-                            <SelectItem value="corretor">Corretor</SelectItem>
-                            <SelectItem value="user">Usuário</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="p-4">{user.phone || '-'}</td>
-                      <td className="p-4">{new Date(user.created_at).toLocaleDateString('pt-BR')}</td>
-                      <td className="p-4">
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <DeleteUserDialog 
-                            userId={user.id}
-                            userName={user.full_name}
-                            onUserDeleted={handleUserDeleted}
-                          />
-                        </div>
-                      </td>
-                    </tr>
+                    <UserRow
+                      key={user.id}
+                      user={user}
+                      updatingUserId={updatingUserId}
+                      onRoleChange={handleRoleChange}
+                      onUserDeleted={handleUserDeleted}
+                    />
                   ))}
                 </tbody>
               </table>
