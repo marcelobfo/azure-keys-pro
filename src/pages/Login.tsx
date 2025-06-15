@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Eye, EyeOff, Home } from 'lucide-react';
+import { Eye, EyeOff, Home, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -37,6 +36,17 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
+        {/* Botão Voltar para Home */}
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-slate-700"
+            onClick={() => navigate('/')}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para Home
+          </Button>
+        </div>
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center space-x-2">
