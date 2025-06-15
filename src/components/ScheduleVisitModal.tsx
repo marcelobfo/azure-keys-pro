@@ -9,12 +9,22 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar } from 'lucide-react';
 
+// Extend props to allow button/style customization
 interface ScheduleVisitModalProps {
   propertyId: string;
   propertyTitle: string;
+  buttonClassName?: string;
+  iconClassName?: string;
+  label?: string;
 }
 
-const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({ propertyId, propertyTitle }) => {
+const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({
+  propertyId,
+  propertyTitle,
+  buttonClassName,
+  iconClassName,
+  label = "Agendar Visita"
+}) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -102,9 +112,12 @@ const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({ propertyId, pro
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-green-600 hover:bg-green-700">
-          <Calendar className="w-4 h-4 mr-1" />
-          Agendar Visita
+        <Button
+          size="sm"
+          className={buttonClassName || "bg-green-600 hover:bg-green-700"}
+        >
+          <Calendar className={`w-4 h-4 mr-1 ${iconClassName || ""}`} />
+          {label}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -205,3 +218,4 @@ const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({ propertyId, pro
 };
 
 export default ScheduleVisitModal;
+
