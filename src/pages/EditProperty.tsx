@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const EditProperty = () => {
   const { id } = useParams();
@@ -19,7 +21,7 @@ const EditProperty = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
-  
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -32,32 +34,39 @@ const EditProperty = () => {
     bedrooms: '',
     bathrooms: '',
     features: [] as string[],
-    images: [] as string[]
+    images: [] as string[],
+    is_featured: false, // Novo campo
   });
 
   const [newFeature, setNewFeature] = useState('');
 
   useEffect(() => {
-    // Simulate loading property data
-    const loadProperty = async () => {
+    async function loadProperty() {
+      setLoading(true);
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Mock data - in real app, fetch from API
+        if (!id) throw new Error("ID inválido.");
+        // Busca o imóvel pelo id no Supabase
+        const { data, error } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        if (error || !data) throw new Error("Imóvel não encontrado.");
+
         setFormData({
-          title: 'Casa Moderna no Centro',
-          description: 'Linda casa com acabamento de primeira qualidade',
-          price: '850000',
-          location: 'Rua das Flores, 123 - Centro',
-          city: 'São Paulo',
-          state: 'SP',
-          property_type: 'Casa',
-          area: '180',
-          bedrooms: '3',
-          bathrooms: '2',
-          features: ['Piscina', 'Garagem', 'Jardim'],
-          images: ['https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop']
+          title: data.title ?? '',
+          description: data.description ?? '',
+          price: data.price ? String(data.price) : '',
+          location: data.location ?? '',
+          city: data.city ?? '',
+          state: data.state ?? '',
+          property_type: data.property_type ?? '',
+          area: data.area ? String(data.area) : '',
+          bedrooms: data.bedrooms ? String(data.bedrooms) : '',
+          bathrooms: data.bathrooms ? String(data.bathrooms) : '',
+          features: Array.isArray(data.features) ? data.features : [],
+          images: Array.isArray(data.images) ? data.images : [],
+          is_featured: Boolean(data.is_featured),
         });
       } catch (error) {
         toast({
@@ -68,12 +77,12 @@ const EditProperty = () => {
       } finally {
         setLoading(false);
       }
-    };
-
+    }
     loadProperty();
-  }, [id, toast]);
+    // eslint-disable-next-line
+  }, [id]);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -117,14 +126,33 @@ const EditProperty = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      if (!id) throw new Error("ID inválido.");
+      // Atualiza o imóvel no Supabase
+      const { error } = await supabase
+        .from('properties')
+        .update({
+          title: formData.title,
+          description: formData.description,
+          price: Number(formData.price) || 0,
+          location: formData.location,
+          city: formData.city,
+          state: formData.state,
+          property_type: formData.property_type,
+          area: formData.area !== '' ? Number(formData.area) : null,
+          bedrooms: formData.bedrooms !== '' ? Number(formData.bedrooms) : null,
+          bathrooms: formData.bathrooms !== '' ? Number(formData.bathrooms) : null,
+          features: formData.features,
+          images: formData.images,
+          is_featured: formData.is_featured, // Novo campo
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
       toast({
         title: "Imóvel atualizado com sucesso!",
         description: "As alterações foram salvas.",
       });
-      
       navigate('/manage-properties');
     } catch (error) {
       toast({
@@ -173,7 +201,6 @@ const EditProperty = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Same form fields as CreateProperty */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Título *</Label>
@@ -185,7 +212,6 @@ const EditProperty = () => {
                     required
                   />
                 </div>
-                
                 <div className="space-y-2">
                   <Label htmlFor="property_type">Tipo *</Label>
                   <Select value={formData.property_type} onValueChange={(value) => handleInputChange('property_type', value)}>
@@ -225,7 +251,6 @@ const EditProperty = () => {
                     required
                   />
                 </div>
-                
                 <div className="space-y-2">
                   <Label htmlFor="area">Área (m²)</Label>
                   <Input
@@ -236,7 +261,6 @@ const EditProperty = () => {
                     placeholder="120"
                   />
                 </div>
-                
                 <div className="space-y-2">
                   <Label htmlFor="bedrooms">Quartos</Label>
                   <Input
@@ -260,7 +284,6 @@ const EditProperty = () => {
                     placeholder="2"
                   />
                 </div>
-                
                 <div className="space-y-2">
                   <Label htmlFor="city">Cidade *</Label>
                   <Input
@@ -271,7 +294,6 @@ const EditProperty = () => {
                     required
                   />
                 </div>
-                
                 <div className="space-y-2">
                   <Label htmlFor="state">Estado</Label>
                   <Input
@@ -342,7 +364,6 @@ const EditProperty = () => {
                     </Button>
                   </Label>
                 </div>
-                
                 {formData.images.length > 0 && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {formData.images.map((image, index) => (
@@ -363,6 +384,19 @@ const EditProperty = () => {
                     ))}
                   </div>
                 )}
+              </div>
+              
+              {/* Campo de destaque */}
+              <div>
+                <Label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_featured}
+                    onChange={e => handleInputChange('is_featured', e.target.checked)}
+                    className="mr-2"
+                  />
+                  <span>Exibir imóvel como destaque na home</span>
+                </Label>
               </div>
 
               <div className="flex justify-end space-x-4">
