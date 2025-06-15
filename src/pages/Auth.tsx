@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
-import { Home, Mail, Lock, User } from 'lucide-react';
+import { Home, Mail, Lock, User, ArrowLeft } from 'lucide-react';
 
 const AuthPage = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -45,6 +45,18 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
+        {/* Botão Voltar para Home */}
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-slate-700"
+            onClick={() => navigate('/')}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para Home
+          </Button>
+        </div>
+
         <div className="text-center">
           <div className="flex justify-center">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
@@ -170,3 +182,4 @@ const AuthPage = () => {
 };
 
 export default AuthPage;
+
