@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bell, Check, CheckCheck } from 'lucide-react';
+import { Bell, Check, CheckCheck, ArrowRight } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Link } from 'react-router-dom';
 
 const NotificationDropdown = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
@@ -54,7 +55,7 @@ const NotificationDropdown = () => {
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         {notifications.length === 0 ? (
           <div className="p-4 text-center text-sm text-muted-foreground">
             Nenhuma notificação
@@ -64,17 +65,28 @@ const NotificationDropdown = () => {
             {notifications.map((notification) => (
               <DropdownMenuItem
                 key={notification.id}
-                className={`p-3 cursor-pointer ${!notification.read ? 'bg-blue-50 dark:bg-blue-950' : ''}`}
+                className={`p-3 cursor-pointer transition ${
+                  !notification.read
+                    ? notification.type === "lead_assigned"
+                      ? "bg-yellow-50 dark:bg-yellow-900"
+                      : "bg-blue-50 dark:bg-blue-950"
+                    : ""
+                }`}
                 onClick={() => !notification.read && markAsRead(notification.id)}
               >
                 <div className="flex-1">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="text-sm font-medium">{notification.title}</h4>
+                      <h4 className="text-sm font-medium flex items-center gap-1">
+                        {notification.title}
+                        {notification.type === "lead_assigned" && (
+                          <Badge className="ml-1 bg-yellow-500 text-white">Lead</Badge>
+                        )}
+                      </h4>
                       <p className="text-xs text-muted-foreground mt-1">
                         {notification.message}
                       </p>
-                      <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center justify-between mt-2 gap-2">
                         <span className="text-xs text-muted-foreground">
                           {formatRelativeTime(notification.created_at)}
                         </span>
@@ -90,6 +102,14 @@ const NotificationDropdown = () => {
                           >
                             <Check className="h-3 w-3" />
                           </Button>
+                        )}
+                        {/* Link para lead, se for lead_assigned */}
+                        {notification.type === "lead_assigned" && notification.data?.lead_id && (
+                          <Link to={`/leads-management#lead-${notification.data.lead_id}`}>
+                            <Button variant="link" size="sm" className="h-auto p-1 text-xs">
+                              Ver Lead <ArrowRight className="w-3 h-3 ml-1" />
+                            </Button>
+                          </Link>
                         )}
                       </div>
                     </div>
@@ -114,3 +134,4 @@ const NotificationDropdown = () => {
 };
 
 export default NotificationDropdown;
+
