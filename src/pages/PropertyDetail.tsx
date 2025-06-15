@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -114,7 +113,7 @@ const PropertyDetail = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Imagens */}
+          {/* Imagens e detalhes principais */}
           <div className="lg:col-span-2">
             <div className="mb-4">
               {property.images && property.images.length > 0 ? (
@@ -219,59 +218,59 @@ const PropertyDetail = () => {
             </Card>
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar aprimorado */}
           <div className="space-y-6">
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Interessado?</h3>
-                <div className="space-y-3">
-                  <InterestModal 
-                    propertyId={property.id} 
-                    propertyTitle={property.title}
-                  />
-                  <ScheduleVisitModal 
-                    propertyId={property.id} 
-                    propertyTitle={property.title}
-                  />
-                  <Button variant="outline" className="w-full">
-                    <Heart className="w-4 h-4 mr-2" />
-                    Adicionar aos Favoritos
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Interessado Card */}
+            <div className="rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm p-6 flex flex-col gap-4 animate-fade-in">
+              <h3 className="text-lg font-semibold mb-2">Interessado?</h3>
+              <div className="flex gap-2 mb-3">
+                <InterestModal 
+                  propertyId={property.id} 
+                  propertyTitle={property.title}
+                />
+                <ScheduleVisitModal 
+                  propertyId={property.id} 
+                  propertyTitle={property.title}
+                  buttonClassName="bg-green-600 hover:bg-green-700 text-white min-w-[140px]"
+                  iconClassName="text-white"
+                  label="Agendar Visita"
+                />
+              </div>
+              <Button 
+                variant="outline" 
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <Heart className="w-4 h-4 mr-2" />
+                Adicionar aos Favoritos
+              </Button>
+            </div>
 
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Informações do Imóvel</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Tipo:</span>
-                    <span className="font-medium">{property.property_type}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Status:</span>
-                    <Badge variant="secondary">{property.status}</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Cidade:</span>
-                    <span className="font-medium">{property.city}</span>
-                  </div>
-                  {property.state && (
-                    <div className="flex justify-between">
-                      <span>Estado:</span>
-                      <span className="font-medium">{property.state}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>Publicado em:</span>
-                    <span className="font-medium">
-                      {new Date(property.created_at).toLocaleDateString('pt-BR')}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Informações do Imóvel Card */}
+            <div className="rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm p-6 animate-fade-in">
+              <h3 className="text-lg font-semibold mb-4">Informações do Imóvel</h3>
+              <div className="grid grid-cols-2 gap-y-2 gap-x-6 text-sm">
+                <span className="font-medium text-gray-600 dark:text-gray-400">Tipo:</span>
+                <span className="text-right font-semibold text-gray-900 dark:text-white">{property.property_type}</span>
+                <span className="font-medium text-gray-600 dark:text-gray-400">Status:</span>
+                <span className="text-right">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border border-blue-300">
+                    {property.status}
+                  </span>
+                </span>
+                <span className="font-medium text-gray-600 dark:text-gray-400">Cidade:</span>
+                <span className="text-right font-semibold text-gray-900 dark:text-white">{property.city}</span>
+                {property.state && (
+                  <>
+                    <span className="font-medium text-gray-600 dark:text-gray-400">Estado:</span>
+                    <span className="text-right font-semibold text-gray-900 dark:text-white">{property.state}</span>
+                  </>
+                )}
+                <span className="font-medium text-gray-600 dark:text-gray-400">Publicado em:</span>
+                <span className="text-right font-semibold text-gray-900 dark:text-white">
+                  {new Date(property.created_at).toLocaleDateString('pt-BR')}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
