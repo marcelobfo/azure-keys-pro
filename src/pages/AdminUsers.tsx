@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AddUserDialog, DeleteUserDialog } from '@/components/UserManagementActions';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
 
 interface User {
   id: string;
@@ -30,6 +31,7 @@ const AdminUsers = () => {
   const [roleFilter, setRoleFilter] = useState('all');
   const [users, setUsers] = useState<User[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -54,7 +56,7 @@ const AdminUsers = () => {
         role: user.role || 'user',
         phone: user.phone,
         created_at: user.created_at,
-        status: 'active'
+        status: user.status || 'ativo',
       })) || [];
 
       setUsers(formattedUsers);
@@ -76,6 +78,61 @@ const AdminUsers = () => {
 
   const handleUserDeleted = (userId: string) => {
     setUsers(prev => prev.filter(user => user.id !== userId));
+  };
+
+  // Atualizar status do usuário
+  const handleToggleStatus = async (user: User) => {
+    setUpdatingUserId(user.id);
+    const newStatus = user.status === 'ativo' ? 'inativo' : 'ativo';
+    const { error } = await supabase
+      .from('profiles')
+      .update({ status: newStatus })
+      .eq('id', user.id);
+
+    if (!error) {
+      toast({
+        title: `Usuário ${newStatus === "ativo" ? "ativado" : "desativado"}!`,
+        description: `Status do usuário atualizado com sucesso.`,
+      });
+      setUsers(prev =>
+        prev.map(u =>
+          u.id === user.id ? { ...u, status: newStatus } : u
+        )
+      );
+    } else {
+      toast({
+        title: "Erro ao atualizar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+    setUpdatingUserId(null);
+  };
+
+  const handleRoleChange = async (user: User, value: string) => {
+    setUpdatingUserId(user.id);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role: value })
+      .eq('id', user.id);
+    if (!error) {
+      toast({
+        title: "Role do usuário atualizada!",
+        description: "A função do usuário foi alterada com sucesso.",
+      });
+      setUsers(prev =>
+        prev.map(u =>
+          u.id === user.id ? { ...u, role: value } : u
+        )
+      );
+    } else {
+      toast({
+        title: "Erro ao atualizar função",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+    setUpdatingUserId(null);
   };
 
   if (loading || usersLoading) {
@@ -188,6 +245,7 @@ const AdminUsers = () => {
                     <th className="text-left p-4">Email</th>
                     <th className="text-left p-4">Role</th>
                     <th className="text-left p-4">Telefone</th>
+                    <th className="text-left p-4">Status</th>
                     <th className="text-left p-4">Data de Cadastro</th>
                     <th className="text-left p-4">Ações</th>
                   </tr>
@@ -202,11 +260,34 @@ const AdminUsers = () => {
                       </td>
                       <td className="p-4">{user.email}</td>
                       <td className="p-4">
-                        <Badge variant={getRoleBadgeVariant(user.role)}>
-                          {getRoleLabel(user.role)}
-                        </Badge>
+                        <Select
+                          value={user.role}
+                          onValueChange={(value) => handleRoleChange(user, value)}
+                          disabled={updatingUserId === user.id}
+                        >
+                          <SelectTrigger className="w-36">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Administrador</SelectItem>
+                            <SelectItem value="corretor">Corretor</SelectItem>
+                            <SelectItem value="user">Usuário</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td className="p-4">{user.phone || '-'}</td>
+                      <td className="p-4">
+                        <Switch
+                          checked={user.status === 'ativo'}
+                          onCheckedChange={() => handleToggleStatus(user)}
+                          disabled={updatingUserId === user.id}
+                        />
+                        <span className={`ml-2 text-xs font-medium rounded px-2 py-0.5 ${
+                          user.status === 'ativo' ? 'bg-green-200 text-green-700' : 'bg-gray-200 text-gray-700'
+                        }`}>
+                          {user.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </td>
                       <td className="p-4">{new Date(user.created_at).toLocaleDateString('pt-BR')}</td>
                       <td className="p-4">
                         <div className="flex space-x-2">
