@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,10 @@ interface PropertyCardProps {
 const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { toggleFavorite, isFavorite } = useFavorites();
+  // Hook useFavorites configurado para redirecionar para /auth se não autenticado
+  const { toggleFavorite, isFavorite } = useFavorites(() => {
+    navigate('/auth');
+  });
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -66,11 +68,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
           }`}
           size="sm"
         >
-          <Heart 
-            className={`w-4 h-4 ${
-              isFavorite(property.id.toString()) ? 'fill-current' : ''
-            }`} 
-          />
+          <svg className={`w-4 h-4 ${isFavorite(property.id.toString()) ? 'fill-current' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21l-1.45-1.32c-5.35-4.89-8.88-8.14-8.88-11.54A5.13 5.13 0 016.6 2c1.63 0 3.19.79 4.13 2.06C11.21 2.79 12.77 2 14.4 2A5.13 5.13 0 0121 8.14c0 3.4-3.53 6.65-8.88 11.54L12 21z"/>
+          </svg>
         </Button>
       </div>
       <CardContent className="p-6">

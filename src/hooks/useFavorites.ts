@@ -1,10 +1,12 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-export const useFavorites = () => {
+/**
+ * Adicionada a possibilidade de passar um callback quando o usuário não está logado
+ */
+export const useFavorites = (onRequireAuth?: () => void) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -41,13 +43,20 @@ export const useFavorites = () => {
     }
   };
 
+  /**
+   * Agora aceita onRequireAuth.
+   */
   const toggleFavorite = async (propertyId: string) => {
     if (!user) {
-      toast({
-        title: "Login necessário",
-        description: "Faça login para adicionar favoritos",
-        variant: "destructive",
-      });
+      if (onRequireAuth) {
+        onRequireAuth();
+      } else {
+        toast({
+          title: "Login necessário",
+          description: "Faça login para adicionar favoritos",
+          variant: "destructive",
+        });
+      }
       return;
     }
 

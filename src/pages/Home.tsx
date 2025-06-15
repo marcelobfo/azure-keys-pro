@@ -7,6 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { supabase } from '@/integrations/supabase/client';
+import { useFavorites } from '@/hooks/useFavorites';
 
 type FeaturedProperty = {
   id: string;
@@ -100,6 +101,11 @@ const HomePage = () => {
     }
     loadFeatured();
   }, []);
+
+  // Adicionar hook do favoritos que redireciona quando não autenticado
+  const { toggleFavorite, isFavorite } = useFavorites(() => {
+    navigate('/auth');
+  });
 
   // Blocos de layout da home (pode ser expandido com mais modelos)
   function renderHero() {
@@ -252,9 +258,11 @@ const HomePage = () => {
                   <Card
                     key={property.id}
                     className="group hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-slate-800 cursor-pointer"
-                    onClick={() => navigate(`/property/${property.id}`)}
                   >
-                    <div className="relative overflow-hidden">
+                    <div
+                      className="relative overflow-hidden"
+                      onClick={() => navigate(`/property/${property.id}`)}
+                    >
                       <img
                         src={
                           property.images?.[0] ||
@@ -269,6 +277,23 @@ const HomePage = () => {
                       <div className="absolute top-4 left-4 bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm font-medium">
                         {property.property_type}
                       </div>
+                      {/* Botão favorito */}
+                      <Button
+                        onClick={e => {
+                          e.stopPropagation();
+                          toggleFavorite(property.id);
+                        }}
+                        className={`absolute top-16 left-4 p-2 rounded-full transition-colors ${
+                          isFavorite(property.id)
+                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                            : 'bg-white hover:bg-gray-100 text-gray-600'
+                        }`}
+                        size="sm"
+                      >
+                        <svg className={`w-4 h-4 ${isFavorite(property.id) ? 'fill-current' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21l-1.45-1.32c-5.35-4.89-8.88-8.14-8.88-11.54A5.13 5.13 0 016.6 2c1.63 0 3.19.79 4.13 2.06C11.21 2.79 12.77 2 14.4 2A5.13 5.13 0 0121 8.14c0 3.4-3.53 6.65-8.88 11.54L12 21z"/>
+                        </svg>
+                      </Button>
                     </div>
                     <CardContent className="p-6">
                       <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">
