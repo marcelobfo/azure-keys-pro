@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -115,7 +114,7 @@ const LeadsManagement = () => {
       case 'contacted':
         return <Badge className="bg-yellow-500">Contatado</Badge>;
       case 'qualified':
-        return <Badge className="bg-green-600">Qualificado</Badge>;
+        return <Badge className="bg-green-600 text-white">Qualificado</Badge>;
       case 'converted':
         return <Badge className="bg-purple-600 text-white">Convertido</Badge>;
       case 'lost':

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
@@ -63,6 +62,23 @@ const HOMEPAGE_SETTINGS = [
     placeholder: 'Cole a URL da imagem',
     type: 'image',
     help: 'Cole a URL de uma imagem hospedada. Upload de imagem em breve!',
+  },
+  {
+    key: 'about_section_title',
+    label: 'Título da Seção Quem Somos',
+    placeholder: 'Ex: Conheça Nossa História',
+  },
+  {
+    key: 'about_section_text',
+    label: 'Texto da Seção Quem Somos',
+    placeholder: 'Digite aqui a apresentação da imobiliária.',
+  },
+  {
+    key: 'about_section_image',
+    label: 'Imagem da Seção Quem Somos (URL)',
+    placeholder: 'Cole a URL da foto principal (Quem Somos)',
+    type: 'image',
+    help: 'Cole a URL de uma imagem hospedada para a seção "Quem Somos".',
   },
   {
     key: 'home_layout',
@@ -464,5 +480,4 @@ const AdminSiteSettings = () => {
 };
 
 export default AdminSiteSettings;
-
 // O arquivo está grande, recomendo fortemente refatorar src/pages/AdminSiteSettings.tsx em arquivos menores após esses ajustes!
