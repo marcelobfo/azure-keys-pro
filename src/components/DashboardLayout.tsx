@@ -59,7 +59,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
       { icon: BarChart3, label: 'Dashboard', href: '/dashboard' },
       { icon: Heart, label: 'Favoritos', href: '/favorites' },
       { icon: Bell, label: 'Alertas', href: '/alerts' },
-      { icon: User, label: 'Perfil', href: '/profile/settings' },
+      { icon: User, label: 'Perfil', href: '/profile' },
     ];
 
     if (userRole === 'corretor' || userRole === 'admin') {
