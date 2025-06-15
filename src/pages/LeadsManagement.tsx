@@ -106,7 +106,7 @@ const LeadsManagement = () => {
     }
   };
 
-  // Corrigidos badges e tratamento para "Qualificado" e "Perdido"
+  // Ajustando badges para "Convertido" (roxo/branco) e "Perdido" (vermelho)
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'new':
@@ -289,6 +289,7 @@ const LeadsManagement = () => {
                     </div>
 
                     <div className="flex flex-col lg:flex-row gap-2 lg:ml-4">
+                      {/* Corrigir as opções do Select para garantir que "Convertido" e "Perdido" estão corretas */}
                       <Select value={lead.status} onValueChange={(value) => updateLeadStatus(lead.id, value)}>
                         <SelectTrigger className="w-full lg:w-32">
                           <SelectValue />
