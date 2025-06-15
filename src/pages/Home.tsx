@@ -22,12 +22,46 @@ type FeaturedProperty = {
   state: string;
 };
 
+const getHomeSettings = async () => {
+  const keys = [
+    'home_banner_title',
+    'home_banner_subtitle',
+    'home_banner_button',
+    'home_banner_image',
+    'about_section_title',
+    'about_section_text',
+    'about_section_image',
+    'home_layout',
+  ];
+  const { data } = await supabase
+    .from('site_settings')
+    .select('key, value')
+    .in('key', keys);
+
+  const map: Record<string, string> = {};
+  data?.forEach((item: any) => {
+    map[item.key] = item.value || '';
+  });
+  return map;
+};
+
 const HomePage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [featuredProperties, setFeaturedProperties] = useState<FeaturedProperty[]>([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
+
+  // Novos estados site_settings
+  const [settings, setSettings] = useState<Record<string, string | undefined>>({});
+
+  useEffect(() => {
+    async function fetchSiteSettings() {
+      const map = await getHomeSettings();
+      setSettings(map);
+    }
+    fetchSiteSettings();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,37 +101,133 @@ const HomePage = () => {
     loadFeatured();
   }, []);
 
+  // Blocos de layout da home (pode ser expandido com mais modelos)
+  function renderHero() {
+    const layout = settings['home_layout'] || 'modelo1';
+    const bannerImage =
+      settings['home_banner_image'] ||
+      'https://images.unsplash.com/photo-1496307653780-42ee777d4833?w=1200&h=500&fit=crop';
+
+    switch (layout) {
+      case 'modelo2':
+        return (
+          <section className="relative bg-blue-950 text-white py-28">
+            <img
+              src={bannerImage}
+              alt="Banner Home"
+              className="absolute inset-0 w-full h-full object-cover brightness-75"
+            />
+            <div className="relative max-w-4xl mx-auto px-4 py-20 text-center z-10">
+              <h1 className="text-5xl font-extrabold mb-4 drop-shadow-lg">
+                {settings['home_banner_title'] || t('home.hero.title')}
+              </h1>
+              <p className="text-2xl mb-6">
+                {settings['home_banner_subtitle'] || t('home.hero.subtitle')}
+              </p>
+              <Button
+                onClick={() => navigate('/properties')}
+                size="lg"
+                className="bg-blue-600 text-white font-semibold px-8"
+              >
+                {settings['home_banner_button'] || t('home.search.button')}
+              </Button>
+            </div>
+          </section>
+        );
+      // Outros modelos podem ser implementados aqui...
+      case 'modelo1':
+      default:
+        return (
+          <section className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white py-20">
+            <div className="absolute inset-0 bg-black opacity-20"></div>
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6">
+                {settings['home_banner_title'] || t('home.hero.title')}
+              </h1>
+              <p className="text-xl md:text-2xl mb-8 text-blue-100">
+                {settings['home_banner_subtitle'] || t('home.hero.subtitle')}
+              </p>
+              {/* Search Bar */}
+              <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
+                <div className="flex bg-white rounded-lg shadow-lg p-2">
+                  <Input
+                    type="text"
+                    placeholder={t('home.search.placeholder')}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-1 border-none text-gray-900 text-lg"
+                  />
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700 px-8">
+                    <Search className="w-5 h-5 mr-2" />
+                    {t('home.search.button')}
+                  </Button>
+                </div>
+              </form>
+            </div>
+            <img
+              src={bannerImage}
+              alt="Banner Home"
+              className="absolute inset-0 w-full h-full object-cover opacity-35"
+            />
+          </section>
+        );
+    }
+  }
+
+  // About Section customizada com imagem
+  function renderAboutSection() {
+    const aboutImage =
+      settings['about_section_image'] ||
+      'https://images.unsplash.com/photo-1496307653780-42ee777d4833?w=600&h=400&fit=crop';
+
+    return (
+      <section className="py-16 bg-gray-50 dark:bg-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+                {settings['about_section_title'] || t('home.about.title')}
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
+                {settings['about_section_text'] || t('home.about.text')}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="text-center p-6 bg-white dark:bg-slate-700 rounded-lg shadow-md">
+                  <Home className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">500+</h3>
+                  <p className="text-gray-600 dark:text-gray-300">Imóveis</p>
+                </div>
+                <div className="text-center p-6 bg-white dark:bg-slate-700 rounded-lg shadow-md">
+                  <Users className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">1000+</h3>
+                  <p className="text-gray-600 dark:text-gray-300">Clientes</p>
+                </div>
+                <div className="text-center p-6 bg-white dark:bg-slate-700 rounded-lg shadow-md">
+                  <Award className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">15</h3>
+                  <p className="text-gray-600 dark:text-gray-300">Anos</p>
+                </div>
+              </div>
+            </div>
+            <div className="relative">
+              <img
+                src={aboutImage}
+                alt="Sobre"
+                className="w-full h-96 object-cover rounded-lg shadow-lg"
+              />
+              <div className="absolute inset-0 bg-blue-600 opacity-10 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <Layout>
       <div className="min-h-screen">
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white py-20">
-          <div className="absolute inset-0 bg-black opacity-20"></div>
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              {t('home.hero.title')}
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 text-blue-100">
-              {t('home.hero.subtitle')}
-            </p>
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
-              <div className="flex bg-white rounded-lg shadow-lg p-2">
-                <Input
-                  type="text"
-                  placeholder={t('home.search.placeholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1 border-none text-gray-900 text-lg"
-                />
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 px-8">
-                  <Search className="w-5 h-5 mr-2" />
-                  {t('home.search.button')}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </section>
+        {renderHero()}
 
         {/* Featured Properties */}
         <section className="py-16 bg-white dark:bg-slate-900">
@@ -162,45 +292,7 @@ const HomePage = () => {
         </section>
 
         {/* About Section */}
-        <section className="py-16 bg-gray-50 dark:bg-slate-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
-                  {t('home.about.title')}
-                </h2>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-                  {t('home.about.text')}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  <div className="text-center p-6 bg-white dark:bg-slate-700 rounded-lg shadow-md">
-                    <Home className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">500+</h3>
-                    <p className="text-gray-600 dark:text-gray-300">Imóveis</p>
-                  </div>
-                  <div className="text-center p-6 bg-white dark:bg-slate-700 rounded-lg shadow-md">
-                    <Users className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">1000+</h3>
-                    <p className="text-gray-600 dark:text-gray-300">Clientes</p>
-                  </div>
-                  <div className="text-center p-6 bg-white dark:bg-slate-700 rounded-lg shadow-md">
-                    <Award className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">15</h3>
-                    <p className="text-gray-600 dark:text-gray-300">Anos</p>
-                  </div>
-                </div>
-              </div>
-              <div className="relative">
-                <img
-                  src="https://images.unsplash.com/photo-1496307653780-42ee777d4833?w=600&h=400&fit=crop"
-                  alt="About Us"
-                  className="w-full h-96 object-cover rounded-lg shadow-lg"
-                />
-                <div className="absolute inset-0 bg-blue-600 opacity-10 rounded-lg"></div>
-              </div>
-            </div>
-          </div>
-        </section>
+        {renderAboutSection()}
       </div>
     </Layout>
   );
