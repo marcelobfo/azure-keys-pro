@@ -69,6 +69,16 @@ const LeadsManagement = () => {
   };
 
   const updateLeadStatus = async (leadId: string, newStatus: string) => {
+    if (
+      !['new', 'contacted', 'qualified', 'converted', 'lost'].includes(newStatus)
+    ) {
+      toast({
+        title: "Status inválido",
+        description: "Selecione um status válido.",
+        variant: "destructive"
+      });
+      return;
+    }
     try {
       const { error } = await supabase
         .from('leads')
@@ -97,6 +107,7 @@ const LeadsManagement = () => {
     }
   };
 
+  // Corrigidos badges e tratamento para "Qualificado" e "Perdido"
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'new':
@@ -104,9 +115,9 @@ const LeadsManagement = () => {
       case 'contacted':
         return <Badge className="bg-yellow-500">Contatado</Badge>;
       case 'qualified':
-        return <Badge className="bg-green-500">Qualificado</Badge>;
+        return <Badge className="bg-green-600">Qualificado</Badge>;
       case 'converted':
-        return <Badge className="bg-purple-500">Convertido</Badge>;
+        return <Badge className="bg-purple-600 text-white">Convertido</Badge>;
       case 'lost':
         return <Badge variant="destructive">Perdido</Badge>;
       default:

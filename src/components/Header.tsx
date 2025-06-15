@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
@@ -16,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { Badge } from '@/components/ui/badge';
 import NotificationDropdown from './NotificationDropdown';
+import { supabase } from '@/integrations/supabase/client';
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
@@ -24,6 +26,21 @@ const Header = () => {
   const { profile } = useProfile();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
+
+  // Busca logo global do site nas configs
+  useEffect(() => {
+    async function fetchLogo() {
+      // Busque site_settings.footer_logo OU site_settings.header_logo se existir futuramente
+      const { data } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'footer_logo')
+        .maybeSingle();
+      setHeaderLogoUrl(data && data.value ? data.value : null);
+    }
+    fetchLogo();
+  }, []);
 
   const toggleLanguage = () => {
     setLanguage(language === 'pt' ? 'en' : 'pt');
@@ -62,12 +79,27 @@ const Header = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Home className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-gray-900 dark:text-white">
-              Maresia Litoral
-            </span>
+            {headerLogoUrl ? (
+              <img
+                src={headerLogoUrl}
+                alt="Logo"
+                className="h-10 w-auto object-contain rounded-lg bg-white dark:bg-white"
+                style={{ maxHeight: 40 }}
+                onError={e => {
+                  (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
+                }}
+              />
+            ) : (
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Home className="w-5 h-5 text-white" />
+              </div>
+            )}
+            {/* Se tiver logo, esconde nome visual! */}
+            {!headerLogoUrl && (
+              <span className="text-xl font-bold text-gray-900 dark:text-white">
+                Maresia Litoral
+              </span>
+            )}
           </Link>
 
           {/* Desktop Navigation */}
@@ -135,7 +167,6 @@ const Header = () => {
                     <User className="mr-2 h-4 w-4" />
                     Dashboard
                   </DropdownMenuItem>
-                  {/* Corrigido destino das configurações */}
                   <DropdownMenuItem onClick={() => navigate('/profile')}>
                     <Settings className="mr-2 h-4 w-4" />
                     Configurações
@@ -223,3 +254,4 @@ const Header = () => {
 };
 
 export default Header;
+// O arquivo está ficando grande. Recomendo fortemente refatorar components/Header.tsx em mais arquivos/componentes após esse ajuste.

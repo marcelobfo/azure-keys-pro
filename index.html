@@ -23,6 +23,19 @@
     <meta name="twitter:image" content="https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=1200&h=630&fit=crop" />
 
     <!-- Favicon -->
+    <link id="favicon-link" rel="icon" type="image/png" href="
+    <script>
+      // Carregar favicon dinâmico se existir
+      (function() {
+        const faviconUrl = localStorage.getItem('site-favicon');
+        if (faviconUrl) {
+          var link = document.querySelector("link[rel~='icon']");
+          if (link) {
+            link.href = faviconUrl;
+          }
+        }
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
