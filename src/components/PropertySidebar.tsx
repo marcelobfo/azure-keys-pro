@@ -30,13 +30,36 @@ const PropertySidebar: React.FC<PropertySidebarProps> = ({ property }) => {
   const getStatusLabel = (status: string) => {
     switch (status.toLowerCase()) {
       case "active":
+      case "available":
         return "Disponível";
       case "sold":
         return "Vendido";
       case "pending":
         return "Pendente";
+      case "rented":
+        return "Alugado";
+      case "reserved":
+        return "Reservado";
       default:
         return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "active":
+      case "available":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-800";
+      case "sold":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 border-red-200 dark:border-red-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800";
+      case "rented":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 border-purple-200 dark:border-purple-800";
+      case "reserved":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300 border-orange-200 dark:border-orange-800";
+      default:
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border-blue-200 dark:border-blue-800";
     }
   };
 
@@ -89,7 +112,7 @@ const PropertySidebar: React.FC<PropertySidebarProps> = ({ property }) => {
           </div>
           <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-slate-600">
             <span className="font-medium text-gray-600 dark:text-gray-400">Status:</span>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(property.status)}`}>
               {getStatusLabel(property.status)}
             </span>
           </div>

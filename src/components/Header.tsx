@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -26,20 +25,29 @@ const Header = () => {
   const { profile } = useProfile();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
+  const [lightLogoUrl, setLightLogoUrl] = useState<string | null>(null);
+  const [darkLogoUrl, setDarkLogoUrl] = useState<string | null>(null);
 
-  // Busca logo global do site nas configs
+  // Busca logos separadas para tema claro e escuro
   useEffect(() => {
-    async function fetchLogo() {
-      // Busque site_settings.footer_logo OU site_settings.header_logo se existir futuramente
+    async function fetchLogos() {
       const { data } = await supabase
         .from('site_settings')
-        .select('value')
-        .eq('key', 'footer_logo')
-        .maybeSingle();
-      setHeaderLogoUrl(data && data.value ? data.value : null);
+        .select('key, value')
+        .in('key', ['footer_logo', 'header_logo_light', 'header_logo_dark']);
+      
+      if (data) {
+        const settings = data.reduce((acc, item) => {
+          acc[item.key] = item.value;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        // Usar logos específicas se existirem, senão usar footer_logo como fallback
+        setLightLogoUrl(settings.header_logo_light || settings.footer_logo || null);
+        setDarkLogoUrl(settings.header_logo_dark || settings.footer_logo || null);
+      }
     }
-    fetchLogo();
+    fetchLogos();
   }, []);
 
   const toggleLanguage = () => {
@@ -73,17 +81,20 @@ const Header = () => {
     { href: '/contact', label: 'Contato', icon: Phone },
   ];
 
+  // Determina qual logo usar baseado no tema
+  const currentLogo = theme === 'dark' ? darkLogoUrl : lightLogoUrl;
+
   return (
     <header className="bg-white dark:bg-slate-900 shadow-sm border-b border-gray-200 dark:border-slate-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            {headerLogoUrl ? (
+            {currentLogo ? (
               <img
-                src={headerLogoUrl}
+                src={currentLogo}
                 alt="Logo"
-                className="h-10 w-auto object-contain rounded-lg bg-white dark:bg-white"
+                className="h-10 w-auto object-contain rounded-lg bg-white dark:bg-transparent"
                 style={{ maxHeight: 40 }}
                 onError={e => {
                   (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
@@ -94,8 +105,8 @@ const Header = () => {
                 <Home className="w-5 h-5 text-white" />
               </div>
             )}
-            {/* Se tiver logo, esconde nome visual! */}
-            {!headerLogoUrl && (
+            {/* Se não tiver logo, mostra nome visual */}
+            {!currentLogo && (
               <span className="text-xl font-bold text-gray-900 dark:text-white">
                 Maresia Litoral
               </span>

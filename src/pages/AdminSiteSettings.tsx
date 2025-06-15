@@ -39,7 +39,6 @@ const TEMPLATE_PREVIEWS = [
   },
 ];
 
-// Definição dos campos por aba/página
 const HOMEPAGE_SETTINGS = [
   {
     key: 'home_banner_title',
@@ -91,9 +90,24 @@ const HOMEPAGE_SETTINGS = [
 const FOOTER_FIELDS = [
   {
     key: 'footer_logo',
-    label: 'Logo do Site (também aparecerá no cabeçalho)',
-    placeholder: 'URL da logo',
+    label: 'Logo Geral (Fallback)',
+    placeholder: 'URL da logo geral',
     type: 'image',
+    help: 'Logo usada como fallback quando não há logos específicas para tema claro/escuro',
+  },
+  {
+    key: 'header_logo_light',
+    label: 'Logo para Tema Claro',
+    placeholder: 'URL da logo para tema claro',
+    type: 'image',
+    help: 'Logo específica para quando o site estiver no tema claro',
+  },
+  {
+    key: 'header_logo_dark',
+    label: 'Logo para Tema Escuro',
+    placeholder: 'URL da logo para tema escuro',
+    type: 'image',
+    help: 'Logo específica para quando o site estiver no tema escuro',
   },
   {
     key: 'footer_description',
@@ -386,10 +400,13 @@ const AdminSiteSettings = () => {
                         onChange={e => handleChange(field.key, e.target.value)}
                         placeholder={field.placeholder}
                       />
+                      {field.help && (
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{field.help}</div>
+                      )}
                       {field.type === 'image' && values[field.key] && (
                         <img
                           src={values[field.key]}
-                          alt="Logo Rodapé"
+                          alt="Logo Preview"
                           className="h-16 rounded mb-1 object-contain bg-white"
                           onError={e => {
                             (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'
@@ -480,4 +497,3 @@ const AdminSiteSettings = () => {
 };
 
 export default AdminSiteSettings;
-// O arquivo está grande, recomendo fortemente refatorar src/pages/AdminSiteSettings.tsx em arquivos menores após esses ajustes!
