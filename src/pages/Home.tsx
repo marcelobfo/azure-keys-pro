@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Home, Users, Award, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -6,48 +6,66 @@ import { Card, CardContent } from '../components/ui/card';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { supabase } from '@/integrations/supabase/client';
+
+type FeaturedProperty = {
+  id: string;
+  title: string;
+  price: number;
+  location: string;
+  area: number;
+  bedrooms: number;
+  images: string[];
+  property_type: string;
+  bathrooms: number;
+  city: string;
+  state: string;
+};
 
 const HomePage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [featuredProperties, setFeaturedProperties] = useState<FeaturedProperty[]>([]);
+  const [loadingFeatured, setLoadingFeatured] = useState(true);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     navigate(`/properties?search=${encodeURIComponent(searchTerm)}`);
   };
 
-  const featuredProperties = [
-    {
-      id: 1,
-      title: 'Casa Moderna no Centro',
-      price: 'R$ 850.000',
-      location: 'São Paulo, SP',
-      area: '180m²',
-      bedrooms: 3,
-      image: 'https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=400&h=300&fit=crop'
-    },
-    {
-      id: 2,
-      title: 'Apartamento Luxo Vista Mar',
-      price: 'R$ 1.200.000',
-      location: 'Rio de Janeiro, RJ',
-      area: '120m²',
-      bedrooms: 2,
-      image: 'https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=400&h=300&fit=crop'
-    },
-    {
-      id: 3,
-      title: 'Cobertura Duplex',
-      price: 'R$ 2.100.000',
-      location: 'Belo Horizonte, MG',
-      area: '250m²',
-      bedrooms: 4,
-      image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=400&h=300&fit=crop'
+  useEffect(() => {
+    async function loadFeatured() {
+      setLoadingFeatured(true);
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('is_featured', true)
+        .limit(8)
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setFeaturedProperties(
+          (data as any[]).map((p) => ({
+            id: p.id,
+            title: p.title,
+            price: Number(p.price),
+            location: p.location,
+            area: p.area ?? 0,
+            bedrooms: p.bedrooms ?? 0,
+            bathrooms: p.bathrooms ?? 0,
+            property_type: p.property_type ?? '',
+            city: p.city ?? '',
+            state: p.state ?? '',
+            images: p.images ?? [],
+          }))
+        );
+      } else {
+        setFeaturedProperties([]);
+      }
+      setLoadingFeatured(false);
     }
-  ];
-
-  // Não há mais propriedades em destaque sendo exibidas!
+    loadFeatured();
+  }, []);
 
   return (
     <Layout>
@@ -90,10 +108,56 @@ const HomePage = () => {
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-300">
                 {/* Mensagem caso não haja imóveis */}
-                Nenhum imóvel de destaque no momento.
+                {loadingFeatured
+                  ? 'Carregando imóveis em destaque...'
+                  : featuredProperties.length === 0
+                  ? 'Nenhum imóvel de destaque no momento.'
+                  : null}
               </p>
             </div>
-            {/* Aqui futuramente serão exibidos imóveis de verdade; não mostra nada por enquanto */}
+            {/* Grid de imóveis em destaque */}
+            {featuredProperties.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                {featuredProperties.map((property) => (
+                  <Card
+                    key={property.id}
+                    className="group hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-slate-800 cursor-pointer"
+                    onClick={() => navigate(`/property/${property.id}`)}
+                  >
+                    <div className="relative overflow-hidden">
+                      <img
+                        src={
+                          property.images?.[0] ||
+                          'https://images.unsplash.com/photo-1496307653780-42ee777d4833?w=600&h=400&fit=crop'
+                        }
+                        alt={property.title}
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                        {property.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })}
+                      </div>
+                      <div className="absolute top-4 left-4 bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm font-medium">
+                        {property.property_type}
+                      </div>
+                    </div>
+                    <CardContent className="p-5">
+                      <h3 className="text-lg font-semibold mb-2 group-hover:text-blue-600 transition-colors">
+                        {property.title}
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-300 mb-2 flex items-center truncate">
+                        <MapPin className="w-4 h-4 mr-1" />
+                        {property.location}
+                      </p>
+                      <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                        <span>{property.area}m²</span>
+                        <span>{property.bedrooms} quartos</span>
+                        <span>{property.bathrooms} banheiros</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
