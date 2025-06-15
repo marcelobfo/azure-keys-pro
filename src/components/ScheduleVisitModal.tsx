@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
-import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar } from 'lucide-react';
+import { useVisitForm } from '@/hooks/useVisitForm';
+import { validateVisitForm, createVisitData } from '@/utils/visitFormValidation';
+import VisitForm from './VisitForm';
 
 // Extend props to allow button/style customization
 interface ScheduleVisitModalProps {
@@ -28,22 +28,16 @@ const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    client_name: '',
-    client_email: '',
-    client_phone: '',
-    visit_date: '',
-    visit_time: '',
-    notes: ''
-  });
+  const { formData, handleChange, resetForm } = useVisitForm();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.client_name.trim() || !formData.client_email.trim() || !formData.visit_date || !formData.visit_time) {
+    const validationError = validateVisitForm(formData);
+    if (validationError) {
       toast({
         title: "Campos obrigatórios",
-        description: "Nome, email, data e horário são obrigatórios.",
+        description: validationError,
         variant: "destructive",
       });
       return;
@@ -52,16 +46,7 @@ const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({
     setLoading(true);
 
     try {
-      const visitData = {
-        property_id: propertyId,
-        client_name: formData.client_name.trim(),
-        client_email: formData.client_email.trim(),
-        client_phone: formData.client_phone.trim(),
-        visit_date: formData.visit_date,
-        visit_time: formData.visit_time,
-        notes: formData.notes.trim() || null,
-        status: 'scheduled'
-      };
+      const visitData = createVisitData(formData, propertyId);
 
       const { data, error } = await supabase
         .from('visits')
@@ -77,14 +62,7 @@ const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({
         description: "Visita agendada com sucesso!",
       });
 
-      setFormData({
-        client_name: '',
-        client_email: '',
-        client_phone: '',
-        visit_date: '',
-        visit_time: '',
-        notes: ''
-      });
+      resetForm();
       setOpen(false);
 
     } catch (error: any) {
@@ -98,16 +76,6 @@ const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({
       setLoading(false);
     }
   };
-
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // Get today's date for min date
-  const today = new Date().toISOString().split('T')[0];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -127,78 +95,13 @@ const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({
             {propertyTitle}
           </p>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="client_name">Nome Completo *</Label>
-            <Input
-              id="client_name"
-              value={formData.client_name}
-              onChange={(e) => handleChange('client_name', e.target.value)}
-              placeholder="Seu nome completo"
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="client_email">E-mail *</Label>
-            <Input
-              id="client_email"
-              type="email"
-              value={formData.client_email}
-              onChange={(e) => handleChange('client_email', e.target.value)}
-              placeholder="seu@email.com"
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="client_phone">Telefone *</Label>
-            <Input
-              id="client_phone"
-              value={formData.client_phone}
-              onChange={(e) => handleChange('client_phone', e.target.value)}
-              placeholder="(11) 99999-9999"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label htmlFor="visit_date">Data da Visita *</Label>
-              <Input
-                id="visit_date"
-                type="date"
-                value={formData.visit_date}
-                onChange={(e) => handleChange('visit_date', e.target.value)}
-                min={today}
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="visit_time">Horário *</Label>
-              <Input
-                id="visit_time"
-                type="time"
-                value={formData.visit_time}
-                onChange={(e) => handleChange('visit_time', e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="notes">Observações</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => handleChange('notes', e.target.value)}
-              placeholder="Alguma preferência de horário ou observação..."
-              rows={3}
-            />
-          </div>
-
-          <div className="flex justify-end space-x-2">
+        <form onSubmit={handleSubmit}>
+          <VisitForm 
+            formData={formData}
+            onFieldChange={handleChange}
+            loading={loading}
+          />
+          <div className="flex justify-end space-x-2 mt-4">
             <Button 
               type="button" 
               variant="outline" 
@@ -218,4 +121,3 @@ const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({
 };
 
 export default ScheduleVisitModal;
-
