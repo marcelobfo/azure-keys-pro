@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -84,12 +83,18 @@ const PropertyDetail = () => {
     }).format(price);
   };
 
-  // Tradução do status
+  // Tradução do status corrigida
   const getStatusLabel = (status: string) => {
-    if (status === "active") return "Disponível";
-    if (status === "sold") return "Vendido";
-    if (status === "pending") return "Pendente";
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    switch (status.toLowerCase()) {
+      case "active":
+        return "Disponível";
+      case "sold":
+        return "Vendido";
+      case "pending":
+        return "Pendente";
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
   };
 
   if (loading) {
@@ -324,4 +329,3 @@ const PropertyDetail = () => {
 };
 
 export default PropertyDetail;
-
