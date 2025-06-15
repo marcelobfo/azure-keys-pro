@@ -68,9 +68,9 @@ const LeadsManagement = () => {
   };
 
   const updateLeadStatus = async (leadId: string, newStatus: string) => {
-    if (
-      !['new', 'contacted', 'qualified', 'converted', 'lost'].includes(newStatus)
-    ) {
+    // Defina valores válidos para comparação (todos minúsculos)
+    const validStatuses = ['new', 'contacted', 'qualified', 'converted', 'lost'];
+    if (!validStatuses.includes(newStatus)) {
       toast({
         title: "Status inválido",
         description: "Selecione um status válido.",
@@ -88,9 +88,11 @@ const LeadsManagement = () => {
         throw error;
       }
 
-      setLeads(prev => prev.map(lead => 
-        lead.id === leadId ? { ...lead, status: newStatus } : lead
-      ));
+      setLeads(prev =>
+        prev.map(lead =>
+          lead.id === leadId ? { ...lead, status: newStatus } : lead
+        )
+      );
 
       toast({
         title: "Status atualizado",
@@ -290,7 +292,10 @@ const LeadsManagement = () => {
 
                     <div className="flex flex-col lg:flex-row gap-2 lg:ml-4">
                       {/* Corrigir as opções do Select para garantir que "Convertido" e "Perdido" estão corretas */}
-                      <Select value={lead.status} onValueChange={(value) => updateLeadStatus(lead.id, value)}>
+                      <Select value={lead.status} onValueChange={(value) => {
+                        console.log('MUDANDO STATUS PARA:', value);
+                        updateLeadStatus(lead.id, value);
+                      }}>
                         <SelectTrigger className="w-full lg:w-32">
                           <SelectValue />
                         </SelectTrigger>
