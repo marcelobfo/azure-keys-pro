@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
@@ -93,6 +92,50 @@ const SITE_SETTINGS: SiteSetting[] = [
     label: 'Modelo Visual da Home (clique para escolher)',
     type: 'custom',
     help: 'Escolha visualmente o layout principal da página HOME. Novos modelos podem ser implementados sob demanda.',
+  },
+];
+
+const FOOTER_FIELDS = [
+  {
+    key: 'footer_logo',
+    label: 'Logo do Rodapé (URL)',
+    placeholder: 'URL da logo para o rodapé',
+    type: 'image',
+  },
+  {
+    key: 'footer_description',
+    label: 'Descrição ou texto do rodapé',
+    placeholder: 'Breve texto sobre a imobiliária ou site',
+  },
+  {
+    key: 'footer_email',
+    label: 'E-mail',
+    placeholder: 'contato@exemplo.com',
+  },
+  {
+    key: 'footer_phone',
+    label: 'Telefone',
+    placeholder: '+55 (00) 99999-9999',
+  },
+  {
+    key: 'footer_address',
+    label: 'Endereço',
+    placeholder: 'Rua Exemplo, 123 - Cidade/UF',
+  },
+  {
+    key: 'footer_instagram',
+    label: 'Instagram (link)',
+    placeholder: 'https://instagram.com/suaempresa',
+  },
+  {
+    key: 'footer_whatsapp',
+    label: 'WhatsApp (link)',
+    placeholder: 'https://wa.me/11999999999',
+  },
+  {
+    key: 'footer_facebook',
+    label: 'Facebook (link)',
+    placeholder: 'https://facebook.com/suaempresa',
   },
 ];
 
@@ -195,30 +238,17 @@ const AdminSiteSettings = () => {
                 e.preventDefault();
                 saveSettings();
               }}>
-              {/* Render all settings except home_layout */}
+              {/* Render all settings exceto home_layout */}
               {SITE_SETTINGS.filter(s => s.key !== 'home_layout').map(setting => (
                 <div key={setting.key} className="space-y-2">
                   <Label htmlFor={setting.key}>{setting.label}</Label>
-                  {setting.type === 'select' ? (
-                    <select
-                      id={setting.key}
-                      className="w-full px-3 py-2 border rounded bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
-                      value={values[setting.key] || ''}
-                      onChange={e => handleChange(setting.key, e.target.value)}
-                    >
-                      {setting.options?.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <Input
-                      id={setting.key}
-                      type={setting.type === 'image' ? 'url' : 'text'}
-                      value={values[setting.key] || ''}
-                      onChange={e => handleChange(setting.key, e.target.value)}
-                      placeholder={setting.placeholder}
-                    />
-                  )}
+                  <Input
+                    id={setting.key}
+                    type={setting.type === 'image' ? 'url' : 'text'}
+                    value={values[setting.key] || ''}
+                    onChange={e => handleChange(setting.key, e.target.value)}
+                    placeholder={setting.placeholder}
+                  />
                   {setting.help && (
                     <div className="text-xs text-gray-500 dark:text-gray-400">{setting.help}</div>
                   )}
@@ -228,10 +258,43 @@ const AdminSiteSettings = () => {
                       src={values[setting.key]}
                       alt={`Preview ${setting.label}`}
                       className="h-28 rounded shadow mb-2 mt-1 object-cover"
+                      onError={e => {
+                        (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'
+                      }}
                     />
                   )}
                 </div>
               ))}
+
+              {/* Campos para o rodapé */}
+              <div className="border-t pt-6 mt-6">
+                <div className="font-bold mb-2">Rodapé</div>
+                <div className="space-y-4">
+                  {FOOTER_FIELDS.map(field => (
+                    <div key={field.key} className="space-y-1">
+                      <Label htmlFor={field.key}>{field.label}</Label>
+                      <Input
+                        id={field.key}
+                        type={field.type === 'image' ? 'url' : 'text'}
+                        value={values[field.key] || ''}
+                        onChange={e => handleChange(field.key, e.target.value)}
+                        placeholder={field.placeholder}
+                      />
+                      {/* Preview de imagem da logo footer */}
+                      {field.type === 'image' && values[field.key] && (
+                        <img
+                          src={values[field.key]}
+                          alt="Logo Rodapé"
+                          className="h-16 rounded mb-1 object-contain bg-white"
+                          onError={e => {
+                            (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'
+                          }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               {/* Seleção visual do template */}
               <div className="space-y-2 mt-8">
@@ -250,9 +313,12 @@ const AdminSiteSettings = () => {
                       <img
                         src={tmpl.img}
                         alt={tmpl.name}
-                        className="w-full h-24 object-cover rounded-md mb-2 group-hover:scale-105 transition-transform"
+                        className="w-full h-24 object-cover rounded-md mb-2 group-hover:scale-105 transition-transform bg-white"
                         draggable={false}
                         style={{ pointerEvents: 'none' }}
+                        onError={e => {
+                          (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'
+                        }}
                       />
                       <div className="font-semibold text-sm mb-1 text-center">{tmpl.name}</div>
                       <div className="text-xs text-gray-500 mb-1 text-center">{tmpl.desc}</div>
