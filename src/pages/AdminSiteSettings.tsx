@@ -10,17 +10,45 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Visual preview for templates
+const TEMPLATE_PREVIEWS = [
+  {
+    value: 'modelo1',
+    name: 'Modelo Clássico',
+    img: 'https://img.lovable-cdn.dev/template-home1.png', // fictitious, swap for a real preview later
+    desc: 'Banner + busca central',
+  },
+  {
+    value: 'modelo2',
+    name: 'Banner Grande',
+    img: 'https://img.lovable-cdn.dev/template-home2.png',
+    desc: 'Imagem full e chamada centralizadas',
+  },
+  {
+    value: 'modelo3',
+    name: 'Com Destaques Laterais',
+    img: 'https://img.lovable-cdn.dev/template-home3.png',
+    desc: 'Destaques de imóveis com visual lateral',
+  },
+  {
+    value: 'modelo4',
+    name: 'Hero Texto Central',
+    img: 'https://img.lovable-cdn.dev/template-home4.png',
+    desc: 'Conteúdo com texto centralizado',
+  },
+];
+
 type SiteSetting = {
   key: string;
   label: string;
   placeholder?: string;
-  type?: 'text' | 'image' | 'select';
+  type?: 'text' | 'image' | 'select' | 'custom';
   options?: { label: string; value: string }[];
   help?: string;
 };
 
+// Deixa home_layout como type: 'custom' (será tratado fora)
 const SITE_SETTINGS: SiteSetting[] = [
-  // Textos Institucionais
   {
     key: 'home_banner_title',
     label: 'Título do Banner Principal da Home',
@@ -62,15 +90,9 @@ const SITE_SETTINGS: SiteSetting[] = [
   },
   {
     key: 'home_layout',
-    label: 'Modelo Visual da Home',
-    type: 'select',
-    options: [
-      { label: 'Modelo Clássico', value: 'modelo1' },
-      { label: 'Banner Grande', value: 'modelo2' },
-      { label: 'Com Destaques Laterais', value: 'modelo3' },
-      { label: 'Hero Texto Central', value: 'modelo4' },
-    ],
-    help: 'Escolha o visual principal da página HOME. Novos modelos podem ser implementados sob demanda.',
+    label: 'Modelo Visual da Home (clique para escolher)',
+    type: 'custom',
+    help: 'Escolha visualmente o layout principal da página HOME. Novos modelos podem ser implementados sob demanda.',
   },
 ];
 
@@ -173,7 +195,8 @@ const AdminSiteSettings = () => {
                 e.preventDefault();
                 saveSettings();
               }}>
-              {SITE_SETTINGS.map(setting => (
+              {/* Render all settings except home_layout */}
+              {SITE_SETTINGS.filter(s => s.key !== 'home_layout').map(setting => (
                 <div key={setting.key} className="space-y-2">
                   <Label htmlFor={setting.key}>{setting.label}</Label>
                   {setting.type === 'select' ? (
@@ -209,6 +232,41 @@ const AdminSiteSettings = () => {
                   )}
                 </div>
               ))}
+
+              {/* Seleção visual do template */}
+              <div className="space-y-2 mt-8">
+                <Label>Modelo Visual da Home</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  {TEMPLATE_PREVIEWS.map(tmpl => (
+                    <div
+                      key={tmpl.value}
+                      onClick={() => handleChange('home_layout', tmpl.value)}
+                      className={`cursor-pointer group rounded-lg border-2 transition-all flex flex-col items-center p-3 ${
+                        values['home_layout'] === tmpl.value
+                          ? 'border-blue-600 ring-2 ring-blue-400'
+                          : 'border-gray-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <img
+                        src={tmpl.img}
+                        alt={tmpl.name}
+                        className="w-full h-24 object-cover rounded-md mb-2 group-hover:scale-105 transition-transform"
+                        draggable={false}
+                        style={{ pointerEvents: 'none' }}
+                      />
+                      <div className="font-semibold text-sm mb-1 text-center">{tmpl.name}</div>
+                      <div className="text-xs text-gray-500 mb-1 text-center">{tmpl.desc}</div>
+                      {values['home_layout'] === tmpl.value && (
+                        <div className="text-xs text-blue-700 font-bold mt-1">Selecionado</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Escolha visualmente como a Home será apresentada no site.
+                </div>
+              </div>
+
               <Button type="submit" className="w-full mt-6" disabled={isSaving}>
                 {isSaving ? "Salvando..." : "Salvar Configurações"}
               </Button>
