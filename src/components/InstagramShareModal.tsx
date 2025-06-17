@@ -39,6 +39,7 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
     generateShareContent, 
     downloadImage, 
     copyCaption, 
+    shareViaWebAPI,
     shareData, 
     isGenerating,
     setShareData 
@@ -55,32 +56,6 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
       setShareData(null);
     }
   }, [isOpen]);
-
-  const handleShare = async () => {
-    if (!shareData) return;
-
-    // Tentar usar Web Share API se disponível
-    if (navigator.share) {
-      try {
-        // Converter dataURL para blob
-        const response = await fetch(shareData.imageUrl);
-        const blob = await response.blob();
-        const file = new File([blob], 'imovel-instagram.jpg', { type: 'image/jpeg' });
-
-        await navigator.share({
-          title: property.title,
-          text: shareData.caption,
-          files: [file]
-        });
-      } catch (error) {
-        console.log('Erro no compartilhamento nativo, usando fallback');
-        downloadImage();
-      }
-    } else {
-      // Fallback: download da imagem
-      downloadImage();
-    }
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -128,7 +103,7 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
               {/* Botões de Ação */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
-                  onClick={handleShare}
+                  onClick={() => shareViaWebAPI()}
                   className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                 >
                   <Share2 className="w-4 h-4" />

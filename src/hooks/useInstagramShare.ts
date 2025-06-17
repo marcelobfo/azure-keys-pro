@@ -194,6 +194,11 @@ ${details.join('\n')}
     link.download = 'imovel-instagram.jpg';
     link.href = shareData.imageUrl;
     link.click();
+
+    toast({
+      title: "Download iniciado!",
+      description: "Imagem salva com sucesso",
+    });
   };
 
   const copyCaption = async () => {
@@ -214,10 +219,42 @@ ${details.join('\n')}
     }
   };
 
+  const shareViaWebAPI = async () => {
+    if (!shareData) return;
+
+    // Tentar usar Web Share API se disponível
+    if (navigator.share) {
+      try {
+        // Converter dataURL para blob
+        const response = await fetch(shareData.imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'imovel-instagram.jpg', { type: 'image/jpeg' });
+
+        await navigator.share({
+          title: 'Imóvel para Compartilhar',
+          text: shareData.caption,
+          files: [file]
+        });
+
+        toast({
+          title: "Compartilhado!",
+          description: "Conteúdo compartilhado com sucesso",
+        });
+      } catch (error) {
+        console.log('Erro no compartilhamento nativo, usando fallback');
+        downloadImage();
+      }
+    } else {
+      // Fallback: download da imagem
+      downloadImage();
+    }
+  };
+
   return {
     generateShareContent,
     downloadImage,
     copyCaption,
+    shareViaWebAPI,
     shareData,
     isGenerating,
     setShareData
