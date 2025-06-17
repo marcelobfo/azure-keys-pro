@@ -15,6 +15,12 @@ interface Property {
   city: string;
   state?: string;
   created_at: string;
+  price: number; // added new fields
+  location: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  area?: number;
+  images?: string[];
 }
 
 interface PropertySidebarProps {
