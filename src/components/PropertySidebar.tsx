@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
 import InterestModal from './InterestModal';
 import ScheduleVisitModal from './ScheduleVisitModal';
+import ShareButton from './ShareButton';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useNavigate } from 'react-router-dom';
 
@@ -79,6 +79,12 @@ const PropertySidebar: React.FC<PropertySidebarProps> = ({ property }) => {
             buttonClassName="w-full bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all duration-200 hover:shadow-xl"
             iconClassName="text-white"
             label="Agendar Visita"
+          />
+          <ShareButton
+            property={property}
+            variant="outline"
+            className="w-full hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:border-purple-300 hover:text-purple-600 shadow-lg transition-all duration-200 hover:shadow-xl"
+            showText={true}
           />
           <Button 
             variant={isFavorite(property.id) ? "default" : "outline"} 
