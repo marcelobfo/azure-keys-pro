@@ -19,6 +19,9 @@ const ChatSettings = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
+    ai_chat_enabled: true,
+    whatsapp_enabled: false,
+    whatsapp_number: '',
     api_provider: 'openai',
     api_key: '',
     welcome_message: 'Olá! Como posso ajudá-lo hoje?',
@@ -50,6 +53,9 @@ const ChatSettings = () => {
 
       if (data) {
         setFormData({
+          ai_chat_enabled: data.ai_chat_enabled ?? true,
+          whatsapp_enabled: data.whatsapp_enabled ?? false,
+          whatsapp_number: data.whatsapp_number || '',
           api_provider: data.api_provider || 'openai',
           api_key: '', // Never show the actual key
           welcome_message: data.welcome_message || 'Olá! Como posso ajudá-lo hoje?',
@@ -90,6 +96,9 @@ const ChatSettings = () => {
     try {
       const configData = {
         company: profile.company,
+        ai_chat_enabled: formData.ai_chat_enabled,
+        whatsapp_enabled: formData.whatsapp_enabled,
+        whatsapp_number: formData.whatsapp_number,
         api_provider: formData.api_provider,
         api_key_encrypted: formData.api_key || null,
         welcome_message: formData.welcome_message,
@@ -152,92 +161,129 @@ const ChatSettings = () => {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Configurações de Integração</CardTitle>
+            <CardTitle>Configurações Gerais</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="api_provider">Provedor de IA</Label>
-                  <Select value={formData.api_provider} onValueChange={(value) => handleChange('api_provider', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o provedor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="openai">OpenAI</SelectItem>
-                      <SelectItem value="anthropic">Anthropic</SelectItem>
-                      <SelectItem value="google">Google AI</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    checked={formData.ai_chat_enabled}
+                    onCheckedChange={(checked) => handleChange('ai_chat_enabled', checked)}
+                  />
+                  <Label>Chat IA ativo</Label>
                 </div>
 
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    checked={formData.whatsapp_enabled}
+                    onCheckedChange={(checked) => handleChange('whatsapp_enabled', checked)}
+                  />
+                  <Label>Botão WhatsApp ativo</Label>
+                </div>
+              </div>
+
+              {formData.whatsapp_enabled && (
                 <div>
-                  <Label htmlFor="api_key">Chave da API</Label>
+                  <Label htmlFor="whatsapp_number">Número do WhatsApp</Label>
                   <Input
-                    id="api_key"
-                    type="password"
-                    value={formData.api_key}
-                    onChange={(e) => handleChange('api_key', e.target.value)}
-                    placeholder="Digite sua chave da API"
+                    id="whatsapp_number"
+                    type="text"
+                    value={formData.whatsapp_number}
+                    onChange={(e) => handleChange('whatsapp_number', e.target.value)}
+                    placeholder="Ex: 5511999999999 (código do país + DDD + número)"
                   />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Formato: código do país + DDD + número (apenas números)
+                  </p>
                 </div>
-              </div>
+              )}
 
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  checked={formData.active}
-                  onCheckedChange={(checked) => handleChange('active', checked)}
-                />
-                <Label>Chat ativo</Label>
-              </div>
+              {formData.ai_chat_enabled && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="api_provider">Provedor de IA</Label>
+                      <Select value={formData.api_provider} onValueChange={(value) => handleChange('api_provider', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o provedor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="openai">OpenAI (GPT-4)</SelectItem>
+                          <SelectItem value="google">Google (Gemini)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              <div>
-                <Label htmlFor="welcome_message">Mensagem de Boas-vindas</Label>
-                <Textarea
-                  id="welcome_message"
-                  value={formData.welcome_message}
-                  onChange={(e) => handleChange('welcome_message', e.target.value)}
-                  placeholder="Digite a mensagem de boas-vindas do chat"
-                  rows={3}
-                />
-              </div>
+                    <div>
+                      <Label htmlFor="api_key">
+                        Chave da API {formData.api_provider === 'openai' ? '(OpenAI)' : '(Google Gemini)'}
+                      </Label>
+                      <Input
+                        id="api_key"
+                        type="password"
+                        value={formData.api_key}
+                        onChange={(e) => handleChange('api_key', e.target.value)}
+                        placeholder={formData.api_provider === 'openai' ? 'sk-...' : 'Digite sua chave do Gemini'}
+                      />
+                      <p className="text-sm text-gray-500 mt-1">
+                        {formData.api_provider === 'openai' 
+                          ? 'Obtenha em: platform.openai.com/api-keys'
+                          : 'Obtenha em: makersuite.google.com/app/apikey'
+                        }
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Respostas Personalizadas</h3>
-                
-                <div>
-                  <Label htmlFor="greeting">Saudação</Label>
-                  <Textarea
-                    id="greeting"
-                    value={formData.custom_responses.greeting}
-                    onChange={(e) => handleCustomResponseChange('greeting', e.target.value)}
-                    placeholder="Mensagem de saudação"
-                    rows={2}
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="welcome_message">Mensagem de Boas-vindas</Label>
+                    <Textarea
+                      id="welcome_message"
+                      value={formData.welcome_message}
+                      onChange={(e) => handleChange('welcome_message', e.target.value)}
+                      placeholder="Digite a mensagem de boas-vindas do chat"
+                      rows={3}
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="contact_info">Informações de Contato</Label>
-                  <Textarea
-                    id="contact_info"
-                    value={formData.custom_responses.contact_info}
-                    onChange={(e) => handleCustomResponseChange('contact_info', e.target.value)}
-                    placeholder="Como entrar em contato"
-                    rows={2}
-                  />
-                </div>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Respostas Personalizadas</h3>
+                    
+                    <div>
+                      <Label htmlFor="greeting">Saudação</Label>
+                      <Textarea
+                        id="greeting"
+                        value={formData.custom_responses.greeting}
+                        onChange={(e) => handleCustomResponseChange('greeting', e.target.value)}
+                        placeholder="Mensagem de saudação"
+                        rows={2}
+                      />
+                    </div>
 
-                <div>
-                  <Label htmlFor="business_hours">Horário de Funcionamento</Label>
-                  <Textarea
-                    id="business_hours"
-                    value={formData.custom_responses.business_hours}
-                    onChange={(e) => handleCustomResponseChange('business_hours', e.target.value)}
-                    placeholder="Horários de atendimento"
-                    rows={2}
-                  />
-                </div>
-              </div>
+                    <div>
+                      <Label htmlFor="contact_info">Informações de Contato</Label>
+                      <Textarea
+                        id="contact_info"
+                        value={formData.custom_responses.contact_info}
+                        onChange={(e) => handleCustomResponseChange('contact_info', e.target.value)}
+                        placeholder="Como entrar em contato"
+                        rows={2}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="business_hours">Horário de Funcionamento</Label>
+                      <Textarea
+                        id="business_hours"
+                        value={formData.custom_responses.business_hours}
+                        onChange={(e) => handleCustomResponseChange('business_hours', e.target.value)}
+                        placeholder="Horários de atendimento"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <Button type="submit" disabled={loading}>
                 {loading ? 'Salvando...' : 'Salvar Configurações'}
@@ -246,19 +292,21 @@ const ChatSettings = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Teste do Chat</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              Teste como o chat funcionará com as configurações atuais.
-            </p>
-            <Button variant="outline">
-              Testar Chat
-            </Button>
-          </CardContent>
-        </Card>
+        {formData.ai_chat_enabled && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Teste do Chat</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 dark:text-gray-300 mb-4">
+                Teste como o chat funcionará com as configurações atuais.
+              </p>
+              <Button variant="outline">
+                Testar Chat
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );

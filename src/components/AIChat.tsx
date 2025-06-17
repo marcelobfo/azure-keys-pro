@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Minimize2, Maximize2, Bot, User } from 'lucide-react';
 import { Button } from './ui/button';
@@ -6,12 +5,20 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Card } from './ui/card';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
   type: 'user' | 'bot';
   content: string;
   timestamp: Date;
+}
+
+interface ChatConfig {
+  ai_chat_enabled: boolean;
+  api_provider: string;
+  welcome_message: string;
+  custom_responses: any;
 }
 
 const AIChat = () => {
@@ -21,6 +28,8 @@ const AIChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [chatConfig, setChatConfig] = useState<ChatConfig | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -37,6 +46,26 @@ const AIChat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    fetchChatConfig();
+  }, []);
+
+  const fetchChatConfig = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('chat_configurations')
+        .select('ai_chat_enabled, api_provider, welcome_message, custom_responses')
+        .maybeSingle();
+
+      if (data) {
+        setIsEnabled(data.ai_chat_enabled || false);
+        setChatConfig(data as ChatConfig);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar configuração do chat:', error);
+    }
+  };
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +90,7 @@ const AIChat = () => {
     const welcomeMessage: Message = {
       id: Date.now().toString(),
       type: 'bot',
-      content: `Olá ${formData.name}! Sou seu assistente virtual. Como posso ajudá-lo com imóveis hoje?`,
+      content: chatConfig?.welcome_message || `Olá ${formData.name}! Sou seu assistente virtual. Como posso ajudá-lo com imóveis hoje?`,
       timestamp: new Date()
     };
     setMessages([welcomeMessage]);
@@ -69,19 +98,41 @@ const AIChat = () => {
 
   const sendMessageToAI = async (message: string) => {
     try {
-      const response = await fetch('/api/ai-chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message,
-          context: {
-            name: formData.name,
-            previousMessages: messages.slice(-5) // Send last 5 messages for context
-          }
-        })
-      });
+      let response;
+      
+      if (chatConfig?.api_provider === 'google') {
+        // Call Gemini API
+        response = await fetch('/api/gemini-chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message,
+            context: {
+              name: formData.name,
+              previousMessages: messages.slice(-5),
+              customResponses: chatConfig.custom_responses
+            }
+          })
+        });
+      } else {
+        // Call OpenAI API (default)
+        response = await fetch('/api/ai-chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message,
+            context: {
+              name: formData.name,
+              previousMessages: messages.slice(-5),
+              customResponses: chatConfig?.custom_responses
+            }
+          })
+        });
+      }
 
       if (!response.ok) throw new Error('Failed to get AI response');
 
@@ -127,6 +178,11 @@ const AIChat = () => {
     setMessages([]);
     setFormData({ name: '', email: '', phone: '', message: '' });
   };
+
+  // Don't render if chat is disabled
+  if (!isEnabled) {
+    return null;
+  }
 
   return (
     <>
