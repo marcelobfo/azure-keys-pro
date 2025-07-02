@@ -12,6 +12,7 @@ export type Database = {
       chat_configurations: {
         Row: {
           active: boolean | null
+          ai_chat_enabled: boolean | null
           api_key_encrypted: string | null
           api_provider: string
           company: string
@@ -20,9 +21,12 @@ export type Database = {
           id: string
           updated_at: string | null
           welcome_message: string | null
+          whatsapp_enabled: boolean | null
+          whatsapp_number: string | null
         }
         Insert: {
           active?: boolean | null
+          ai_chat_enabled?: boolean | null
           api_key_encrypted?: string | null
           api_provider?: string
           company: string
@@ -31,9 +35,12 @@ export type Database = {
           id?: string
           updated_at?: string | null
           welcome_message?: string | null
+          whatsapp_enabled?: boolean | null
+          whatsapp_number?: string | null
         }
         Update: {
           active?: boolean | null
+          ai_chat_enabled?: boolean | null
           api_key_encrypted?: string | null
           api_provider?: string
           company?: string
@@ -42,6 +49,8 @@ export type Database = {
           id?: string
           updated_at?: string | null
           welcome_message?: string | null
+          whatsapp_enabled?: boolean | null
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
