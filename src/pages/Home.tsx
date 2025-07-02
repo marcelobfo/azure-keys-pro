@@ -13,7 +13,7 @@ import PropertyPurposeButtons from '../components/PropertyPurposeButtons';
 import PropertyTag from '../components/PropertyTag';
 import { formatCurrency } from '../utils/priceUtils';
 
-type FeaturedProperty = {
+interface FeaturedProperty {
   id: string;
   title: string;
   price: number;
@@ -29,23 +29,27 @@ type FeaturedProperty = {
   purpose?: string;
   tags?: string[];
   property_code?: string;
-};
+}
 
-const getHomeSettings = async () => {
+interface SiteSettings {
+  [key: string]: string | undefined;
+}
+
+const getHomeSettings = async (): Promise<SiteSettings> => {
   const keys = [
     'home_banner_title',
-    'home_banner_subtitle',
+    'home_banner_subtitle', 
     'home_banner_button',
     'home_banner_image',
     'home_banner_type',
     'home_banner_video_url',
     'home_banner_link_url',
     'about_section_title',
-    'about_section_text',  
+    'about_section_text',
     'about_section_image',
     'home_layout',
     'home_sections_featured',
-    'home_sections_beachfront',
+    'home_sections_beachfront', 
     'home_sections_near_beach',
     'home_sections_developments',
     'home_sections_order',
@@ -55,7 +59,7 @@ const getHomeSettings = async () => {
     .select('key, value')
     .in('key', keys);
 
-  const map: Record<string, string> = {};
+  const map: SiteSettings = {};
   data?.forEach((item: any) => {
     map[item.key] = item.value || '';
   });
@@ -71,7 +75,7 @@ const HomePage = () => {
   const [nearBeachProperties, setNearBeachProperties] = useState<FeaturedProperty[]>([]);
   const [developments, setDevelopments] = useState<FeaturedProperty[]>([]);
   const [loadingFeatured, setLoadingFeatured] = useState(true);
-  const [settings, setSettings] = useState<Record<string, string | undefined>>({});
+  const [settings, setSettings] = useState<SiteSettings>({});
 
   useEffect(() => {
     async function fetchSiteSettings() {
@@ -126,7 +130,7 @@ const HomePage = () => {
         .limit(8)
         .order('created_at', { ascending: false });
 
-      const formatProperties = (data: any[]) => 
+      const formatProperties = (data: any[]): FeaturedProperty[] => 
         (data || []).map((p) => ({
           id: p.id,
           title: p.title,
