@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Home, Users, Award, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -130,8 +129,9 @@ const HomePage = () => {
         .limit(8)
         .order('created_at', { ascending: false });
 
-      const formatProperties = (data: any[]): FeaturedProperty[] => 
-        (data || []).map((p: any) => ({
+      const formatProperties = (data: any[]): FeaturedProperty[] => {
+        if (!data) return [];
+        return data.map((p: any) => ({
           id: p.id,
           title: p.title,
           price: Number(p.price),
@@ -148,6 +148,7 @@ const HomePage = () => {
           property_code: p.property_code,
           images: p.images ?? [],
         }));
+      };
 
       setFeaturedProperties(formatProperties(featured || []));
       setBeachfrontProperties(formatProperties(beachfront || []));
