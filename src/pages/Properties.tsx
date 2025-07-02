@@ -52,7 +52,7 @@ const PropertiesPage = () => {
         throw error;
       }
 
-      const formattedProperties: Property[] = data?.map(property => ({
+      const formattedProperties: Property[] = data?.map((property: any) => ({
         id: property.id,
         title: property.title,
         price: property.price,

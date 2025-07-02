@@ -32,7 +32,7 @@ interface FeaturedProperty {
 }
 
 interface SiteSettings {
-  [key: string]: string | undefined;
+  [key: string]: string;
 }
 
 const getHomeSettings = async (): Promise<SiteSettings> => {
@@ -131,7 +131,7 @@ const HomePage = () => {
         .order('created_at', { ascending: false });
 
       const formatProperties = (data: any[]): FeaturedProperty[] => 
-        (data || []).map((p) => ({
+        (data || []).map((p: any) => ({
           id: p.id,
           title: p.title,
           price: Number(p.price),
