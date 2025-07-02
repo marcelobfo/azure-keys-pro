@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import PropertyCard from '../components/PropertyCard';
 import PropertyFilters from '../components/PropertyFilters';
 import { usePropertyFilters } from '../hooks/usePropertyFilters';
@@ -13,17 +13,25 @@ interface Property {
   id: string;
   title: string;
   price: number;
+  rental_price?: number;
   location: string;
   area: number;
   bedrooms: number;
   bathrooms: number;
   type: string;
+  purpose?: string;
   image: string;
+  tags?: string[];
+  is_beachfront?: boolean;
+  is_near_beach?: boolean;
+  is_development?: boolean;
+  property_code?: string;
 }
 
 const PropertiesPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,12 +56,19 @@ const PropertiesPage = () => {
         id: property.id,
         title: property.title,
         price: property.price,
+        rental_price: property.rental_price,
         location: property.location,
         area: property.area || 0,
         bedrooms: property.bedrooms || 0,
         bathrooms: property.bathrooms || 0,
         type: property.property_type,
-        image: property.images?.[0] || '/placeholder.svg'
+        purpose: property.purpose,
+        image: property.images?.[0] || '/placeholder.svg',
+        tags: property.tags,
+        is_beachfront: property.is_beachfront,
+        is_near_beach: property.is_near_beach,
+        is_development: property.is_development,
+        property_code: property.property_code
       })) || [];
 
       setProperties(formattedProperties);
@@ -65,6 +80,20 @@ const PropertiesPage = () => {
   };
 
   const { filters, setFilters, filteredProperties, clearFilters } = usePropertyFilters(properties);
+
+  // Aplicar filtros da URL ao carregar
+  useEffect(() => {
+    const searchFromUrl = searchParams.get('search');
+    const purposeFromUrl = searchParams.get('purpose');
+    
+    if (searchFromUrl || purposeFromUrl) {
+      setFilters(prev => ({
+        ...prev,
+        search: searchFromUrl || '',
+        purpose: purposeFromUrl || ''
+      }));
+    }
+  }, [searchParams, setFilters]);
 
   if (loading) {
     return (
@@ -82,7 +111,9 @@ const PropertiesPage = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            {t('properties.title')}
+            {filters.purpose === 'rent' ? 'Imóveis para Alugar' : 
+             filters.purpose === 'sale' ? 'Imóveis para Comprar' : 
+             t('properties.title')}
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300">
             Encontre o imóvel perfeito para você

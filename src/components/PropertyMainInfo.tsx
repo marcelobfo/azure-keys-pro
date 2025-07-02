@@ -6,13 +6,19 @@ import { Badge } from '@/components/ui/badge';
 import PropertyStats from './PropertyStats';
 import PropertyMultimedia from './PropertyMultimedia';
 import PropertyFeatures from './PropertyFeatures';
+import PropertyTag from './PropertyTag';
+import SimilarProperties from './SimilarProperties';
+import { formatCurrency } from '@/utils/priceUtils';
 
 interface Property {
+  id: string;
   title: string;
   location: string;
   city: string;
   property_type: string;
   price: number;
+  rental_price?: number;
+  purpose?: string;
   bedrooms: number;
   bathrooms: number;
   area: number;
@@ -20,6 +26,9 @@ interface Property {
   features?: string[];
   virtual_tour_url?: string;
   video_url?: string;
+  tags?: string[];
+  property_code?: string;
+  images: string[];
 }
 
 interface PropertyMainInfoProps {
@@ -27,22 +36,22 @@ interface PropertyMainInfoProps {
 }
 
 const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(price);
-  };
-
   return (
     <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-gray-50 dark:from-slate-800 dark:to-slate-900">
       <CardContent className="p-8">
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div className="flex-1">
-            <h1 className="text-4xl font-bold mb-3 text-gray-900 dark:text-white leading-tight">
-              {property.title}
-            </h1>
+            <div className="flex items-center gap-3 mb-3">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white leading-tight">
+                {property.title}
+              </h1>
+              {property.property_code && (
+                <Badge variant="outline" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                  {property.property_code}
+                </Badge>
+              )}
+            </div>
             <div className="flex items-center text-gray-600 dark:text-gray-300 mb-3">
               <MapPin className="w-5 h-5 mr-2 text-blue-600" />
               <span className="text-lg">{property.location}, {property.city}</span>
@@ -56,12 +65,49 @@ const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
           </Badge>
         </div>
 
+        {/* Tags */}
+        {property.tags && property.tags.length > 0 && (
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-2">
+              {property.tags.map((tag, index) => (
+                <PropertyTag key={index} tag={tag} />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Price */}
         <div className="mb-8 p-6 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl text-white shadow-lg">
-          <div className="text-4xl font-bold">
-            {formatPrice(property.price)}
-          </div>
-          <div className="text-blue-100 mt-1">Valor do imóvel</div>
+          {property.purpose === 'both' && property.rental_price ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(property.price)}
+                </div>
+                <div className="text-blue-100">Preço de Venda</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(property.rental_price)}/mês
+                </div>
+                <div className="text-blue-100">Preço de Aluguel</div>
+              </div>
+            </div>
+          ) : property.purpose === 'rent' && property.rental_price ? (
+            <>
+              <div className="text-4xl font-bold">
+                {formatCurrency(property.rental_price)}/mês
+              </div>
+              <div className="text-blue-100 mt-1">Valor do aluguel</div>
+            </>
+          ) : (
+            <>
+              <div className="text-4xl font-bold">
+                {formatCurrency(property.price)}
+              </div>
+              <div className="text-blue-100 mt-1">Valor do imóvel</div>
+            </>
+          )}
         </div>
 
         {/* Property Stats */}
@@ -91,6 +137,9 @@ const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
         {property.features && (
           <PropertyFeatures features={property.features} />
         )}
+
+        {/* Similar Properties */}
+        <SimilarProperties currentProperty={property} />
       </CardContent>
     </Card>
   );
