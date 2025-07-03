@@ -25,6 +25,7 @@ interface FeaturedProperty {
   purpose?: string;
   tags?: string[];
   property_code?: string;
+  features?: string[];
 }
 
 interface PropertyCardEnhancedProps {
@@ -36,6 +37,10 @@ const PropertyCardEnhanced: React.FC<PropertyCardEnhancedProps> = ({ property })
   const { toggleFavorite, isFavorite } = useFavorites(() => {
     navigate('/auth');
   });
+
+  // Garantir que tags sempre seja um array
+  const propertyTags = Array.isArray(property.tags) ? property.tags : [];
+  const propertyFeatures = Array.isArray(property.features) ? property.features : [];
 
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-slate-800 cursor-pointer">
@@ -52,20 +57,26 @@ const PropertyCardEnhanced: React.FC<PropertyCardEnhancedProps> = ({ property })
           className="w-full h-60 object-cover group-hover:scale-105 transition-transform duration-300"
         />
         
-        {property.tags && property.tags.length > 0 && (
+        {/* Tags no canto superior esquerdo */}
+        {propertyTags.length > 0 && (
           <div className="absolute top-4 left-4 flex flex-wrap gap-1">
-            {property.tags.slice(0, 2).map((tag, index) => (
+            {propertyTags.slice(0, 2).map((tag, index) => (
               <PropertyTag key={index} tag={tag} />
             ))}
+            {propertyTags.length > 2 && (
+              <PropertyTag tag={`+${propertyTags.length - 2}`} variant="outline" />
+            )}
           </div>
         )}
 
+        {/* Código da propriedade no canto superior direito */}
         {property.property_code && (
           <div className="absolute top-4 right-4 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs font-mono">
             {property.property_code}
           </div>
         )}
 
+        {/* Preços no canto inferior direito */}
         <div className="absolute bottom-4 right-4 flex flex-col gap-1">
           {property.purpose === 'rent' && property.rental_price ? (
             <div className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
@@ -89,10 +100,12 @@ const PropertyCardEnhanced: React.FC<PropertyCardEnhancedProps> = ({ property })
           )}
         </div>
 
+        {/* Tipo da propriedade no canto inferior esquerdo */}
         <div className="absolute bottom-4 left-4 bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm font-medium">
           {property.property_type}
         </div>
 
+        {/* Botão de favorito */}
         <Button
           onClick={e => {
             e.stopPropagation();
@@ -110,12 +123,12 @@ const PropertyCardEnhanced: React.FC<PropertyCardEnhancedProps> = ({ property })
       </div>
       
       <CardContent className="p-6">
-        <h3 className="text-xl font-semibold mb-3 group-hover:text-blue-600 transition-colors">
+        <h3 className="text-xl font-semibold mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
           {property.title}
         </h3>
-        <p className="text-gray-600 dark:text-gray-300 mb-4 flex items-center truncate">
-          <MapPin className="w-4 h-4 mr-1" />
-          {property.location}
+        <p className="text-gray-600 dark:text-gray-300 mb-4 flex items-center">
+          <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+          <span className="truncate">{property.location}</span>
         </p>
         
         {/* Características com ícones em destaque */}
@@ -162,6 +175,24 @@ const PropertyCardEnhanced: React.FC<PropertyCardEnhancedProps> = ({ property })
             </div>
           )}
         </div>
+
+        {/* Mostrar algumas características principais se existirem */}
+        {propertyFeatures.length > 0 && (
+          <div className="mt-3">
+            <div className="flex flex-wrap gap-1">
+              {propertyFeatures.slice(0, 3).map((feature, index) => (
+                <span key={index} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
+                  {feature}
+                </span>
+              ))}
+              {propertyFeatures.length > 3 && (
+                <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
+                  +{propertyFeatures.length - 3}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -19,6 +19,7 @@ interface FeaturedProperty {
   purpose?: string;
   tags?: string[];
   property_code?: string;
+  features?: string[];
 }
 
 interface SiteSettings {
@@ -83,7 +84,7 @@ export const useHomeData = () => {
           .from('properties')
           .select('*')
           .eq('is_featured', true)
-          .eq('status', 'available')
+          .eq('status', 'active')
           .limit(8)
           .order('created_at', { ascending: false });
         featuredData = featured || [];
@@ -96,7 +97,7 @@ export const useHomeData = () => {
           .from('properties')
           .select('*')
           .eq('is_beachfront', true)
-          .eq('status', 'available')
+          .eq('status', 'active')
           .limit(8)
           .order('created_at', { ascending: false });
         beachfrontData = beachfront || [];
@@ -109,7 +110,7 @@ export const useHomeData = () => {
           .from('properties')
           .select('*')
           .eq('is_near_beach', true)
-          .eq('status', 'available')
+          .eq('status', 'active')
           .limit(8)
           .order('created_at', { ascending: false });
         nearBeachData = nearBeach || [];
@@ -122,7 +123,7 @@ export const useHomeData = () => {
           .from('properties')
           .select('*')
           .eq('is_development', true)
-          .eq('status', 'available')
+          .eq('status', 'active')
           .limit(8)
           .order('created_at', { ascending: false });
         devsData = devs || [];
@@ -146,6 +147,7 @@ export const useHomeData = () => {
             state: p.state || '',
             purpose: p.purpose,
             tags: Array.isArray(p.tags) ? p.tags : [],
+            features: Array.isArray(p.features) ? p.features : [],
             property_code: p.property_code,
             images: Array.isArray(p.images) ? p.images : [],
           };

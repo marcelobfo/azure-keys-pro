@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from '@/pages/Home';
@@ -26,6 +27,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ScheduleVisit from '@/pages/ScheduleVisit';
 import ChatSettings from '@/pages/ChatSettings';
+import AdminChatSettings from '@/pages/AdminChatSettings';
 import Index from '@/pages/Index';
 import PropertyDetail from '@/pages/PropertyDetail';
 import VisitsManagement from '@/pages/VisitsManagement';
@@ -64,6 +66,7 @@ function App() {
                 <Route path="/admin/users" element={<AdminUsers />} />
                 <Route path="/admin/site-settings" element={<AdminSiteSettings />} />
                 <Route path="/admin/settings" element={<WebhookSettings />} />
+                <Route path="/admin/chat-settings" element={<AdminChatSettings />} />
 
                 {/* Corretor Routes */}
                 <Route path="/corretor/*" element={<CorretorDashboard />} />

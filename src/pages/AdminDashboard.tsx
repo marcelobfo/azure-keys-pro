@@ -4,7 +4,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Home, MessageSquare, TrendingUp, Settings, Webhook, BarChart3, UserCheck } from 'lucide-react';
+import { Users, Home, MessageSquare, TrendingUp, Settings, Webhook, BarChart3, UserCheck, MessageCircle } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
@@ -200,14 +200,45 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/webhooks')}>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/chat-settings')}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Configurações de Webhooks
-                <Webhook className="h-5 w-5" />
+                Configurações do Chat
+                <MessageCircle className="h-5 w-5" />
               </CardTitle>
               <CardDescription>
-                Configure webhooks para formulários e notificações
+                Configure chat com IA e integração WhatsApp
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm">Chat com IA</span>
+                  <Badge variant="default">Configurar</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Integração WhatsApp</span>
+                  <Badge variant="secondary">Configurar</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Mensagens Automáticas</span>
+                  <Badge>Personalizar</Badge>
+                </div>
+              </div>
+              <Button className="w-full mt-4" variant="outline">
+                Configurar Chat
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/settings')}>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Configurações Gerais
+                <Settings className="h-5 w-5" />
+              </CardTitle>
+              <CardDescription>
+                Configure webhooks e parâmetros globais
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -220,9 +251,13 @@ const AdminDashboard = () => {
                   <span className="text-sm">Falhas nas últimas 24h</span>
                   <Badge variant="destructive">{webhookStats.failures}</Badge>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Configurações do Site</span>
+                  <Badge>Editar</Badge>
+                </div>
               </div>
               <Button className="w-full mt-4" variant="outline">
-                Configurar Webhooks
+                Acessar Configurações
               </Button>
             </CardContent>
           </Card>
@@ -284,37 +319,6 @@ const AdminDashboard = () => {
               </Button>
             </CardContent>
           </Card>
-
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/settings')}>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Configurações do Sistema
-                <Settings className="h-5 w-5" />
-              </CardTitle>
-              <CardDescription>
-                Configure parâmetros globais da aplicação
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm">Editar Home</span>
-                  <Badge variant="default">Banner / Primeira Dobra</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Modelos de Layout Extras</span>
-                  <Badge>Novos Layouts</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Configuração do Chat</span>
-                  <Badge>Chat</Badge>
-                </div>
-              </div>
-              <Button className="w-full mt-4" variant="outline">
-                Acessar Configurações
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </DashboardLayout>
@@ -322,4 +326,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
