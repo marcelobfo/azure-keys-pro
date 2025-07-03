@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +22,10 @@ interface Property {
   status: string;
   images: string[] | null;
   created_at: string;
+  is_featured: boolean;
+  is_beachfront: boolean;
+  is_near_beach: boolean;
+  is_development: boolean;
 }
 
 const ManageProperties = () => {
@@ -52,7 +57,11 @@ const ManageProperties = () => {
       // e converter tipos corretamente (evita bugs de -1 vindo como valor default)
       setProperties((data || []).map(item => ({
         ...item,
-        price: (item.price != null && Number(item.price) > 0) ? Number(item.price) : 0
+        price: (item.price != null && Number(item.price) > 0) ? Number(item.price) : 0,
+        is_featured: Boolean(item.is_featured),
+        is_beachfront: Boolean(item.is_beachfront),
+        is_near_beach: Boolean(item.is_near_beach),
+        is_development: Boolean(item.is_development)
       })));
     } catch (error: any) {
       console.error('Erro ao buscar propriedades:', error);
@@ -93,16 +102,30 @@ const ManageProperties = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    const normalizedStatus = status?.toLowerCase();
+    switch (normalizedStatus) {
       case 'available':
+      case 'active':
+      case 'ativo':
         return <Badge variant="default">Disponível</Badge>;
       case 'unavailable':
+      case 'indisponivel':
         return <Badge variant="secondary">Indisponível</Badge>;
       case 'sold':
+      case 'vendido':
         return <Badge variant="outline">Vendido</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
+  };
+
+  const getSpecialBadges = (property: Property) => {
+    const badges = [];
+    if (property.is_featured) badges.push(<Badge key="featured" className="bg-yellow-500">Destaque</Badge>);
+    if (property.is_beachfront) badges.push(<Badge key="beachfront" className="bg-blue-500">Frente Mar</Badge>);
+    if (property.is_near_beach) badges.push(<Badge key="near-beach" className="bg-cyan-500">Quadra Mar</Badge>);
+    if (property.is_development) badges.push(<Badge key="development" className="bg-purple-500">Empreendimento</Badge>);
+    return badges;
   };
 
   if (loading) {
@@ -114,6 +137,8 @@ const ManageProperties = () => {
       </Layout>
     );
   }
+
+  const activeProperties = properties.filter(p => ['available', 'active', 'ativo'].includes(p.status?.toLowerCase()));
 
   return (
     <Layout>
@@ -140,20 +165,20 @@ const ManageProperties = () => {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">{properties.filter(p => p.status === 'available').length}</div>
+              <div className="text-2xl font-bold">{activeProperties.length}</div>
               <p className="text-sm text-muted-foreground">Imóveis Ativos</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-sm text-muted-foreground">Total de Visualizações</p>
+              <div className="text-2xl font-bold">{properties.filter(p => p.is_featured).length}</div>
+              <p className="text-sm text-muted-foreground">Em Destaque</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-sm text-muted-foreground">Total de Leads</p>
+              <div className="text-2xl font-bold">{properties.filter(p => p.is_beachfront || p.is_near_beach).length}</div>
+              <p className="text-sm text-muted-foreground">Frente/Quadra Mar</p>
             </CardContent>
           </Card>
         </div>
@@ -184,8 +209,11 @@ const ManageProperties = () => {
                     alt={property.title}
                     className="w-full h-48 object-cover"
                   />
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-2 right-2 flex flex-col gap-1">
                     {getStatusBadge(property.status)}
+                  </div>
+                  <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                    {getSpecialBadges(property)}
                   </div>
                 </div>
                 <CardContent className="p-4">

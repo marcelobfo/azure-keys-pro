@@ -84,7 +84,7 @@ export const useHomeData = () => {
           .from('properties')
           .select('*')
           .eq('is_featured', true)
-          .eq('status', 'active')
+          .in('status', ['active', 'ativo', 'available']) // Múltiplos status aceitos
           .limit(8)
           .order('created_at', { ascending: false });
         featuredData = featured || [];
@@ -97,7 +97,7 @@ export const useHomeData = () => {
           .from('properties')
           .select('*')
           .eq('is_beachfront', true)
-          .eq('status', 'active')
+          .in('status', ['active', 'ativo', 'available']) // Múltiplos status aceitos
           .limit(8)
           .order('created_at', { ascending: false });
         beachfrontData = beachfront || [];
@@ -110,7 +110,7 @@ export const useHomeData = () => {
           .from('properties')
           .select('*')
           .eq('is_near_beach', true)
-          .eq('status', 'active')
+          .in('status', ['active', 'ativo', 'available']) // Múltiplos status aceitos
           .limit(8)
           .order('created_at', { ascending: false });
         nearBeachData = nearBeach || [];
@@ -123,7 +123,7 @@ export const useHomeData = () => {
           .from('properties')
           .select('*')
           .eq('is_development', true)
-          .eq('status', 'active')
+          .in('status', ['active', 'ativo', 'available']) // Múltiplos status aceitos
           .limit(8)
           .order('created_at', { ascending: false });
         devsData = devs || [];
