@@ -57,11 +57,17 @@ export const usePropertyFilters = (properties: Property[]) => {
 
   const filteredProperties = useMemo(() => {
     return properties.filter(property => {
-      // Search filter
-      if (filters.search && !property.title.toLowerCase().includes(filters.search.toLowerCase()) &&
-          !property.location.toLowerCase().includes(filters.search.toLowerCase()) &&
-          !(property.property_code && property.property_code.toLowerCase().includes(filters.search.toLowerCase()))) {
-        return false;
+      // Search filter - incluir busca por código do imóvel
+      if (filters.search) {
+        const searchTerm = filters.search.toLowerCase();
+        const matchesTitle = property.title.toLowerCase().includes(searchTerm);
+        const matchesLocation = property.location.toLowerCase().includes(searchTerm);
+        const matchesCode = property.property_code && 
+          property.property_code.toLowerCase().includes(searchTerm);
+        
+        if (!matchesTitle && !matchesLocation && !matchesCode) {
+          return false;
+        }
       }
 
       // Type filter

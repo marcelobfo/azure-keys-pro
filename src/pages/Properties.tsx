@@ -64,7 +64,7 @@ const PropertiesPage = () => {
         type: property.property_type,
         purpose: property.purpose,
         image: property.images?.[0] || '/placeholder.svg',
-        tags: property.tags || [],
+        tags: Array.isArray(property.tags) ? property.tags : [],
         is_beachfront: property.is_beachfront || false,
         is_near_beach: property.is_near_beach || false,
         is_development: property.is_development || false,

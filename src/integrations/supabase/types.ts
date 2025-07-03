@@ -228,12 +228,16 @@ export type Database = {
           images: string[] | null
           infra: Json | null
           iptu_fee: number | null
+          is_beachfront: boolean | null
+          is_development: boolean | null
           is_featured: boolean | null
+          is_near_beach: boolean | null
           latitude: number | null
           location: string
           longitude: number | null
           negotiation_notes: string | null
           price: number
+          property_code: string | null
           property_type: string
           purpose: string | null
           reference_point: string | null
@@ -241,6 +245,7 @@ export type Database = {
           state: string | null
           status: string | null
           suites: number | null
+          tags: string[] | null
           title: string
           total_area: number | null
           updated_at: string | null
@@ -264,12 +269,16 @@ export type Database = {
           images?: string[] | null
           infra?: Json | null
           iptu_fee?: number | null
+          is_beachfront?: boolean | null
+          is_development?: boolean | null
           is_featured?: boolean | null
+          is_near_beach?: boolean | null
           latitude?: number | null
           location: string
           longitude?: number | null
           negotiation_notes?: string | null
           price: number
+          property_code?: string | null
           property_type: string
           purpose?: string | null
           reference_point?: string | null
@@ -277,6 +286,7 @@ export type Database = {
           state?: string | null
           status?: string | null
           suites?: number | null
+          tags?: string[] | null
           title: string
           total_area?: number | null
           updated_at?: string | null
@@ -300,12 +310,16 @@ export type Database = {
           images?: string[] | null
           infra?: Json | null
           iptu_fee?: number | null
+          is_beachfront?: boolean | null
+          is_development?: boolean | null
           is_featured?: boolean | null
+          is_near_beach?: boolean | null
           latitude?: number | null
           location?: string
           longitude?: number | null
           negotiation_notes?: string | null
           price?: number
+          property_code?: string | null
           property_type?: string
           purpose?: string | null
           reference_point?: string | null
@@ -313,6 +327,7 @@ export type Database = {
           state?: string | null
           status?: string | null
           suites?: number | null
+          tags?: string[] | null
           title?: string
           total_area?: number | null
           updated_at?: string | null
@@ -443,7 +458,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_property_code: {
+        Args: { property_type: string }
+        Returns: string
+      }
     }
     Enums: {
       user_role: "user" | "corretor" | "admin"

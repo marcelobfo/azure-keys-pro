@@ -131,23 +131,25 @@ const HomePage = () => {
 
       const formatProperties = (data: any[]): FeaturedProperty[] => {
         if (!data) return [];
-        return data.map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          price: Number(p.price),
-          rental_price: p.rental_price ? Number(p.rental_price) : undefined,
-          location: p.location,
-          area: p.area ?? 0,
-          bedrooms: p.bedrooms ?? 0,
-          bathrooms: p.bathrooms ?? 0,
-          property_type: p.property_type ?? '',
-          city: p.city ?? '',
-          state: p.state ?? '',
-          purpose: p.purpose,
-          tags: p.tags ?? [],
-          property_code: p.property_code,
-          images: p.images ?? [],
-        }));
+        return data.map((p: any) => {
+          return {
+            id: p.id,
+            title: p.title,
+            price: p.price ? Number(p.price) : 0,
+            rental_price: p.rental_price ? Number(p.rental_price) : undefined,
+            location: p.location || '',
+            area: p.area || 0,
+            bedrooms: p.bedrooms || 0,
+            bathrooms: p.bathrooms || 0,
+            property_type: p.property_type || '',
+            city: p.city || '',
+            state: p.state || '',
+            purpose: p.purpose,
+            tags: Array.isArray(p.tags) ? p.tags : [],
+            property_code: p.property_code,
+            images: Array.isArray(p.images) ? p.images : [],
+          };
+        });
       };
 
       setFeaturedProperties(formatProperties(featured || []));
