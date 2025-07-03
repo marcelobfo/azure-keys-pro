@@ -55,8 +55,8 @@ const PropertyCardEnhanced: React.FC<PropertyCardEnhancedProps> = ({ property })
 
   // Combinar tags normais com tags especiais
   const allTags = [
-    ...specialTags.map(tag => ({ text: tag.text, variant: 'special', color: tag.color })),
-    ...propertyTags.slice(0, Math.max(0, 3 - specialTags.length)).map(tag => ({ text: tag, variant: 'normal' }))
+    ...specialTags,
+    ...propertyTags.slice(0, Math.max(0, 3 - specialTags.length)).map(tag => ({ text: tag, color: 'bg-gray-600' }))
   ];
 
   return (
@@ -80,9 +80,7 @@ const PropertyCardEnhanced: React.FC<PropertyCardEnhancedProps> = ({ property })
             {allTags.slice(0, 2).map((tag, index) => (
               <span
                 key={index}
-                className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${
-                  tag.color || 'bg-gray-600'
-                }`}
+                className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${tag.color}`}
               >
                 {tag.text}
               </span>
