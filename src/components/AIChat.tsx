@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Minimize2, Maximize2, Bot, User } from 'lucide-react';
 import { Button } from './ui/button';
@@ -59,6 +58,11 @@ const AIChat = () => {
         .from('chat_configurations')
         .select('ai_chat_enabled, api_provider, welcome_message, system_instruction, custom_responses')
         .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching chat config:', error);
+        return;
+      }
 
       if (data) {
         setIsEnabled(data.ai_chat_enabled || false);

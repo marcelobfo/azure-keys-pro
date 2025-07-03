@@ -58,6 +58,7 @@ export type Database = {
           created_at: string | null
           custom_responses: Json | null
           id: string
+          system_instruction: string | null
           updated_at: string | null
           welcome_message: string | null
           whatsapp_enabled: boolean | null
@@ -72,6 +73,7 @@ export type Database = {
           created_at?: string | null
           custom_responses?: Json | null
           id?: string
+          system_instruction?: string | null
           updated_at?: string | null
           welcome_message?: string | null
           whatsapp_enabled?: boolean | null
@@ -86,6 +88,7 @@ export type Database = {
           created_at?: string | null
           custom_responses?: Json | null
           id?: string
+          system_instruction?: string | null
           updated_at?: string | null
           welcome_message?: string | null
           whatsapp_enabled?: boolean | null

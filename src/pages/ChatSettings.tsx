@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -107,6 +106,7 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
           api_key: '', // Never show the actual key
           welcome_message: data.welcome_message || 'Olá! Como posso ajudá-lo hoje?',
           active: data.active ?? true,
+          system_instruction: data.system_instruction || formData.system_instruction,
           custom_responses: typeof data.custom_responses === 'object' && data.custom_responses 
             ? data.custom_responses as any
             : {
