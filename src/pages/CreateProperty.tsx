@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -417,8 +416,7 @@ const CreateProperty = () => {
             <CardContent>
               <ImageUpload
                 images={formData.images}
-                onImagesChange={(images) => setFormData({...formData, images})}
-                maxImages={10}
+                onChange={(images) => setFormData({...formData, images})}
               />
             </CardContent>
           </Card>
