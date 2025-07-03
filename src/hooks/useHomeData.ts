@@ -13,6 +13,7 @@ interface FeaturedProperty {
   images: string[];
   property_type: string;
   bathrooms: number;
+  suites?: number;
   city: string;
   state: string;
   purpose?: string;
@@ -75,41 +76,57 @@ export const useHomeData = () => {
     async function loadProperties() {
       setLoadingFeatured(true);
       
-      // Imóveis em destaque
-      const { data: featured } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('is_featured', true)
-        .eq('status', 'available')
-        .limit(8)
-        .order('created_at', { ascending: false });
+      // Imóveis em destaque - só busca se configurado para mostrar
+      let featuredData: any[] = [];
+      if (settings['home_sections_featured'] === 'true') {
+        const { data: featured } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('is_featured', true)
+          .eq('status', 'available')
+          .limit(8)
+          .order('created_at', { ascending: false });
+        featuredData = featured || [];
+      }
 
-      // Imóveis frente mar
-      const { data: beachfront } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('is_beachfront', true)
-        .eq('status', 'available')
-        .limit(8)
-        .order('created_at', { ascending: false });
+      // Imóveis frente mar - só busca se configurado para mostrar
+      let beachfrontData: any[] = [];
+      if (settings['home_sections_beachfront'] === 'true') {
+        const { data: beachfront } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('is_beachfront', true)
+          .eq('status', 'available')
+          .limit(8)
+          .order('created_at', { ascending: false });
+        beachfrontData = beachfront || [];
+      }
 
-      // Imóveis quadra mar
-      const { data: nearBeach } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('is_near_beach', true)
-        .eq('status', 'available')
-        .limit(8)
-        .order('created_at', { ascending: false });
+      // Imóveis quadra mar - só busca se configurado para mostrar
+      let nearBeachData: any[] = [];
+      if (settings['home_sections_near_beach'] === 'true') {
+        const { data: nearBeach } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('is_near_beach', true)
+          .eq('status', 'available')
+          .limit(8)
+          .order('created_at', { ascending: false });
+        nearBeachData = nearBeach || [];
+      }
 
-      // Empreendimentos
-      const { data: devs } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('is_development', true)
-        .eq('status', 'available')
-        .limit(8)
-        .order('created_at', { ascending: false });
+      // Empreendimentos - só busca se configurado para mostrar
+      let devsData: any[] = [];
+      if (settings['home_sections_developments'] === 'true') {
+        const { data: devs } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('is_development', true)
+          .eq('status', 'available')
+          .limit(8)
+          .order('created_at', { ascending: false });
+        devsData = devs || [];
+      }
 
       const formatProperties = (data: any[]): FeaturedProperty[] => {
         if (!data) return [];
@@ -123,6 +140,7 @@ export const useHomeData = () => {
             area: p.area || 0,
             bedrooms: p.bedrooms || 0,
             bathrooms: p.bathrooms || 0,
+            suites: p.suites || 0,
             property_type: p.property_type || '',
             city: p.city || '',
             state: p.state || '',
@@ -134,14 +152,18 @@ export const useHomeData = () => {
         });
       };
 
-      setFeaturedProperties(formatProperties(featured || []));
-      setBeachfrontProperties(formatProperties(beachfront || []));
-      setNearBeachProperties(formatProperties(nearBeach || []));
-      setDevelopments(formatProperties(devs || []));
+      setFeaturedProperties(formatProperties(featuredData));
+      setBeachfrontProperties(formatProperties(beachfrontData));
+      setNearBeachProperties(formatProperties(nearBeachData));
+      setDevelopments(formatProperties(devsData));
       setLoadingFeatured(false);
     }
-    loadProperties();
-  }, []);
+    
+    // Só carrega se as configurações já foram carregadas
+    if (Object.keys(settings).length > 0) {
+      loadProperties();
+    }
+  }, [settings]);
 
   return {
     featuredProperties,

@@ -16,29 +16,29 @@ const HomePage = () => {
     settings
   } = useHomeData();
 
-  // Renderizar seções baseadas nas configurações
+  // Renderizar seções baseadas nas configurações e se há imóveis
   const sectionsOrder = JSON.parse(settings['home_sections_order'] || '["featured", "beachfront", "near_beach", "developments"]');
   const sectionsConfig = {
     featured: {
-      show: settings['home_sections_featured'] === 'true',
+      show: settings['home_sections_featured'] === 'true' && featuredProperties.length > 0,
       title: 'Imóveis em Destaque',
       properties: featuredProperties,
       emptyMessage: 'Nenhum imóvel em destaque no momento.'
     },
     beachfront: {
-      show: settings['home_sections_beachfront'] === 'true',
+      show: settings['home_sections_beachfront'] === 'true' && beachfrontProperties.length > 0,
       title: 'Imóveis Frente Mar',
       properties: beachfrontProperties,
       emptyMessage: 'Nenhum imóvel frente mar no momento.'
     },
     near_beach: {
-      show: settings['home_sections_near_beach'] === 'true',
+      show: settings['home_sections_near_beach'] === 'true' && nearBeachProperties.length > 0,
       title: 'Imóveis Quadra Mar',
       properties: nearBeachProperties,
       emptyMessage: 'Nenhum imóvel quadra mar no momento.'
     },
     developments: {
-      show: settings['home_sections_developments'] === 'true',
+      show: settings['home_sections_developments'] === 'true' && developments.length > 0,
       title: 'Empreendimentos',
       properties: developments,
       emptyMessage: 'Nenhum empreendimento no momento.'

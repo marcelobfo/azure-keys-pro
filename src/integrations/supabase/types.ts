@@ -9,6 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_tokens: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          last_used_at: string | null
+          permissions: Json | null
+          token_hash: string
+          token_name: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          permissions?: Json | null
+          token_hash: string
+          token_name: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          permissions?: Json | null
+          token_hash?: string
+          token_name?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       chat_configurations: {
         Row: {
           active: boolean | null
