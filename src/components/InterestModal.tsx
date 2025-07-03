@@ -93,9 +93,9 @@ const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <MessageCircle className="w-4 h-4 mr-1" />
-          Interesse
+        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all duration-200 hover:shadow-xl">
+          <MessageCircle className="w-4 h-4 mr-2" />
+          Demonstrar Interesse
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

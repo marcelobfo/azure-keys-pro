@@ -59,14 +59,19 @@ export const usePropertyFilters = (properties: Property[]) => {
   });
 
   const filteredProperties = useMemo(() => {
+    console.log('Filtering properties:', properties.length);
+    console.log('Current filters:', filters);
+    
     return properties.filter(property => {
       // Search filter - incluir busca por código do imóvel, título e localização
       if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        const matchesTitle = property.title.toLowerCase().includes(searchTerm);
-        const matchesLocation = property.location.toLowerCase().includes(searchTerm);
+        const searchTerm = filters.search.toLowerCase().trim();
+        const matchesTitle = property.title && property.title.toLowerCase().includes(searchTerm);
+        const matchesLocation = property.location && property.location.toLowerCase().includes(searchTerm);
         const matchesCode = property.property_code && 
           property.property_code.toLowerCase().includes(searchTerm);
+        
+        console.log(`Property ${property.id}: title match: ${matchesTitle}, location match: ${matchesLocation}, code match: ${matchesCode}`);
         
         if (!matchesTitle && !matchesLocation && !matchesCode) {
           return false;
@@ -74,43 +79,66 @@ export const usePropertyFilters = (properties: Property[]) => {
       }
 
       // Type filter
-      if (filters.type && filters.type !== 'all' && property.type !== filters.type) {
-        return false;
+      if (filters.type && filters.type !== 'all' && filters.type !== '') {
+        if (property.type !== filters.type) {
+          console.log(`Property ${property.id} filtered out by type: ${property.type} !== ${filters.type}`);
+          return false;
+        }
       }
 
       // Purpose filter
-      if (filters.purpose && filters.purpose !== 'all' && property.purpose !== filters.purpose) {
-        return false;
+      if (filters.purpose && filters.purpose !== 'all' && filters.purpose !== '') {
+        if (property.purpose !== filters.purpose) {
+          console.log(`Property ${property.id} filtered out by purpose: ${property.purpose} !== ${filters.purpose}`);
+          return false;
+        }
       }
 
       // City filter
-      if (filters.city && filters.city !== 'all' && !property.location.toLowerCase().includes(filters.city.toLowerCase())) {
-        return false;
+      if (filters.city && filters.city !== 'all' && filters.city !== '') {
+        if (!property.location || !property.location.toLowerCase().includes(filters.city.toLowerCase())) {
+          console.log(`Property ${property.id} filtered out by city`);
+          return false;
+        }
       }
 
       // Price filter - considera tanto preço de venda quanto aluguel
       const relevantPrice = filters.purpose === 'rent' ? (property.rental_price || property.price) : property.price;
       if (relevantPrice < filters.priceMin || relevantPrice > filters.priceMax) {
+        console.log(`Property ${property.id} filtered out by price: ${relevantPrice}`);
         return false;
       }
 
       // Area filter
-      if (property.area < filters.areaMin || property.area > filters.areaMax) {
+      if (property.area && (property.area < filters.areaMin || property.area > filters.areaMax)) {
+        console.log(`Property ${property.id} filtered out by area: ${property.area}`);
         return false;
       }
 
       // Bedrooms filter
-      if (filters.bedrooms && filters.bedrooms !== 'any') {
+      if (filters.bedrooms && filters.bedrooms !== 'any' && filters.bedrooms !== '') {
         const bedroomCount = parseInt(filters.bedrooms);
-        if (filters.bedrooms === '4' && property.bedrooms < 4) return false;
-        if (filters.bedrooms !== '4' && property.bedrooms !== bedroomCount) return false;
+        if (filters.bedrooms === '4' && property.bedrooms < 4) {
+          console.log(`Property ${property.id} filtered out by bedrooms (4+): ${property.bedrooms}`);
+          return false;
+        }
+        if (filters.bedrooms !== '4' && property.bedrooms !== bedroomCount) {
+          console.log(`Property ${property.id} filtered out by bedrooms: ${property.bedrooms} !== ${bedroomCount}`);
+          return false;
+        }
       }
 
       // Bathrooms filter
-      if (filters.bathrooms && filters.bathrooms !== 'any') {
+      if (filters.bathrooms && filters.bathrooms !== 'any' && filters.bathrooms !== '') {
         const bathroomCount = parseInt(filters.bathrooms);
-        if (filters.bathrooms === '3' && property.bathrooms < 3) return false;
-        if (filters.bathrooms !== '3' && property.bathrooms !== bathroomCount) return false;
+        if (filters.bathrooms === '3' && property.bathrooms < 3) {
+          console.log(`Property ${property.id} filtered out by bathrooms (3+): ${property.bathrooms}`);
+          return false;
+        }
+        if (filters.bathrooms !== '3' && property.bathrooms !== bathroomCount) {
+          console.log(`Property ${property.id} filtered out by bathrooms: ${property.bathrooms} !== ${bathroomCount}`);
+          return false;
+        }
       }
 
       // Tags filter
@@ -121,26 +149,34 @@ export const usePropertyFilters = (properties: Property[]) => {
             propertyTag.toLowerCase().includes(filterTag.toLowerCase())
           )
         );
-        if (!hasMatchingTag) return false;
+        if (!hasMatchingTag) {
+          console.log(`Property ${property.id} filtered out by tags`);
+          return false;
+        }
       }
 
       // Filtros especiais
       if (filters.isFeatured && !property.is_featured) {
+        console.log(`Property ${property.id} filtered out by featured filter`);
         return false;
       }
 
       if (filters.isBeachfront && !property.is_beachfront) {
+        console.log(`Property ${property.id} filtered out by beachfront filter`);
         return false;
       }
 
       if (filters.isNearBeach && !property.is_near_beach) {
+        console.log(`Property ${property.id} filtered out by near beach filter`);
         return false;
       }
 
       if (filters.isDevelopment && !property.is_development) {
+        console.log(`Property ${property.id} filtered out by development filter`);
         return false;
       }
 
+      console.log(`Property ${property.id} passed all filters`);
       return true;
     });
   }, [properties, filters]);

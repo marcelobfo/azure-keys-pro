@@ -78,17 +78,24 @@ serve(async (req) => {
 
     Responda sempre em português brasileiro, de forma natural e útil.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        system_instruction: {
+          parts: [
+            {
+              text: systemPrompt
+            }
+          ]
+        },
         contents: [
           {
             parts: [
               {
-                text: `${systemPrompt}\n\nMensagem do usuário: ${message}`
+                text: message
               }
             ]
           }
@@ -103,6 +110,11 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    
+    if (!data.candidates || !data.candidates[0]) {
+      throw new Error('No response from Gemini API');
+    }
+    
     const aiResponse = data.candidates[0].content.parts[0].text;
 
     return new Response(JSON.stringify({ response: aiResponse }), {

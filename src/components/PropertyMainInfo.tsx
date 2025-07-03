@@ -36,6 +36,15 @@ interface PropertyMainInfoProps {
 }
 
 const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
+  const formatDescription = (description: string) => {
+    return description.split('\n').map((line, index) => (
+      <React.Fragment key={index}>
+        {line}
+        {index < description.split('\n').length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
+
   return (
     <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-gray-50 dark:from-slate-800 dark:to-slate-900">
       <CardContent className="p-8">
@@ -121,8 +130,8 @@ const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
         <div className="mb-8">
           <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Descrição</h3>
           <div className="bg-gray-50 dark:bg-slate-700 p-6 rounded-xl">
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg">
-              {property.description || 'Sem descrição disponível.'}
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-lg whitespace-pre-line">
+              {property.description ? formatDescription(property.description) : 'Sem descrição disponível.'}
             </p>
           </div>
         </div>
