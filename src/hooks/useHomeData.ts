@@ -84,7 +84,7 @@ export const useHomeData = () => {
           .from('properties')
           .select('*')
           .eq('is_featured', true)
-          .in('status', ['active', 'ativo', 'available']) // Múltiplos status aceitos
+          .in('status', ['active', 'ativo', 'available'])
           .limit(8)
           .order('created_at', { ascending: false });
         featuredData = featured || [];
@@ -97,7 +97,7 @@ export const useHomeData = () => {
           .from('properties')
           .select('*')
           .eq('is_beachfront', true)
-          .in('status', ['active', 'ativo', 'available']) // Múltiplos status aceitos
+          .in('status', ['active', 'ativo', 'available'])
           .limit(8)
           .order('created_at', { ascending: false });
         beachfrontData = beachfront || [];
@@ -110,7 +110,7 @@ export const useHomeData = () => {
           .from('properties')
           .select('*')
           .eq('is_near_beach', true)
-          .in('status', ['active', 'ativo', 'available']) // Múltiplos status aceitos
+          .in('status', ['active', 'ativo', 'available'])
           .limit(8)
           .order('created_at', { ascending: false });
         nearBeachData = nearBeach || [];
@@ -123,7 +123,7 @@ export const useHomeData = () => {
           .from('properties')
           .select('*')
           .eq('is_development', true)
-          .in('status', ['active', 'ativo', 'available']) // Múltiplos status aceitos
+          .in('status', ['active', 'ativo', 'available'])
           .limit(8)
           .order('created_at', { ascending: false });
         devsData = devs || [];
@@ -150,6 +150,11 @@ export const useHomeData = () => {
             features: Array.isArray(p.features) ? p.features : [],
             property_code: p.property_code,
             images: Array.isArray(p.images) ? p.images : [],
+            // Adicionar os campos especiais
+            is_featured: Boolean(p.is_featured),
+            is_beachfront: Boolean(p.is_beachfront),
+            is_near_beach: Boolean(p.is_near_beach),
+            is_development: Boolean(p.is_development),
           };
         });
       };

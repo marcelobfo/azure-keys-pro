@@ -16,6 +16,7 @@ interface PropertyFilters {
   isBeachfront: boolean;
   isNearBeach: boolean;
   isDevelopment: boolean;
+  isFeatured: boolean;
 }
 
 interface Property {
@@ -34,6 +35,7 @@ interface Property {
   is_beachfront?: boolean;
   is_near_beach?: boolean;
   is_development?: boolean;
+  is_featured?: boolean;
   property_code?: string;
 }
 
@@ -52,12 +54,13 @@ export const usePropertyFilters = (properties: Property[]) => {
     tags: [],
     isBeachfront: false,
     isNearBeach: false,
-    isDevelopment: false
+    isDevelopment: false,
+    isFeatured: false
   });
 
   const filteredProperties = useMemo(() => {
     return properties.filter(property => {
-      // Search filter - incluir busca por código do imóvel
+      // Search filter - incluir busca por código do imóvel, título e localização
       if (filters.search) {
         const searchTerm = filters.search.toLowerCase();
         const matchesTitle = property.title.toLowerCase().includes(searchTerm);
@@ -121,17 +124,19 @@ export const usePropertyFilters = (properties: Property[]) => {
         if (!hasMatchingTag) return false;
       }
 
-      // Beachfront filter
+      // Filtros especiais
+      if (filters.isFeatured && !property.is_featured) {
+        return false;
+      }
+
       if (filters.isBeachfront && !property.is_beachfront) {
         return false;
       }
 
-      // Near beach filter
       if (filters.isNearBeach && !property.is_near_beach) {
         return false;
       }
 
-      // Development filter
       if (filters.isDevelopment && !property.is_development) {
         return false;
       }
@@ -155,7 +160,8 @@ export const usePropertyFilters = (properties: Property[]) => {
       tags: [],
       isBeachfront: false,
       isNearBeach: false,
-      isDevelopment: false
+      isDevelopment: false,
+      isFeatured: false
     });
   };
 

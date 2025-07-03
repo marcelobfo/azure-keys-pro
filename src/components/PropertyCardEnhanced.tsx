@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, MapPin, Bed, Bath, Square, Car, Home, Users } from 'lucide-react';
+import { Heart, MapPin, Bed, Bath, Square, Users, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFavorites } from '@/hooks/useFavorites';
 import PropertyTag from './PropertyTag';
@@ -26,6 +26,10 @@ interface FeaturedProperty {
   tags?: string[];
   property_code?: string;
   features?: string[];
+  is_featured?: boolean;
+  is_beachfront?: boolean;
+  is_near_beach?: boolean;
+  is_development?: boolean;
 }
 
 interface PropertyCardEnhancedProps {
@@ -41,6 +45,19 @@ const PropertyCardEnhanced: React.FC<PropertyCardEnhancedProps> = ({ property })
   // Garantir que tags sempre seja um array
   const propertyTags = Array.isArray(property.tags) ? property.tags : [];
   const propertyFeatures = Array.isArray(property.features) ? property.features : [];
+
+  // Criar tags especiais baseadas nas propriedades booleanas
+  const specialTags = [];
+  if (property.is_featured) specialTags.push({ text: 'Destaque', color: 'bg-yellow-500' });
+  if (property.is_beachfront) specialTags.push({ text: 'Frente Mar', color: 'bg-blue-500' });
+  if (property.is_near_beach) specialTags.push({ text: 'Quadra Mar', color: 'bg-cyan-500' });
+  if (property.is_development) specialTags.push({ text: 'Empreendimento', color: 'bg-purple-500' });
+
+  // Combinar tags normais com tags especiais
+  const allTags = [
+    ...specialTags.map(tag => ({ text: tag.text, variant: 'special', color: tag.color })),
+    ...propertyTags.slice(0, Math.max(0, 3 - specialTags.length)).map(tag => ({ text: tag, variant: 'normal' }))
+  ];
 
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-slate-800 cursor-pointer">
@@ -58,13 +75,22 @@ const PropertyCardEnhanced: React.FC<PropertyCardEnhancedProps> = ({ property })
         />
         
         {/* Tags no canto superior esquerdo */}
-        {propertyTags.length > 0 && (
+        {allTags.length > 0 && (
           <div className="absolute top-4 left-4 flex flex-wrap gap-1">
-            {propertyTags.slice(0, 2).map((tag, index) => (
-              <PropertyTag key={index} tag={tag} />
+            {allTags.slice(0, 2).map((tag, index) => (
+              <span
+                key={index}
+                className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${
+                  tag.color || 'bg-gray-600'
+                }`}
+              >
+                {tag.text}
+              </span>
             ))}
-            {propertyTags.length > 2 && (
-              <PropertyTag tag={`+${propertyTags.length - 2}`} variant="outline" />
+            {allTags.length > 2 && (
+              <span className="px-2 py-1 rounded-full text-xs font-semibold text-white bg-gray-600">
+                +{allTags.length - 2}
+              </span>
             )}
           </div>
         )}

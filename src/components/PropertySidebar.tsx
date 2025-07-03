@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
@@ -15,12 +16,13 @@ interface Property {
   city: string;
   state?: string;
   created_at: string;
-  price: number; // added new fields
+  price: number;
   location: string;
   bedrooms?: number;
   bathrooms?: number;
   area?: number;
   images?: string[];
+  property_code?: string;
 }
 
 interface PropertySidebarProps {
@@ -37,8 +39,10 @@ const PropertySidebar: React.FC<PropertySidebarProps> = ({ property }) => {
     switch (status.toLowerCase()) {
       case "active":
       case "available":
+      case "ativo":
         return "Disponível";
       case "sold":
+      case "vendido":
         return "Vendido";
       case "pending":
         return "Pendente";
@@ -55,8 +59,10 @@ const PropertySidebar: React.FC<PropertySidebarProps> = ({ property }) => {
     switch (status.toLowerCase()) {
       case "active":
       case "available":
+      case "ativo":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 border-green-200 dark:border-green-800";
       case "sold":
+      case "vendido":
         return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 border-red-200 dark:border-red-800";
       case "pending":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800";
@@ -118,6 +124,18 @@ const PropertySidebar: React.FC<PropertySidebarProps> = ({ property }) => {
       <div className="bg-gradient-to-br from-white to-gray-50 dark:from-slate-800 dark:to-slate-900 border border-gray-200 dark:border-slate-700 shadow-xl rounded-2xl p-6">
         <h3 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">Informações do Imóvel</h3>
         <div className="space-y-4">
+          {/* Código do Imóvel - Destaque especial */}
+          {property.property_code && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-blue-700 dark:text-blue-300">Código do Imóvel:</span>
+                <span className="font-bold text-lg text-blue-900 dark:text-blue-100 font-mono bg-blue-100 dark:bg-blue-800 px-3 py-1 rounded">
+                  {property.property_code}
+                </span>
+              </div>
+            </div>
+          )}
+          
           <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-slate-600">
             <span className="font-medium text-gray-600 dark:text-gray-400">Tipo:</span>
             <span className="font-semibold text-gray-900 dark:text-white">{property.property_type}</span>

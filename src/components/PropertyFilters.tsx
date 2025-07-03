@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Filter, X } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Filter, X, Search } from 'lucide-react';
 
 interface PropertyFiltersProps {
   filters: any;
@@ -28,8 +29,27 @@ const PropertyFilters: React.FC<PropertyFiltersProps> = ({
   return (
     <Card className="mb-8">
       <CardContent className="p-6">
+        {/* Search Bar Principal */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            🔍 Buscar Imóveis
+          </label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Input
+              placeholder="Digite o nome, localização ou código do imóvel (ex: AP-001)"
+              value={filters.search}
+              onChange={(e) => updateFilter('search', e.target.value)}
+              className="pl-10 text-lg py-3"
+            />
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            💡 Dica: Você pode buscar pelo código do imóvel (ex: CA-001, AP-002)
+          </p>
+        </div>
+
         {/* Basic Filters Row */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           {/* Property Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -87,12 +107,57 @@ const PropertyFilters: React.FC<PropertyFiltersProps> = ({
               onChange={(e) => updateFilter('priceMax', parseInt(e.target.value) || 5000000)}
             />
           </div>
+        </div>
 
-          {/* Search Button */}
-          <div className="flex items-end">
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-              🔍 Buscar Imóveis
-            </Button>
+        {/* Filtros Especiais - Cards em destaque */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            ⭐ Categorias Especiais
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <Checkbox
+                id="featured"
+                checked={filters.isFeatured}
+                onCheckedChange={(checked) => updateFilter('isFeatured', checked)}
+              />
+              <label htmlFor="featured" className="text-sm font-medium cursor-pointer">
+                🌟 Em Destaque
+              </label>
+            </div>
+            
+            <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <Checkbox
+                id="beachfront"
+                checked={filters.isBeachfront}
+                onCheckedChange={(checked) => updateFilter('isBeachfront', checked)}
+              />
+              <label htmlFor="beachfront" className="text-sm font-medium cursor-pointer">
+                🏖️ Frente Mar
+              </label>
+            </div>
+            
+            <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-cyan-50 dark:hover:bg-cyan-900/20">
+              <Checkbox
+                id="nearBeach"
+                checked={filters.isNearBeach}
+                onCheckedChange={(checked) => updateFilter('isNearBeach', checked)}
+              />
+              <label htmlFor="nearBeach" className="text-sm font-medium cursor-pointer">
+                🏄 Quadra Mar
+              </label>
+            </div>
+            
+            <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20">
+              <Checkbox
+                id="development"
+                checked={filters.isDevelopment}
+                onCheckedChange={(checked) => updateFilter('isDevelopment', checked)}
+              />
+              <label htmlFor="development" className="text-sm font-medium cursor-pointer">
+                🏗️ Empreendimento
+              </label>
+            </div>
           </div>
         </div>
 
@@ -124,11 +189,11 @@ const PropertyFilters: React.FC<PropertyFiltersProps> = ({
               {/* Bedrooms */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Quartos (mín)
+                  🛏️ Quartos (mín)
                 </label>
                 <Select value={filters.bedrooms} onValueChange={(value) => updateFilter('bedrooms', value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="2+" />
+                    <SelectValue placeholder="Qualquer" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="any">Qualquer</SelectItem>
@@ -143,11 +208,11 @@ const PropertyFilters: React.FC<PropertyFiltersProps> = ({
               {/* Bathrooms */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Banheiros (mín)
+                  🚿 Banheiros (mín)
                 </label>
                 <Select value={filters.bathrooms} onValueChange={(value) => updateFilter('bathrooms', value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="3+" />
+                    <SelectValue placeholder="Qualquer" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="any">Qualquer</SelectItem>
@@ -161,7 +226,7 @@ const PropertyFilters: React.FC<PropertyFiltersProps> = ({
               {/* Area Min */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Área Mín (m²)
+                  📐 Área Mín (m²)
                 </label>
                 <Input
                   type="number"
@@ -174,7 +239,7 @@ const PropertyFilters: React.FC<PropertyFiltersProps> = ({
               {/* Area Max */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Área Máx (m²)
+                  📏 Área Máx (m²)
                 </label>
                 <Input
                   type="number"
