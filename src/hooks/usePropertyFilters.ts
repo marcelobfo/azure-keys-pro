@@ -71,25 +71,32 @@ export const usePropertyFilters = (properties: Property[]) => {
         const matchesCode = property.property_code && 
           property.property_code.toLowerCase().includes(searchTerm);
         
-        console.log(`Property ${property.id}: title match: ${matchesTitle}, location match: ${matchesLocation}, code match: ${matchesCode}`);
-        
         if (!matchesTitle && !matchesLocation && !matchesCode) {
           return false;
         }
       }
 
-      // Type filter
+      // Type filter - corrigir comparação
       if (filters.type && filters.type !== 'all' && filters.type !== '') {
-        if (property.type !== filters.type) {
-          console.log(`Property ${property.id} filtered out by type: ${property.type} !== ${filters.type}`);
+        // Normalizar ambos os valores para comparação
+        const filterType = filters.type.toLowerCase().trim();
+        const propertyType = property.type.toLowerCase().trim();
+        
+        console.log(`Comparing types: filter="${filterType}" vs property="${propertyType}"`);
+        
+        if (propertyType !== filterType) {
+          console.log(`Property ${property.id} filtered out by type`);
           return false;
         }
       }
 
       // Purpose filter
       if (filters.purpose && filters.purpose !== 'all' && filters.purpose !== '') {
-        if (property.purpose !== filters.purpose) {
-          console.log(`Property ${property.id} filtered out by purpose: ${property.purpose} !== ${filters.purpose}`);
+        const filterPurpose = filters.purpose.toLowerCase().trim();
+        const propertyPurpose = property.purpose?.toLowerCase().trim() || '';
+        
+        if (propertyPurpose !== filterPurpose) {
+          console.log(`Property ${property.id} filtered out by purpose`);
           return false;
         }
       }
@@ -155,7 +162,7 @@ export const usePropertyFilters = (properties: Property[]) => {
         }
       }
 
-      // Filtros especiais
+      // Filtros especiais - corrigir lógica
       if (filters.isFeatured && !property.is_featured) {
         console.log(`Property ${property.id} filtered out by featured filter`);
         return false;

@@ -52,13 +52,6 @@ const PropertyCardImage: React.FC<PropertyCardImageProps> = ({
       {/* Tags no canto superior esquerdo */}
       <PropertyCardTags property={property} />
 
-      {/* Código da propriedade no canto superior direito */}
-      {property.property_code && (
-        <div className="absolute top-4 right-4 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs font-mono">
-          {property.property_code}
-        </div>
-      )}
-
       {/* Preços no canto inferior direito */}
       <div className="absolute bottom-4 right-4 flex flex-col gap-1">
         {property.purpose === 'rent' && property.rental_price ? (
@@ -94,7 +87,7 @@ const PropertyCardImage: React.FC<PropertyCardImageProps> = ({
           e.stopPropagation();
           toggleFavorite(property.id);
         }}
-        className={`absolute top-16 left-4 p-2 rounded-full transition-colors ${
+        className={`absolute top-4 left-4 p-2 rounded-full transition-colors ${
           isFavorite(property.id)
             ? 'bg-red-500 hover:bg-red-600 text-white'
             : 'bg-white hover:bg-gray-100 text-gray-600'
