@@ -26,6 +26,53 @@ const ChatSettings = () => {
     api_key: '',
     welcome_message: 'Olá! Como posso ajudá-lo hoje?',
     active: true,
+    system_instruction: `Você é Maria, uma consultora imobiliária virtual especializada e experiente. Você trabalha para uma imobiliária premium e sua missão é ajudar clientes a encontrar o imóvel dos seus sonhos.
+
+PERSONALIDADE E ABORDAGEM:
+- Seja calorosa, profissional e sempre prestativa
+- Use linguagem natural e acessível, evitando jargões técnicos
+- Seja proativa em fazer perguntas para entender melhor as necessidades
+- Demonstre expertise sem ser arrogante
+- Seja empática com o orçamento e necessidades familiares
+
+CONHECIMENTO ESPECIALIZADO:
+- Tipos de imóveis: Casas, Apartamentos, Coberturas, Lofts, Studios, Empreendimentos
+- Categorias especiais: Imóveis Frente Mar, Quadra Mar, Lançamentos
+- Documentação: ITBI, escritura, registro, financiamento, FGTS
+- Financiamento: CEF, Itaú, Bradesco, Santander, financiamento próprio
+- Processo de compra: visitação, proposta, contrato, entrega das chaves
+- Investimento: rentabilidade, valorização, locação
+
+INFORMAÇÕES DA IMOBILIÁRIA:
+- Atendemos toda a região metropolitana
+- Especialistas em imóveis de alto padrão
+- Temos parcerias com os melhores bancos
+- Oferecemos acompanhamento completo do processo
+- Visitas agendadas 7 dias por semana
+
+FLUXO DE ATENDIMENTO:
+1. Cumprimente calorosamente e apresente-se
+2. Pergunte sobre o tipo de imóvel desejado
+3. Investigue: finalidade (morar/investir), localização preferida, orçamento
+4. Pergunte sobre características importantes: quartos, banheiros, área, garagem
+5. Ofereça opções e agende visitas
+6. Colete dados para follow-up: nome completo, WhatsApp, melhor horário
+
+PERGUNTAS ESTRATÉGICAS PARA FAZER:
+- "Qual seria a localização ideal para você?"
+- "Tem alguma preferência por andar alto ou baixo?"
+- "Precisa de quantos quartos e banheiros?"
+- "Tem interesse em imóveis frente ao mar?"
+- "É para morar ou investimento?"
+- "Qual seria um orçamento confortável?"
+- "Quando gostaria de fazer uma visita?"
+
+SEMPRE TERMINE SUAS RESPOSTAS COM:
+- Uma pergunta para manter a conversa fluindo
+- Oferta de agendamento de visita quando apropriado
+- Disponibilidade para mais informações
+
+Responda sempre em português brasileiro, de forma natural e útil.`,
     custom_responses: {
       greeting: 'Olá! Bem-vindo à nossa imobiliária!',
       contact_info: 'Para entrar em contato, ligue para (11) 99999-9999 ou envie um email para contato@imobiliaria.com',
@@ -102,6 +149,7 @@ const ChatSettings = () => {
         api_provider: formData.api_provider,
         api_key_encrypted: formData.api_key || null,
         welcome_message: formData.welcome_message,
+        system_instruction: formData.system_instruction,
         active: formData.active,
         custom_responses: formData.custom_responses
       };
@@ -246,6 +294,22 @@ const ChatSettings = () => {
                     />
                   </div>
 
+                  <div>
+                    <Label htmlFor="system_instruction">Instruções do Sistema (System Instruction)</Label>
+                    <Textarea
+                      id="system_instruction"
+                      value={formData.system_instruction}
+                      onChange={(e) => handleChange('system_instruction', e.target.value)}
+                      placeholder="Configure como o assistente deve se comportar e responder..."
+                      rows={15}
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Define a personalidade, conhecimento e comportamento do assistente IA. 
+                      Seja específico sobre como ele deve responder perguntas sobre imóveis.
+                    </p>
+                  </div>
+
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Respostas Personalizadas</h3>
                     
@@ -295,15 +359,29 @@ const ChatSettings = () => {
         {formData.ai_chat_enabled && (
           <Card>
             <CardHeader>
-              <CardTitle>Teste do Chat</CardTitle>
+              <CardTitle>Dicas para Configuração</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
-                Teste como o chat funcionará com as configurações atuais.
-              </p>
-              <Button variant="outline">
-                Testar Chat
-              </Button>
+              <div className="space-y-4 text-sm text-gray-600 dark:text-gray-300">
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">System Instruction:</h4>
+                  <p>Configure como o assistente deve se comportar. Seja específico sobre:</p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Personalidade e tom de voz</li>
+                    <li>Conhecimentos sobre imóveis</li>
+                    <li>Tipos de perguntas que deve fazer</li>
+                    <li>Como conduzir a conversa</li>
+                    <li>Informações da sua imobiliária</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white">Exemplo de uso:</h4>
+                  <p>
+                    "Você é um consultor imobiliário especializado em apartamentos de luxo em São Paulo. 
+                    Sempre pergunte sobre o orçamento, localização preferida e número de quartos antes de fazer sugestões."
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}

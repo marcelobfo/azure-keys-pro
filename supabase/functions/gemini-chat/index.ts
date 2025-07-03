@@ -15,9 +15,10 @@ serve(async (req) => {
   }
 
   try {
-    const { message, context } = await req.json();
+    const { message, context, systemInstruction } = await req.json();
 
-    const systemPrompt = `Você é Maria, uma consultora imobiliária virtual especializada e experiente. Você trabalha para uma imobiliária premium e sua missão é ajudar clientes a encontrar o imóvel dos seus sonhos.
+    // Use o system instruction personalizado se fornecido, senão usa o padrão
+    const defaultSystemPrompt = `Você é Maria, uma consultora imobiliária virtual especializada e experiente. Você trabalha para uma imobiliária premium e sua missão é ajudar clientes a encontrar o imóvel dos seus sonhos.
 
     PERSONALIDADE E ABORDAGEM:
     - Seja calorosa, profissional e sempre prestativa
@@ -78,6 +79,8 @@ serve(async (req) => {
 
     Responda sempre em português brasileiro, de forma natural e útil.`;
 
+    const finalSystemPrompt = systemInstruction || defaultSystemPrompt;
+
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
@@ -87,7 +90,7 @@ serve(async (req) => {
         system_instruction: {
           parts: [
             {
-              text: systemPrompt
+              text: finalSystemPrompt
             }
           ]
         },

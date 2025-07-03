@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Minimize2, Maximize2, Bot, User } from 'lucide-react';
 import { Button } from './ui/button';
@@ -18,6 +19,7 @@ interface ChatConfig {
   ai_chat_enabled: boolean;
   api_provider: string;
   welcome_message: string;
+  system_instruction?: string;
   custom_responses: any;
 }
 
@@ -55,7 +57,7 @@ const AIChat = () => {
     try {
       const { data, error } = await supabase
         .from('chat_configurations')
-        .select('ai_chat_enabled, api_provider, welcome_message, custom_responses')
+        .select('ai_chat_enabled, api_provider, welcome_message, system_instruction, custom_responses')
         .maybeSingle();
 
       if (data) {
@@ -109,6 +111,7 @@ const AIChat = () => {
           },
           body: JSON.stringify({
             message,
+            systemInstruction: chatConfig.system_instruction,
             context: {
               name: formData.name,
               previousMessages: messages.slice(-5),
@@ -125,6 +128,7 @@ const AIChat = () => {
           },
           body: JSON.stringify({
             message,
+            systemInstruction: chatConfig?.system_instruction,
             context: {
               name: formData.name,
               previousMessages: messages.slice(-5),
