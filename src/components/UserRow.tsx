@@ -3,7 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AddUserDialog, DeleteUserDialog } from "@/components/UserManagementActions";
+import { UserActions } from "@/components/UserManagementActions";
 
 interface User {
   id: string;
@@ -11,18 +11,23 @@ interface User {
   email: string;
   role: "user" | "corretor" | "admin";
   phone?: string;
+  company?: string;
+  bio?: string;
+  website?: string;
   created_at: string;
+  status: string;
 }
 
 interface UserRowProps {
   user: User;
   updatingUserId: string | null;
   onRoleChange: (user: User, value: "user" | "corretor" | "admin") => void;
+  onUserUpdated: () => void;
   onUserDeleted: (userId: string) => void;
 }
 
 const UserRow: React.FC<UserRowProps> = ({
-  user, updatingUserId, onRoleChange, onUserDeleted
+  user, updatingUserId, onRoleChange, onUserUpdated, onUserDeleted
 }) => (
   <tr className="border-b hover:bg-gray-50 dark:hover:bg-slate-700">
     <td className="p-4">
@@ -50,16 +55,11 @@ const UserRow: React.FC<UserRowProps> = ({
     <td className="p-4">{user.phone || '-'}</td>
     <td className="p-4">{new Date(user.created_at).toLocaleDateString('pt-BR')}</td>
     <td className="p-4">
-      <div className="flex space-x-2">
-        <Button variant="outline" size="sm">
-          <Edit className="w-4 h-4" />
-        </Button>
-        <DeleteUserDialog
-          userId={user.id}
-          userName={user.full_name}
-          onUserDeleted={onUserDeleted}
-        />
-      </div>
+      <UserActions 
+        user={user}
+        onUserUpdated={onUserUpdated}
+        onUserDeleted={onUserDeleted}
+      />
     </td>
   </tr>
 );

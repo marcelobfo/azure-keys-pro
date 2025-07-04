@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { UserPlus, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import EditUserDialog from './EditUserDialog';
 
 interface User {
   id: string;
@@ -16,12 +17,16 @@ interface User {
   email: string;
   role: string;
   phone?: string;
+  company?: string;
+  bio?: string;
+  website?: string;
   created_at: string;
   status: string;
 }
 
 interface UserManagementActionsProps {
   onUserAdded: () => void;
+  onUserUpdated: () => void;
   onUserDeleted: (userId: string) => void;
   user?: User;
 }
@@ -170,6 +175,23 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
         </form>
       </DialogContent>
     </Dialog>
+  );
+};
+
+export const UserActions: React.FC<{ user: User; onUserUpdated: () => void; onUserDeleted: (userId: string) => void }> = ({ 
+  user, 
+  onUserUpdated, 
+  onUserDeleted 
+}) => {
+  return (
+    <div className="flex space-x-2">
+      <EditUserDialog user={user} onUserUpdated={onUserUpdated} />
+      <DeleteUserDialog 
+        userId={user.id} 
+        userName={user.full_name || user.email} 
+        onUserDeleted={onUserDeleted} 
+      />
+    </div>
   );
 };
 

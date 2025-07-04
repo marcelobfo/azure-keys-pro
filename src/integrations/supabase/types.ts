@@ -293,6 +293,7 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
           video_url: string | null
+          view_count: number | null
           virtual_tour_url: string | null
         }
         Insert: {
@@ -334,6 +335,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           video_url?: string | null
+          view_count?: number | null
           virtual_tour_url?: string | null
         }
         Update: {
@@ -375,6 +377,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
           video_url?: string | null
+          view_count?: number | null
           virtual_tour_url?: string | null
         }
         Relationships: []
@@ -495,6 +498,33 @@ export type Database = {
           },
         ]
       }
+      webhook_logs: {
+        Row: {
+          created_at: string
+          data: Json | null
+          event_type: string
+          id: string
+          source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          event_type: string
+          id?: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string
+          id?: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -503,6 +533,10 @@ export type Database = {
       generate_property_code: {
         Args: { property_type: string }
         Returns: string
+      }
+      increment_property_views: {
+        Args: { property_id: string }
+        Returns: undefined
       }
     }
     Enums: {

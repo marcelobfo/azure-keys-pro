@@ -20,7 +20,11 @@ interface User {
   email: string;
   role: 'user' | 'corretor' | 'admin';
   phone?: string;
+  company?: string;
+  bio?: string;
+  website?: string;
   created_at: string;
+  status: string;
 }
 
 const AdminUsers = () => {
@@ -52,7 +56,11 @@ const AdminUsers = () => {
         email: user.email || 'Email não informado',
         role: (user.role ?? 'user') as 'user' | 'corretor' | 'admin',
         phone: user.phone,
+        company: user.company,
+        bio: user.bio,
+        website: user.website,
         created_at: user.created_at,
+        status: 'active',
       })) || [];
 
       setUsers(formattedUsers);
@@ -69,6 +77,10 @@ const AdminUsers = () => {
   };
 
   const handleUserAdded = () => {
+    fetchUsers();
+  };
+
+  const handleUserUpdated = () => {
     fetchUsers();
   };
 
@@ -160,15 +172,16 @@ const AdminUsers = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user) => (
-                    <UserRow
-                      key={user.id}
-                      user={user}
-                      updatingUserId={updatingUserId}
-                      onRoleChange={handleRoleChange}
-                      onUserDeleted={handleUserDeleted}
-                    />
-                  ))}
+                   {filteredUsers.map((user) => (
+                     <UserRow
+                       key={user.id}
+                       user={user}
+                       updatingUserId={updatingUserId}
+                       onRoleChange={handleRoleChange}
+                       onUserUpdated={handleUserUpdated}
+                       onUserDeleted={handleUserDeleted}
+                     />
+                   ))}
                 </tbody>
               </table>
             </div>
