@@ -25,23 +25,21 @@ export const useNotifications = () => {
 
   // Cleanup function
   const cleanupSubscription = () => {
-    if (channelRef.current) {
+    if (channelRef.current && isSubscribedRef.current) {
       console.log('Cleaning up notification subscription');
-      supabase.removeChannel(channelRef.current);
+      channelRef.current.unsubscribe();
       channelRef.current = null;
       isSubscribedRef.current = false;
     }
   };
 
   useEffect(() => {
-    // Always cleanup first
-    cleanupSubscription();
-
     if (user?.id) {
       console.log('Setting up notifications for user:', user.id);
       fetchNotifications();
       setupRealtimeSubscription();
     } else {
+      cleanupSubscription();
       setNotifications([]);
       setUnreadCount(0);
       setLoading(false);
@@ -87,6 +85,9 @@ export const useNotifications = () => {
     try {
       console.log('Creating new notification channel for user:', user.id);
       
+      // Cleanup any existing subscription first
+      cleanupSubscription();
+      
       // Create new channel with unique name
       const channelName = `notifications-${user.id}-${Date.now()}`;
       const channel = supabase
@@ -120,6 +121,8 @@ export const useNotifications = () => {
           console.log('Subscription status:', status);
           if (status === 'SUBSCRIBED') {
             isSubscribedRef.current = true;
+          } else if (status === 'CLOSED') {
+            isSubscribedRef.current = false;
           }
         });
 

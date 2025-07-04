@@ -87,7 +87,7 @@ const PropertyCardImage: React.FC<PropertyCardImageProps> = ({
           e.stopPropagation();
           toggleFavorite(property.id);
         }}
-        className={`absolute top-4 left-4 p-2 rounded-full transition-colors ${
+        className={`absolute top-4 right-4 p-2 rounded-full transition-colors z-10 ${
           isFavorite(property.id)
             ? 'bg-red-500 hover:bg-red-600 text-white'
             : 'bg-white hover:bg-gray-100 text-gray-600'

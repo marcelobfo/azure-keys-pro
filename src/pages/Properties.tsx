@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import PropertyCard from '../components/PropertyCard';
+import PropertyCardSimple from '../components/PropertyCardSimple';
 import PropertyFilters from '../components/PropertyFilters';
 import { usePropertyFilters } from '../hooks/usePropertyFilters';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,7 +45,7 @@ const PropertiesPage = () => {
       const { data, error } = await supabase
         .from('properties')
         .select('*')
-        .eq('status', 'available')
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -139,7 +139,7 @@ const PropertiesPage = () => {
         {/* Properties Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredProperties.map((property) => (
-            <PropertyCard key={property.id} property={property} />
+            <PropertyCardSimple key={property.id} property={property} />
           ))}
         </div>
 
