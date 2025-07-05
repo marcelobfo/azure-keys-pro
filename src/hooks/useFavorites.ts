@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 /**
- * Adicionada a possibilidade de passar um callback quando o usuário não está logado
+ * Hook para gerenciar favoritos com analytics tracking
  */
 export const useFavorites = (onRequireAuth?: () => void) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { trackEvent } = useAnalytics();
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
@@ -81,6 +83,9 @@ export const useFavorites = (onRequireAuth?: () => void) => {
           return newSet;
         });
         
+        // Track analytics
+        trackEvent('favorite_removed', { property_id: propertyId });
+        
         toast({
           title: "Removido dos favoritos",
           description: "Imóvel removido da sua lista de favoritos",
@@ -99,6 +104,9 @@ export const useFavorites = (onRequireAuth?: () => void) => {
         }
 
         setFavorites(prev => new Set(prev).add(propertyId));
+        
+        // Track analytics
+        trackEvent('favorite_added', { property_id: propertyId });
         
         toast({
           title: "Adicionado aos favoritos",

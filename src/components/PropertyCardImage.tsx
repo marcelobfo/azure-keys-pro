@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../utils/priceUtils';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import PropertyCardTags from './PropertyCardTags';
 
 interface FeaturedProperty {
@@ -34,11 +35,22 @@ const PropertyCardImage: React.FC<PropertyCardImageProps> = ({
   toggleFavorite 
 }) => {
   const navigate = useNavigate();
+  const { trackEvent } = useAnalytics();
+
+  const handlePropertyClick = () => {
+    trackEvent('property_view', {
+      property_id: property.id,
+      property_title: property.title,
+      property_type: property.property_type,
+      price: property.price
+    });
+    navigate(`/property/${property.id}`);
+  };
 
   return (
     <div
-      className="relative overflow-hidden"
-      onClick={() => navigate(`/property/${property.id}`)}
+      className="relative overflow-hidden cursor-pointer"
+      onClick={handlePropertyClick}
     >
       <img
         src={

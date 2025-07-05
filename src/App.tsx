@@ -32,6 +32,8 @@ import Index from '@/pages/Index';
 import PropertyDetail from '@/pages/PropertyDetail';
 import VisitsManagement from '@/pages/VisitsManagement';
 import AdminSiteSettings from '@/pages/AdminSiteSettings';
+import ApiTokens from '@/pages/ApiTokens';
+import Analytics from './pages/Analytics';
 
 const queryClient = new QueryClient();
 
@@ -67,6 +69,7 @@ function App() {
                 <Route path="/admin/site-settings" element={<AdminSiteSettings />} />
                 <Route path="/admin/settings" element={<WebhookSettings />} />
                 <Route path="/admin/chat-settings" element={<AdminChatSettings />} />
+                <Route path="/analytics" element={<Analytics />} />
 
                 {/* Corretor Routes */}
                 <Route path="/corretor/*" element={<CorretorDashboard />} />

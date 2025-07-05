@@ -9,6 +9,81 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          created_at: string
+          data: Json | null
+          event_type: string
+          id: string
+          page_path: string | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          event_type: string
+          id?: string
+          page_path?: string | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string
+          id?: string
+          page_path?: string | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      analytics_summary: {
+        Row: {
+          chat_messages: number | null
+          created_at: string
+          data: Json | null
+          date: string
+          favorites_added: number | null
+          id: string
+          leads_generated: number | null
+          page_views: number | null
+          property_views: number | null
+          unique_visitors: number | null
+          updated_at: string
+          visits_scheduled: number | null
+        }
+        Insert: {
+          chat_messages?: number | null
+          created_at?: string
+          data?: Json | null
+          date?: string
+          favorites_added?: number | null
+          id?: string
+          leads_generated?: number | null
+          page_views?: number | null
+          property_views?: number | null
+          unique_visitors?: number | null
+          updated_at?: string
+          visits_scheduled?: number | null
+        }
+        Update: {
+          chat_messages?: number | null
+          created_at?: string
+          data?: Json | null
+          date?: string
+          favorites_added?: number | null
+          id?: string
+          leads_generated?: number | null
+          page_views?: number | null
+          property_views?: number | null
+          unique_visitors?: number | null
+          updated_at?: string
+          visits_scheduled?: number | null
+        }
+        Relationships: []
+      }
       api_tokens: {
         Row: {
           active: boolean | null

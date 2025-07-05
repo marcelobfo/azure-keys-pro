@@ -6,6 +6,7 @@ import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageCircle } from 'lucide-react';
 
@@ -16,6 +17,7 @@ interface InterestModalProps {
 
 const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle }) => {
   const { toast } = useToast();
+  const { trackEvent } = useAnalytics();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -57,6 +59,13 @@ const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle
       if (error) {
         throw error;
       }
+
+      // Track analytics
+      trackEvent('lead_created', {
+        property_id: propertyId,
+        property_title: propertyTitle,
+        lead_id: data[0]?.id
+      });
 
       toast({
         title: "Interesse enviado!",
