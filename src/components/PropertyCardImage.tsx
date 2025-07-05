@@ -5,6 +5,7 @@ import { Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../utils/priceUtils';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useFavorites } from '@/hooks/useFavorites';
 import PropertyCardTags from './PropertyCardTags';
 
 interface FeaturedProperty {
@@ -25,17 +26,16 @@ interface FeaturedProperty {
 
 interface PropertyCardImageProps {
   property: FeaturedProperty;
-  isFavorite: (id: string) => boolean;
-  toggleFavorite: (id: string) => void;
+  className?: string;
 }
 
 const PropertyCardImage: React.FC<PropertyCardImageProps> = ({ 
   property, 
-  isFavorite, 
-  toggleFavorite 
+  className = "" 
 }) => {
   const navigate = useNavigate();
   const { trackEvent } = useAnalytics();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const handlePropertyClick = () => {
     trackEvent('property_view', {
@@ -45,6 +45,11 @@ const PropertyCardImage: React.FC<PropertyCardImageProps> = ({
       price: property.price
     });
     navigate(`/property/${property.id}`);
+  };
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleFavorite(property.id);
   };
 
   return (
@@ -95,10 +100,7 @@ const PropertyCardImage: React.FC<PropertyCardImageProps> = ({
 
       {/* Botão de favorito */}
       <Button
-        onClick={e => {
-          e.stopPropagation();
-          toggleFavorite(property.id);
-        }}
+        onClick={handleFavoriteClick}
         className={`absolute top-4 right-4 p-2 rounded-full transition-colors z-10 ${
           isFavorite(property.id)
             ? 'bg-red-500 hover:bg-red-600 text-white'

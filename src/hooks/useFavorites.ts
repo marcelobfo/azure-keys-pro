@@ -45,9 +45,6 @@ export const useFavorites = (onRequireAuth?: () => void) => {
     }
   };
 
-  /**
-   * Agora aceita onRequireAuth.
-   */
   const toggleFavorite = async (propertyId: string) => {
     if (!user) {
       if (onRequireAuth) {

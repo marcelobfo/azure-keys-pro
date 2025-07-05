@@ -113,7 +113,7 @@ export const useAnalyticsDashboard = () => {
   const [summary, setSummary] = useState<AnalyticsSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchAnalytics = async (days: number = 30) => {
+  const fetchAnalytics = useCallback(async (days: number = 30) => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -132,9 +132,9 @@ export const useAnalyticsDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchTopProperties = async (limit: number = 10) => {
+  const fetchTopProperties = useCallback(async (limit: number = 10) => {
     try {
       const { data, error } = await supabase
         .from('properties')
@@ -152,11 +152,11 @@ export const useAnalyticsDashboard = () => {
       console.error('Error in fetchTopProperties:', error);
       return [];
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchAnalytics();
-  }, []);
+  }, [fetchAnalytics]);
 
   return {
     summary,

@@ -1,8 +1,6 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { useNavigate } from 'react-router-dom';
-import { useFavorites } from '@/hooks/useFavorites';
 import PropertyCardImage from './PropertyCardImage';
 import PropertyCardContent from './PropertyCardContent';
 
@@ -35,18 +33,11 @@ interface PropertyCardEnhancedProps {
 }
 
 const PropertyCardEnhanced: React.FC<PropertyCardEnhancedProps> = ({ property }) => {
-  const navigate = useNavigate();
-  const { toggleFavorite, isFavorite } = useFavorites(() => {
-    navigate('/auth');
-  });
-
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-slate-800 cursor-pointer">
-      <PropertyCardImage 
-        property={property}
-        isFavorite={isFavorite}
-        toggleFavorite={toggleFavorite}
-      />
+        <PropertyCardImage 
+          property={property}
+        />
       
       <CardContent className="p-0">
         <PropertyCardContent property={property} />
