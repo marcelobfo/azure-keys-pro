@@ -56,7 +56,7 @@ const SimilarProperties: React.FC<SimilarPropertiesProps> = ({ currentProperty }
   return (
     <div className="mt-16">
       <h3 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Imóveis Similares</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
         {similarProperties.map((property) => (
           <Card
             key={property.id}
