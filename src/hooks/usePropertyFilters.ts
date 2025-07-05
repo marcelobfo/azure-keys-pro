@@ -76,16 +76,17 @@ export const usePropertyFilters = (properties: Property[]) => {
         }
       }
 
-      // Type filter - corrigir comparação
+      // Type filter - melhorar comparação
       if (filters.type && filters.type !== 'all' && filters.type !== '') {
-        // Normalizar ambos os valores para comparação
         const filterType = filters.type.toLowerCase().trim();
         const propertyType = property.type.toLowerCase().trim();
         
-        console.log(`Comparing types: filter="${filterType}" vs property="${propertyType}"`);
+        // Buscar por correspondência parcial para maior flexibilidade
+        const matchesType = propertyType.includes(filterType) || 
+                           filterType.includes(propertyType) ||
+                           propertyType === filterType;
         
-        if (propertyType !== filterType) {
-          console.log(`Property ${property.id} filtered out by type`);
+        if (!matchesType) {
           return false;
         }
       }
@@ -148,16 +149,26 @@ export const usePropertyFilters = (properties: Property[]) => {
         }
       }
 
-      // Tags filter
+      // Tags filter - incluir busca em todas as categorias especiais
       if (filters.tags.length > 0) {
         const propertyTags = property.tags || [];
+        const specialCategories = [];
+        
+        // Adicionar categorias especiais como tags virtuais
+        if (property.is_featured) specialCategories.push('destaque', 'featured');
+        if (property.is_beachfront) specialCategories.push('frente mar', 'beachfront');
+        if (property.is_near_beach) specialCategories.push('quadra mar', 'near beach');
+        if (property.is_development) specialCategories.push('empreendimento', 'development');
+        
+        const allSearchableTags = [...propertyTags, ...specialCategories];
+        
         const hasMatchingTag = filters.tags.some(filterTag => 
-          propertyTags.some(propertyTag => 
-            propertyTag.toLowerCase().includes(filterTag.toLowerCase())
+          allSearchableTags.some(tag => 
+            tag.toLowerCase().includes(filterTag.toLowerCase())
           )
         );
+        
         if (!hasMatchingTag) {
-          console.log(`Property ${property.id} filtered out by tags`);
           return false;
         }
       }

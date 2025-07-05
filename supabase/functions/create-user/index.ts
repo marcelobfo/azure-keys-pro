@@ -40,15 +40,16 @@ serve(async (req) => {
       throw userError;
     }
 
-    // Update the profile with additional information
+    // Insert the profile with additional information
     const { error: profileError } = await supabaseClient
       .from('profiles')
-      .update({
+      .upsert({
+        id: user.user.id,
+        email,
         full_name,
         role,
         phone: phone || null
-      })
-      .eq('id', user.user.id);
+      });
 
     if (profileError) {
       console.error('Error updating profile:', profileError);

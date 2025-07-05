@@ -28,6 +28,11 @@ interface Property {
   created_at: string;
   virtual_tour_url: string;
   video_url: string;
+  is_featured?: boolean;
+  is_beachfront?: boolean;
+  is_near_beach?: boolean;
+  is_development?: boolean;
+  tags?: string[];
 }
 
 const PropertyDetail = () => {
@@ -106,6 +111,35 @@ const PropertyDetail = () => {
           </Button>
         </div>
         
+        {/* Special Categories Banner */}
+        {(property.is_featured || property.is_beachfront || property.is_near_beach || property.is_development) && (
+          <div className="mb-6 bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Categorias Especiais</h3>
+            <div className="flex flex-wrap gap-2">
+              {property.is_featured && (
+                <span className="px-3 py-1 bg-yellow-500 text-white text-sm font-semibold rounded-full">
+                  ⭐ Imóvel em Destaque
+                </span>
+              )}
+              {property.is_beachfront && (
+                <span className="px-3 py-1 bg-blue-500 text-white text-sm font-semibold rounded-full">
+                  🏖️ Frente para o Mar
+                </span>
+              )}
+              {property.is_near_beach && (
+                <span className="px-3 py-1 bg-cyan-500 text-white text-sm font-semibold rounded-full">
+                  🌊 Quadra Mar
+                </span>
+              )}
+              {property.is_development && (
+                <span className="px-3 py-1 bg-purple-500 text-white text-sm font-semibold rounded-full">
+                  🏗️ Empreendimento
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <PropertyImageGallery 

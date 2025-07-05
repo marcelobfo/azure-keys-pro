@@ -16,9 +16,7 @@ const Analytics = () => {
   const [topProperties, setTopProperties] = useState<any[]>([]);
 
   useEffect(() => {
-    if (timeRange) {
-      fetchAnalytics(parseInt(timeRange));
-    }
+    fetchAnalytics(parseInt(timeRange));
   }, [timeRange, fetchAnalytics]);
 
   useEffect(() => {

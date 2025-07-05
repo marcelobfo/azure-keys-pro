@@ -7,9 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
+import AutomaticMessages from '@/components/AutomaticMessages';
 
 interface ChatConfig {
   id: string;
@@ -215,181 +217,203 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
         </div>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações Básicas</CardTitle>
-              <CardDescription>
-                Configure as informações básicas da empresa
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="company">Nome da Empresa</Label>
-                <Input
-                  id="company"
-                  value={formData.company}
-                  onChange={(e) => setFormData({...formData, company: e.target.value})}
-                  placeholder="Ex: Imobiliária XYZ"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="welcome">Mensagem de Boas-vindas</Label>
-                <Textarea
-                  id="welcome"
-                  value={formData.welcome_message}
-                  onChange={(e) => setFormData({...formData, welcome_message: e.target.value})}
-                  placeholder="Digite a mensagem que será exibida quando o chat iniciar"
-                  rows={3}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="basic">Configurações Básicas</TabsTrigger>
+              <TabsTrigger value="ai">Chat com IA</TabsTrigger>
+              <TabsTrigger value="automatic">Mensagens Automáticas</TabsTrigger>
+            </TabsList>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Chat com IA</CardTitle>
-              <CardDescription>
-                Configure o assistente virtual com IA
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="ai-chat"
-                  checked={formData.ai_chat_enabled}
-                  onCheckedChange={(checked) => setFormData({...formData, ai_chat_enabled: checked})}
-                />
-                <Label htmlFor="ai-chat">Habilitar Chat com IA</Label>
-              </div>
-
-              {formData.ai_chat_enabled && (
-                <>
+            <TabsContent value="basic" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informações Básicas</CardTitle>
+                  <CardDescription>
+                    Configure as informações básicas da empresa
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="provider">Provedor de IA</Label>
-                    <Select
-                      value={formData.api_provider}
-                      onValueChange={(value) => setFormData({...formData, api_provider: value})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o provedor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="openai">OpenAI</SelectItem>
-                        <SelectItem value="google">Google Gemini</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="api-key">Chave da API</Label>
+                    <Label htmlFor="company">Nome da Empresa</Label>
                     <Input
-                      id="api-key"
-                      type="password"
-                      value={formData.api_key}
-                      onChange={(e) => setFormData({...formData, api_key: e.target.value})}
-                      placeholder="Insira sua chave da API"
+                      id="company"
+                      value={formData.company}
+                      onChange={(e) => setFormData({...formData, company: e.target.value})}
+                      placeholder="Ex: Imobiliária XYZ"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Deixe em branco para manter a chave atual
-                    </p>
                   </div>
-
+                  
                   <div>
-                    <Label htmlFor="system_instruction">Instruções do Sistema (System Instruction)</Label>
+                    <Label htmlFor="welcome">Mensagem de Boas-vindas</Label>
                     <Textarea
-                      id="system_instruction"
-                      value={formData.system_instruction}
-                      onChange={(e) => setFormData({...formData, system_instruction: e.target.value})}
-                      placeholder="Configure como o assistente deve se comportar e responder..."
-                      rows={15}
-                      className="font-mono text-sm"
+                      id="welcome"
+                      value={formData.welcome_message}
+                      onChange={(e) => setFormData({...formData, welcome_message: e.target.value})}
+                      placeholder="Digite a mensagem que será exibida quando o chat iniciar"
+                      rows={3}
                     />
-                    <p className="text-sm text-gray-500 mt-1">
-                      Define a personalidade, conhecimento e comportamento do assistente IA.
-                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Integração WhatsApp</CardTitle>
+                  <CardDescription>
+                    Configure redirecionamento para WhatsApp
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="whatsapp"
+                      checked={formData.whatsapp_enabled}
+                      onCheckedChange={(checked) => setFormData({...formData, whatsapp_enabled: checked})}
+                    />
+                    <Label htmlFor="whatsapp">Habilitar WhatsApp</Label>
                   </div>
 
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Respostas Personalizadas</h3>
-                    
+                  {formData.whatsapp_enabled && (
                     <div>
-                      <Label htmlFor="greeting-admin">Saudação</Label>
-                      <Textarea
-                        id="greeting-admin"
-                        value={formData.custom_responses?.greeting || ''}
-                        onChange={(e) => handleCustomResponseChange('greeting', e.target.value)}
-                        placeholder="Mensagem de saudação"
-                        rows={2}
+                      <Label htmlFor="whatsapp-number">Número do WhatsApp</Label>
+                      <Input
+                        id="whatsapp-number"
+                        value={formData.whatsapp_number}
+                        onChange={(e) => setFormData({...formData, whatsapp_number: e.target.value})}
+                        placeholder="Ex: 5511999999999"
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Digite apenas números (com código do país)
+                      </p>
                     </div>
+                  )}
+                </CardContent>
+              </Card>
 
-                    <div>
-                      <Label htmlFor="contact_info-admin">Informações de Contato</Label>
-                      <Textarea
-                        id="contact_info-admin"
-                        value={formData.custom_responses?.contact_info || ''}
-                        onChange={(e) => handleCustomResponseChange('contact_info', e.target.value)}
-                        placeholder="Como entrar em contato"
-                        rows={2}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="business_hours-admin">Horário de Funcionamento</Label>
-                      <Textarea
-                        id="business_hours-admin"
-                        value={formData.custom_responses?.business_hours || ''}
-                        onChange={(e) => handleCustomResponseChange('business_hours', e.target.value)}
-                        placeholder="Horários de atendimento"
-                        rows={2}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Integração WhatsApp</CardTitle>
-              <CardDescription>
-                Configure redirecionamento para WhatsApp
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="whatsapp"
-                  checked={formData.whatsapp_enabled}
-                  onCheckedChange={(checked) => setFormData({...formData, whatsapp_enabled: checked})}
-                />
-                <Label htmlFor="whatsapp">Habilitar WhatsApp</Label>
+              <div className="flex justify-end">
+                <Button onClick={saveChatConfig} disabled={saving}>
+                  {saving ? 'Salvando...' : 'Salvar Configurações'}
+                </Button>
               </div>
+            </TabsContent>
 
-              {formData.whatsapp_enabled && (
-                <div>
-                  <Label htmlFor="whatsapp-number">Número do WhatsApp</Label>
-                  <Input
-                    id="whatsapp-number"
-                    value={formData.whatsapp_number}
-                    onChange={(e) => setFormData({...formData, whatsapp_number: e.target.value})}
-                    placeholder="Ex: 5511999999999"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Digite apenas números (com código do país)
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            <TabsContent value="ai" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Chat com IA</CardTitle>
+                  <CardDescription>
+                    Configure o assistente virtual com IA
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="ai-chat"
+                      checked={formData.ai_chat_enabled}
+                      onCheckedChange={(checked) => setFormData({...formData, ai_chat_enabled: checked})}
+                    />
+                    <Label htmlFor="ai-chat">Habilitar Chat com IA</Label>
+                  </div>
 
-          <div className="flex justify-end">
-            <Button onClick={saveChatConfig} disabled={saving}>
-              {saving ? 'Salvando...' : 'Salvar Configurações'}
-            </Button>
-          </div>
+                  {formData.ai_chat_enabled && (
+                    <>
+                      <div>
+                        <Label htmlFor="provider">Provedor de IA</Label>
+                        <Select
+                          value={formData.api_provider}
+                          onValueChange={(value) => setFormData({...formData, api_provider: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o provedor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="openai">OpenAI</SelectItem>
+                            <SelectItem value="google">Google Gemini</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="api-key">Chave da API</Label>
+                        <Input
+                          id="api-key"
+                          type="password"
+                          value={formData.api_key}
+                          onChange={(e) => setFormData({...formData, api_key: e.target.value})}
+                          placeholder="Insira sua chave da API"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Deixe em branco para manter a chave atual
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="system_instruction">Instruções do Sistema (System Instruction)</Label>
+                        <Textarea
+                          id="system_instruction"
+                          value={formData.system_instruction}
+                          onChange={(e) => setFormData({...formData, system_instruction: e.target.value})}
+                          placeholder="Configure como o assistente deve se comportar e responder..."
+                          rows={15}
+                          className="font-mono text-sm"
+                        />
+                        <p className="text-sm text-gray-500 mt-1">
+                          Define a personalidade, conhecimento e comportamento do assistente IA.
+                        </p>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Respostas Personalizadas</h3>
+                        
+                        <div>
+                          <Label htmlFor="greeting-admin">Saudação</Label>
+                          <Textarea
+                            id="greeting-admin"
+                            value={formData.custom_responses?.greeting || ''}
+                            onChange={(e) => handleCustomResponseChange('greeting', e.target.value)}
+                            placeholder="Mensagem de saudação"
+                            rows={2}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="contact_info-admin">Informações de Contato</Label>
+                          <Textarea
+                            id="contact_info-admin"
+                            value={formData.custom_responses?.contact_info || ''}
+                            onChange={(e) => handleCustomResponseChange('contact_info', e.target.value)}
+                            placeholder="Como entrar em contato"
+                            rows={2}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="business_hours-admin">Horário de Funcionamento</Label>
+                          <Textarea
+                            id="business_hours-admin"
+                            value={formData.custom_responses?.business_hours || ''}
+                            onChange={(e) => handleCustomResponseChange('business_hours', e.target.value)}
+                            placeholder="Horários de atendimento"
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end">
+                <Button onClick={saveChatConfig} disabled={saving}>
+                  {saving ? 'Salvando...' : 'Salvar Configurações'}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="automatic" className="space-y-6">
+              <AutomaticMessages />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </Layout>

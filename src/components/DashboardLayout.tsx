@@ -73,6 +73,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
     if (userRole === 'admin') {
       baseItems.splice(-1, 0,
         { icon: Users, label: 'Usuários', href: '/admin/users' },
+        { icon: BarChart3, label: 'Analytics', href: '/analytics' },
         { icon: Settings, label: 'Configurações', href: '/admin/site-settings' }
       );
     }

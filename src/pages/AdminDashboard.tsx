@@ -207,7 +207,7 @@ const AdminDashboard = () => {
                 <MessageCircle className="h-5 w-5" />
               </CardTitle>
               <CardDescription>
-                Configure chat com IA e integração WhatsApp
+                Configure chat com IA e mensagens automáticas
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -222,7 +222,7 @@ const AdminDashboard = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm">Mensagens Automáticas</span>
-                  <Badge>Personalizar</Badge>
+                  <Badge>Ativo</Badge>
                 </div>
               </div>
               <Button className="w-full mt-4" variant="outline">
