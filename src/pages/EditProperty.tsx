@@ -41,7 +41,6 @@ const EditProperty = () => {
     bedrooms: '',
     bathrooms: '',
     suites: '',
-          garage_spaces: '',
     condo_fee: '',
     iptu_fee: '',
     reference_point: '',
@@ -134,7 +133,7 @@ const EditProperty = () => {
           has_lavabo: features.includes('Lavabo'),
           has_furnished: features.includes('Mobiliado'),
           has_air_conditioning: features.includes('Ar Condicionado'),
-          has_solar_energy: features.includes('Energia Solar'),
+           has_solar_energy: features.includes('Energia Solar'),
         });
       } catch (error) {
         toast({
