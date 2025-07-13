@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Upload, X, Plus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowLeft, X } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import ImageUpload from '@/components/ImageUpload';
 
 const EditProperty = () => {
   const { id } = useParams();
@@ -20,33 +22,63 @@ const EditProperty = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentTag, setCurrentTag] = useState('');
+  const [currentFeature, setCurrentFeature] = useState('');
 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     price: '',
+    rental_price: '',
     location: '',
     city: '',
     state: '',
     property_type: '',
+    purpose: 'sale',
     area: '',
+    built_area: '',
+    total_area: '',
     bedrooms: '',
     bathrooms: '',
-    features: [] as string[],
-    images: [] as string[],
-    is_featured: false, // Novo campo
-    virtual_tour_url: '',
+    suites: '',
+          garage_spaces: '',
+    condo_fee: '',
+    iptu_fee: '',
+    reference_point: '',
     video_url: '',
+    virtual_tour_url: '',
+    broker_name: '',
+    broker_creci: '',
+    negotiation_notes: '',
+    images: [] as string[],
+    features: [] as string[],
+    tags: [] as string[],
+    is_featured: false,
+    is_beachfront: false,
+    is_near_beach: false,
+    is_development: false,
+    // Facilidades/Comodidades
+    has_pool: false,
+    has_gym: false,
+    has_playground: false,
+    has_barbecue: false,
+    has_party_room: false,
+    has_concierge: false,
+    has_elevator: false,
+    has_garden: false,
+    has_balcony: false,
+    has_sacada: false,
+    has_lavabo: false,
+    has_furnished: false,
+    has_air_conditioning: false,
+    has_solar_energy: false,
   });
-
-  const [newFeature, setNewFeature] = useState('');
 
   useEffect(() => {
     async function loadProperty() {
       setLoading(true);
       try {
         if (!id) throw new Error("ID inválido.");
-        // Busca o imóvel pelo id no Supabase
         const { data, error } = await supabase
           .from('properties')
           .select('*')
@@ -54,22 +86,55 @@ const EditProperty = () => {
           .maybeSingle();
         if (error || !data) throw new Error("Imóvel não encontrado.");
 
+        // Parse features to extract facility flags
+        const features = Array.isArray(data.features) ? data.features : [];
+        
         setFormData({
           title: data.title ?? '',
           description: data.description ?? '',
           price: data.price ? String(data.price) : '',
+          rental_price: data.rental_price ? String(data.rental_price) : '',
           location: data.location ?? '',
           city: data.city ?? '',
           state: data.state ?? '',
           property_type: data.property_type ?? '',
+          purpose: data.purpose ?? 'sale',
           area: data.area ? String(data.area) : '',
+          built_area: data.built_area ? String(data.built_area) : '',
+          total_area: data.total_area ? String(data.total_area) : '',
           bedrooms: data.bedrooms ? String(data.bedrooms) : '',
           bathrooms: data.bathrooms ? String(data.bathrooms) : '',
-          features: Array.isArray(data.features) ? data.features : [],
-          images: Array.isArray(data.images) ? data.images : [],
-          is_featured: Boolean(data.is_featured),
-          virtual_tour_url: data.virtual_tour_url ?? '',
+          suites: data.suites ? String(data.suites) : '',
+          condo_fee: data.condo_fee ? String(data.condo_fee) : '',
+          iptu_fee: data.iptu_fee ? String(data.iptu_fee) : '',
+          reference_point: data.reference_point ?? '',
           video_url: data.video_url ?? '',
+          virtual_tour_url: data.virtual_tour_url ?? '',
+          broker_name: data.broker_name ?? '',
+          broker_creci: data.broker_creci ?? '',
+          negotiation_notes: data.negotiation_notes ?? '',
+          images: Array.isArray(data.images) ? data.images : [],
+          features: features.filter(f => !['Piscina', 'Academia', 'Playground', 'Churrasqueira', 'Salão de Festas', 'Portaria 24h', 'Elevador', 'Jardim', 'Varanda', 'Sacada', 'Lavabo', 'Mobiliado', 'Ar Condicionado', 'Energia Solar'].includes(f)),
+          tags: Array.isArray(data.tags) ? data.tags : [],
+          is_featured: Boolean(data.is_featured),
+          is_beachfront: Boolean(data.is_beachfront),
+          is_near_beach: Boolean(data.is_near_beach),
+          is_development: Boolean(data.is_development),
+          // Extract facility flags from features
+          has_pool: features.includes('Piscina'),
+          has_gym: features.includes('Academia'),
+          has_playground: features.includes('Playground'),
+          has_barbecue: features.includes('Churrasqueira'),
+          has_party_room: features.includes('Salão de Festas'),
+          has_concierge: features.includes('Portaria 24h'),
+          has_elevator: features.includes('Elevador'),
+          has_garden: features.includes('Jardim'),
+          has_balcony: features.includes('Varanda'),
+          has_sacada: features.includes('Sacada'),
+          has_lavabo: features.includes('Lavabo'),
+          has_furnished: features.includes('Mobiliado'),
+          has_air_conditioning: features.includes('Ar Condicionado'),
+          has_solar_energy: features.includes('Energia Solar'),
         });
       } catch (error) {
         toast({
@@ -82,46 +147,51 @@ const EditProperty = () => {
       }
     }
     loadProperty();
-    // eslint-disable-next-line
-  }, [id]);
+  }, [id, toast]);
 
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const addTag = () => {
+    if (currentTag.trim() && !formData.tags.includes(currentTag.trim())) {
+      setFormData({
+        ...formData,
+        tags: [...formData.tags, currentTag.trim()]
+      });
+      setCurrentTag('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setFormData({
+      ...formData,
+      tags: formData.tags.filter(tag => tag !== tagToRemove)
+    });
   };
 
   const addFeature = () => {
-    if (newFeature.trim() && !formData.features.includes(newFeature.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        features: [...prev.features, newFeature.trim()]
-      }));
-      setNewFeature('');
+    if (currentFeature.trim() && !formData.features.includes(currentFeature.trim())) {
+      setFormData({
+        ...formData,
+        features: [...formData.features, currentFeature.trim()]
+      });
+      setCurrentFeature('');
     }
   };
 
-  const removeFeature = (feature: string) => {
-    setFormData(prev => ({
-      ...prev,
-      features: prev.features.filter(f => f !== feature)
-    }));
+  const removeFeature = (featureToRemove: string) => {
+    setFormData({
+      ...formData,
+      features: formData.features.filter(feature => feature !== featureToRemove)
+    });
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files) {
-      const newImages = Array.from(files).map(file => URL.createObjectURL(file));
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...newImages]
-      }));
+  const handleKeyPress = (e: React.KeyboardEvent, action: 'tag' | 'feature') => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (action === 'tag') {
+        addTag();
+      } else {
+        addFeature();
+      }
     }
-  };
-
-  const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,25 +200,60 @@ const EditProperty = () => {
 
     try {
       if (!id) throw new Error("ID inválido.");
+      
+      // Criar array de características baseado nos checkboxes
+      const facilidades = [];
+      if (formData.has_pool) facilidades.push('Piscina');
+      if (formData.has_gym) facilidades.push('Academia');
+      if (formData.has_playground) facilidades.push('Playground');
+      if (formData.has_barbecue) facilidades.push('Churrasqueira');
+      if (formData.has_party_room) facilidades.push('Salão de Festas');
+      if (formData.has_concierge) facilidades.push('Portaria 24h');
+      if (formData.has_elevator) facilidades.push('Elevador');
+      if (formData.has_garden) facilidades.push('Jardim');
+      if (formData.has_balcony) facilidades.push('Varanda');
+      if (formData.has_sacada) facilidades.push('Sacada');
+      if (formData.has_lavabo) facilidades.push('Lavabo');
+      if (formData.has_furnished) facilidades.push('Mobiliado');
+      if (formData.has_air_conditioning) facilidades.push('Ar Condicionado');
+      if (formData.has_solar_energy) facilidades.push('Energia Solar');
+
+      const allFeatures = [...formData.features, ...facilidades];
+
       // Atualiza o imóvel no Supabase
       const { error } = await supabase
         .from('properties')
         .update({
           title: formData.title,
           description: formData.description,
-          price: Number(formData.price) || 0,
+          price: parseFloat(formData.price) || 0,
+          rental_price: formData.rental_price ? parseFloat(formData.rental_price) : null,
           location: formData.location,
           city: formData.city,
           state: formData.state,
           property_type: formData.property_type,
-          area: formData.area !== '' ? Number(formData.area) : null,
-          bedrooms: formData.bedrooms !== '' ? Number(formData.bedrooms) : null,
-          bathrooms: formData.bathrooms !== '' ? Number(formData.bathrooms) : null,
-          features: formData.features,
+          purpose: formData.purpose,
+          area: parseFloat(formData.area) || null,
+          built_area: parseFloat(formData.built_area) || null,
+          total_area: parseFloat(formData.total_area) || null,
+          bedrooms: parseInt(formData.bedrooms) || null,
+          bathrooms: parseInt(formData.bathrooms) || null,
+          suites: parseInt(formData.suites) || null,
+          condo_fee: parseFloat(formData.condo_fee) || null,
+          iptu_fee: parseFloat(formData.iptu_fee) || null,
+          reference_point: formData.reference_point || null,
+          video_url: formData.video_url || null,
+          virtual_tour_url: formData.virtual_tour_url || null,
+          broker_name: formData.broker_name || null,
+          broker_creci: formData.broker_creci || null,
+          negotiation_notes: formData.negotiation_notes || null,
           images: formData.images,
-          is_featured: formData.is_featured, // Novo campo
-          virtual_tour_url: formData.virtual_tour_url,
-          video_url: formData.video_url,
+          features: allFeatures,
+          tags: formData.tags,
+          is_featured: formData.is_featured,
+          is_beachfront: formData.is_beachfront,
+          is_near_beach: formData.is_near_beach,
+          is_development: formData.is_development,
         })
         .eq('id', id);
 
@@ -188,7 +293,7 @@ const EditProperty = () => {
 
   return (
     <DashboardLayout title="Editar Imóvel" userRole={dashboardRole}>
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center space-x-4">
           <Button
             variant="outline"
@@ -200,246 +305,632 @@ const EditProperty = () => {
           <h1 className="text-2xl font-bold">Editar Imóvel</h1>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações do Imóvel</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Informações Básicas */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações Básicas</CardTitle>
+              <CardDescription>Dados principais da propriedade</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="title">Título *</Label>
                   <Input
                     id="title"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="Ex: Casa Moderna no Centro"
                     required
+                    value={formData.title}
+                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    placeholder="Ex: Apartamento 3 dormitórios na praia"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="property_type">Tipo *</Label>
-                  <Select value={formData.property_type} onValueChange={(value) => handleInputChange('property_type', value)}>
+                <div>
+                  <Label htmlFor="property_type">Tipo de Propriedade *</Label>
+                  <Select
+                    required
+                    value={formData.property_type}
+                    onValueChange={(value) => setFormData({...formData, property_type: value})}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Casa">Casa</SelectItem>
-                      <SelectItem value="Apartamento">Apartamento</SelectItem>
-                      <SelectItem value="Terreno">Terreno</SelectItem>
-                      <SelectItem value="Comercial">Comercial</SelectItem>
+                      <SelectItem value="apartamento">Apartamento</SelectItem>
+                      <SelectItem value="casa">Casa</SelectItem>
+                      <SelectItem value="cobertura">Cobertura</SelectItem>
+                      <SelectItem value="lote">Lote</SelectItem>
+                      <SelectItem value="studio">Studio</SelectItem>
+                      <SelectItem value="loft">Loft</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="description">Descrição</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Descreva as principais características do imóvel..."
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  placeholder="Descreva a propriedade em detalhes..."
                   rows={4}
                 />
               </div>
+            </CardContent>
+          </Card>
 
+          {/* Localização */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Localização</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="location">Endereço Completo *</Label>
+                <Input
+                  id="location"
+                  required
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  placeholder="Rua, número, bairro"
+                />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Preço (R$) *</Label>
+                <div>
+                  <Label htmlFor="city">Cidade *</Label>
                   <Input
-                    id="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => handleInputChange('price', e.target.value)}
-                    placeholder="500000"
+                    id="city"
                     required
+                    value={formData.city}
+                    onChange={(e) => setFormData({...formData, city: e.target.value})}
+                    placeholder="Ex: Florianópolis"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="area">Área (m²)</Label>
+                <div>
+                  <Label htmlFor="state">Estado</Label>
+                  <Input
+                    id="state"
+                    value={formData.state}
+                    onChange={(e) => setFormData({...formData, state: e.target.value})}
+                    placeholder="Ex: SC"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="reference_point">Ponto de Referência</Label>
+                  <Input
+                    id="reference_point"
+                    value={formData.reference_point}
+                    onChange={(e) => setFormData({...formData, reference_point: e.target.value})}
+                    placeholder="Ex: Próximo ao shopping"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Valores e Finalidade */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Valores e Finalidade</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="purpose">Finalidade *</Label>
+                <Select
+                  required
+                  value={formData.purpose}
+                  onValueChange={(value) => setFormData({...formData, purpose: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a finalidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sale">Venda</SelectItem>
+                    <SelectItem value="rent">Aluguel</SelectItem>
+                    <SelectItem value="both">Venda e Aluguel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(formData.purpose === 'sale' || formData.purpose === 'both') && (
+                  <div>
+                    <Label htmlFor="price">Preço de Venda (R$) *</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      required={formData.purpose === 'sale' || formData.purpose === 'both'}
+                      value={formData.price}
+                      onChange={(e) => setFormData({...formData, price: e.target.value})}
+                      placeholder="Ex: 450000"
+                    />
+                  </div>
+                )}
+                
+                {(formData.purpose === 'rent' || formData.purpose === 'both') && (
+                  <div>
+                    <Label htmlFor="rental_price">Preço do Aluguel (R$) *</Label>
+                    <Input
+                      id="rental_price"
+                      type="number"
+                      required={formData.purpose === 'rent' || formData.purpose === 'both'}
+                      value={formData.rental_price}
+                      onChange={(e) => setFormData({...formData, rental_price: e.target.value})}
+                      placeholder="Ex: 2500"
+                    />
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Áreas e Medidas */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Áreas e Medidas</CardTitle>
+              <CardDescription>Informações sobre as dimensões do imóvel</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="area">Área Privativa (m²)</Label>
                   <Input
                     id="area"
                     type="number"
                     value={formData.area}
-                    onChange={(e) => handleInputChange('area', e.target.value)}
-                    placeholder="120"
+                    onChange={(e) => setFormData({...formData, area: e.target.value})}
+                    placeholder="Ex: 85"
                   />
                 </div>
-                <div className="space-y-2">
+                <div>
+                  <Label htmlFor="built_area">Área Construída (m²)</Label>
+                  <Input
+                    id="built_area"
+                    type="number"
+                    value={formData.built_area}
+                    onChange={(e) => setFormData({...formData, built_area: e.target.value})}
+                    placeholder="Ex: 120"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="total_area">Área Total (m²)</Label>
+                  <Input
+                    id="total_area"
+                    type="number"
+                    value={formData.total_area}
+                    onChange={(e) => setFormData({...formData, total_area: e.target.value})}
+                    placeholder="Ex: 150"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Características */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Características do Imóvel</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
                   <Label htmlFor="bedrooms">Quartos</Label>
                   <Input
                     id="bedrooms"
                     type="number"
                     value={formData.bedrooms}
-                    onChange={(e) => handleInputChange('bedrooms', e.target.value)}
-                    placeholder="3"
+                    onChange={(e) => setFormData({...formData, bedrooms: e.target.value})}
+                    placeholder="Ex: 3"
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
+                <div>
                   <Label htmlFor="bathrooms">Banheiros</Label>
                   <Input
                     id="bathrooms"
                     type="number"
                     value={formData.bathrooms}
-                    onChange={(e) => handleInputChange('bathrooms', e.target.value)}
-                    placeholder="2"
+                    onChange={(e) => setFormData({...formData, bathrooms: e.target.value})}
+                    placeholder="Ex: 2"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city">Cidade *</Label>
+                <div>
+                  <Label htmlFor="suites">Suítes</Label>
                   <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    placeholder="São Paulo"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="state">Estado</Label>
-                  <Input
-                    id="state"
-                    value={formData.state}
-                    onChange={(e) => handleInputChange('state', e.target.value)}
-                    placeholder="SP"
+                    id="suites"
+                    type="number"
+                    value={formData.suites}
+                    onChange={(e) => setFormData({...formData, suites: e.target.value})}
+                    placeholder="Ex: 1"
                   />
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="location">Endereço Completo *</Label>
+          {/* Detalhes Financeiros */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Detalhes Financeiros</CardTitle>
+              <CardDescription>Taxas e custos adicionais</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="condo_fee">Taxa de Condomínio (R$/mês)</Label>
+                  <Input
+                    id="condo_fee"
+                    type="number"
+                    value={formData.condo_fee}
+                    onChange={(e) => setFormData({...formData, condo_fee: e.target.value})}
+                    placeholder="Ex: 350"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="iptu_fee">IPTU (R$/ano)</Label>
+                  <Input
+                    id="iptu_fee"
+                    type="number"
+                    value={formData.iptu_fee}
+                    onChange={(e) => setFormData({...formData, iptu_fee: e.target.value})}
+                    placeholder="Ex: 1200"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Facilidades e Comodidades */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Facilidades e Comodidades</CardTitle>
+              <CardDescription>Marque as comodidades disponíveis</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_pool"
+                    checked={formData.has_pool}
+                    onCheckedChange={(checked) => setFormData({...formData, has_pool: !!checked})}
+                  />
+                  <Label htmlFor="has_pool">Piscina</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_gym"
+                    checked={formData.has_gym}
+                    onCheckedChange={(checked) => setFormData({...formData, has_gym: !!checked})}
+                  />
+                  <Label htmlFor="has_gym">Academia</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_playground"
+                    checked={formData.has_playground}
+                    onCheckedChange={(checked) => setFormData({...formData, has_playground: !!checked})}
+                  />
+                  <Label htmlFor="has_playground">Playground</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_barbecue"
+                    checked={formData.has_barbecue}
+                    onCheckedChange={(checked) => setFormData({...formData, has_barbecue: !!checked})}
+                  />
+                  <Label htmlFor="has_barbecue">Churrasqueira</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_party_room"
+                    checked={formData.has_party_room}
+                    onCheckedChange={(checked) => setFormData({...formData, has_party_room: !!checked})}
+                  />
+                  <Label htmlFor="has_party_room">Salão de Festas</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_concierge"
+                    checked={formData.has_concierge}
+                    onCheckedChange={(checked) => setFormData({...formData, has_concierge: !!checked})}
+                  />
+                  <Label htmlFor="has_concierge">Portaria 24h</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_elevator"
+                    checked={formData.has_elevator}
+                    onCheckedChange={(checked) => setFormData({...formData, has_elevator: !!checked})}
+                  />
+                  <Label htmlFor="has_elevator">Elevador</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_garden"
+                    checked={formData.has_garden}
+                    onCheckedChange={(checked) => setFormData({...formData, has_garden: !!checked})}
+                  />
+                  <Label htmlFor="has_garden">Jardim</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_balcony"
+                    checked={formData.has_balcony}
+                    onCheckedChange={(checked) => setFormData({...formData, has_balcony: !!checked})}
+                  />
+                  <Label htmlFor="has_balcony">Varanda</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_sacada"
+                    checked={formData.has_sacada}
+                    onCheckedChange={(checked) => setFormData({...formData, has_sacada: !!checked})}
+                  />
+                  <Label htmlFor="has_sacada">Sacada</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_lavabo"
+                    checked={formData.has_lavabo}
+                    onCheckedChange={(checked) => setFormData({...formData, has_lavabo: !!checked})}
+                  />
+                  <Label htmlFor="has_lavabo">Lavabo</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_furnished"
+                    checked={formData.has_furnished}
+                    onCheckedChange={(checked) => setFormData({...formData, has_furnished: !!checked})}
+                  />
+                  <Label htmlFor="has_furnished">Mobiliado</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_air_conditioning"
+                    checked={formData.has_air_conditioning}
+                    onCheckedChange={(checked) => setFormData({...formData, has_air_conditioning: !!checked})}
+                  />
+                  <Label htmlFor="has_air_conditioning">Ar Condicionado</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_solar_energy"
+                    checked={formData.has_solar_energy}
+                    onCheckedChange={(checked) => setFormData({...formData, has_solar_energy: !!checked})}
+                  />
+                  <Label htmlFor="has_solar_energy">Energia Solar</Label>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Características Adicionais */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Características Adicionais</CardTitle>
+              <CardDescription>Adicione características específicas do imóvel</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
                 <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  placeholder="Rua das Flores, 123 - Centro"
-                  required
+                  value={currentFeature}
+                  onChange={(e) => setCurrentFeature(e.target.value)}
+                  onKeyPress={(e) => handleKeyPress(e, 'feature')}
+                  placeholder="Digite uma característica e pressione Enter"
                 />
+                <Button type="button" onClick={addFeature}>
+                  Adicionar
+                </Button>
               </div>
-
-              <div className="space-y-4">
-                <Label>Características</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    value={newFeature}
-                    onChange={(e) => setNewFeature(e.target.value)}
-                    placeholder="Ex: Piscina, Garagem, etc."
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
-                  />
-                  <Button type="button" onClick={addFeature}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
+              
+              {formData.features.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {formData.features.map((feature) => (
-                    <Badge key={feature} variant="secondary" className="px-3 py-1">
+                  {formData.features.map((feature, index) => (
+                    <Badge key={index} variant="outline" className="flex items-center gap-1">
                       {feature}
-                      <button
-                        type="button"
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
                         onClick={() => removeFeature(feature)}
-                        className="ml-2 hover:text-red-600"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                      />
                     </Badge>
                   ))}
                 </div>
-              </div>
+              )}
+            </CardContent>
+          </Card>
 
-              <div className="space-y-4">
-                <Label>Imagens</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-600 mb-4">Clique para adicionar mais imagens</p>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <Label htmlFor="image-upload" className="cursor-pointer">
-                    <Button type="button" variant="outline" asChild>
-                      <span>Adicionar Imagens</span>
-                    </Button>
-                  </Label>
-                </div>
-                {formData.images.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {formData.images.map((image, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={image}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* NOVOS CAMPOS */}
-              <div className="space-y-2">
-                <Label htmlFor="virtual_tour_url">Link do Tour Virtual</Label>
-                <Input
-                  id="virtual_tour_url"
-                  value={formData.virtual_tour_url || ""}
-                  onChange={e => handleInputChange('virtual_tour_url', e.target.value)}
-                  placeholder="https://meu-tour.app/tour/12345"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="video_url">Link do Vídeo</Label>
-                <Input
-                  id="video_url"
-                  value={formData.video_url || ""}
-                  onChange={e => handleInputChange('video_url', e.target.value)}
-                  placeholder="https://youtube.com/watch?v=..."
-                />
-              </div>
-              {/* FIM NOVOS CAMPOS */}
-
-              {/* Campo de destaque */}
-              <div>
-                <Label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
+          {/* Categorias Especiais */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Categorias Especiais</CardTitle>
+              <CardDescription>Marque as categorias que se aplicam</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="is_featured"
                     checked={formData.is_featured}
-                    onChange={e => handleInputChange('is_featured', e.target.checked)}
-                    className="mr-2"
+                    onCheckedChange={(checked) => setFormData({...formData, is_featured: !!checked})}
                   />
-                  <span>Exibir imóvel como destaque na home</span>
-                </Label>
+                  <Label htmlFor="is_featured">Imóvel em Destaque</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="is_beachfront"
+                    checked={formData.is_beachfront}
+                    onCheckedChange={(checked) => setFormData({...formData, is_beachfront: !!checked})}
+                  />
+                  <Label htmlFor="is_beachfront">Frente Mar</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="is_near_beach"
+                    checked={formData.is_near_beach}
+                    onCheckedChange={(checked) => setFormData({...formData, is_near_beach: !!checked})}
+                  />
+                  <Label htmlFor="is_near_beach">Quadra Mar</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="is_development"
+                    checked={formData.is_development}
+                    onCheckedChange={(checked) => setFormData({...formData, is_development: !!checked})}
+                  />
+                  <Label htmlFor="is_development">Empreendimento</Label>
+                </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="flex justify-end space-x-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate('/manage-properties')}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+          {/* Tags */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Tags</CardTitle>
+              <CardDescription>Adicione tags para melhor categorização e busca</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  value={currentTag}
+                  onChange={(e) => setCurrentTag(e.target.value)}
+                  onKeyPress={(e) => handleKeyPress(e, 'tag')}
+                  placeholder="Digite uma tag e pressione Enter"
+                />
+                <Button type="button" onClick={addTag}>
+                  Adicionar
                 </Button>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+              
+              {formData.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {tag}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => removeTag(tag)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Mídia e Tours */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Mídia e Tours Virtuais</CardTitle>
+              <CardDescription>Adicione vídeos e tours virtuais</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="video_url">URL do Vídeo</Label>
+                  <Input
+                    id="video_url"
+                    value={formData.video_url}
+                    onChange={(e) => setFormData({...formData, video_url: e.target.value})}
+                    placeholder="https://youtube.com/watch?v=..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="virtual_tour_url">URL do Tour Virtual</Label>
+                  <Input
+                    id="virtual_tour_url"
+                    value={formData.virtual_tour_url}
+                    onChange={(e) => setFormData({...formData, virtual_tour_url: e.target.value})}
+                    placeholder="https://matterport.com/..."
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Informações do Corretor */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações do Corretor</CardTitle>
+              <CardDescription>Dados do corretor responsável</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="broker_name">Nome do Corretor</Label>
+                  <Input
+                    id="broker_name"
+                    value={formData.broker_name}
+                    onChange={(e) => setFormData({...formData, broker_name: e.target.value})}
+                    placeholder="Nome completo"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="broker_creci">CRECI</Label>
+                  <Input
+                    id="broker_creci"
+                    value={formData.broker_creci}
+                    onChange={(e) => setFormData({...formData, broker_creci: e.target.value})}
+                    placeholder="Ex: CRECI 12345-J"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="negotiation_notes">Observações de Negociação</Label>
+                <Textarea
+                  id="negotiation_notes"
+                  value={formData.negotiation_notes}
+                  onChange={(e) => setFormData({...formData, negotiation_notes: e.target.value})}
+                  placeholder="Informações importantes sobre negociação, documentação, etc."
+                  rows={3}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Imagens */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Imagens da Propriedade</CardTitle>
+              <CardDescription>Adicione fotos do imóvel (máximo 20 imagens)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ImageUpload
+                images={formData.images}
+                onChange={(images) => setFormData({...formData, images})}
+              />
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/manage-properties')}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </div>
+        </form>
       </div>
     </DashboardLayout>
   );

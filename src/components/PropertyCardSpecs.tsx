@@ -49,11 +49,11 @@ const PropertyCardSpecs: React.FC<PropertyCardSpecsProps> = ({ property }) => {
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-center bg-gray-50 dark:bg-gray-900/20 rounded-lg p-3">
+        <div className="flex items-center justify-center bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3">
           <div className="text-center">
-            <Home className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-            <div className="text-sm font-semibold text-gray-900 dark:text-white">-</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Extras</div>
+            <Users className="w-6 h-6 text-orange-600 mx-auto mb-1" />
+            <div className="text-sm font-semibold text-gray-900 dark:text-white">0</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">Suítes</div>
           </div>
         </div>
       )}

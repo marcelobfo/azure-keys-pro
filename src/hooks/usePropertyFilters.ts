@@ -76,10 +76,12 @@ export const usePropertyFilters = (properties: Property[]) => {
         }
       }
 
-      // Type filter - melhorar comparação
+      // Type filter - melhorar comparação e debugging
       if (filters.type && filters.type !== 'all' && filters.type !== '') {
         const filterType = filters.type.toLowerCase().trim();
-        const propertyType = property.type.toLowerCase().trim();
+        const propertyType = (property.type || '').toLowerCase().trim();
+        
+        console.log(`Comparing types: filter="${filterType}" vs property="${propertyType}"`);
         
         // Buscar por correspondência parcial para maior flexibilidade
         const matchesType = propertyType.includes(filterType) || 
@@ -87,6 +89,7 @@ export const usePropertyFilters = (properties: Property[]) => {
                            propertyType === filterType;
         
         if (!matchesType) {
+          console.log(`Property ${property.id} filtered out by type: "${propertyType}" vs "${filterType}"`);
           return false;
         }
       }

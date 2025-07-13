@@ -66,6 +66,8 @@ const CreateProperty = () => {
     has_elevator: false,
     has_garden: false,
     has_balcony: false,
+    has_sacada: false,  // Nova facilidade
+    has_lavabo: false,  // Nova facilidade
     has_furnished: false,
     has_air_conditioning: false,
     has_solar_energy: false,
@@ -140,6 +142,8 @@ const CreateProperty = () => {
       if (formData.has_elevator) facilidades.push('Elevador');
       if (formData.has_garden) facilidades.push('Jardim');
       if (formData.has_balcony) facilidades.push('Varanda');
+      if (formData.has_sacada) facilidades.push('Sacada');
+      if (formData.has_lavabo) facilidades.push('Lavabo');
       if (formData.has_furnished) facilidades.push('Mobiliado');
       if (formData.has_air_conditioning) facilidades.push('Ar Condicionado');
       if (formData.has_solar_energy) facilidades.push('Energia Solar');
@@ -582,6 +586,24 @@ const CreateProperty = () => {
                     onCheckedChange={(checked) => setFormData({...formData, has_balcony: !!checked})}
                   />
                   <Label htmlFor="has_balcony">Varanda</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_sacada"
+                    checked={formData.has_sacada}
+                    onCheckedChange={(checked) => setFormData({...formData, has_sacada: !!checked})}
+                  />
+                  <Label htmlFor="has_sacada">Sacada</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_lavabo"
+                    checked={formData.has_lavabo}
+                    onCheckedChange={(checked) => setFormData({...formData, has_lavabo: !!checked})}
+                  />
+                  <Label htmlFor="has_lavabo">Lavabo</Label>
                 </div>
                 
                 <div className="flex items-center space-x-2">

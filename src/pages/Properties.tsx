@@ -25,6 +25,7 @@ interface Property {
   is_beachfront?: boolean;
   is_near_beach?: boolean;
   is_development?: boolean;
+  is_featured?: boolean;
   property_code?: string;
 }
 
@@ -68,6 +69,7 @@ const PropertiesPage = () => {
         is_beachfront: property.is_beachfront || false,
         is_near_beach: property.is_near_beach || false,
         is_development: property.is_development || false,
+        is_featured: property.is_featured || false,
         property_code: property.property_code
       })) || [];
 

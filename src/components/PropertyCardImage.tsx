@@ -93,9 +93,16 @@ const PropertyCardImage: React.FC<PropertyCardImageProps> = ({
         )}
       </div>
 
-      {/* Tipo da propriedade no canto inferior esquerdo */}
-      <div className="absolute bottom-4 left-4 bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm font-medium">
-        {property.property_type}
+      {/* Tipo da propriedade e código no canto inferior esquerdo */}
+      <div className="absolute bottom-4 left-4 flex flex-col gap-1">
+        <div className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm font-medium">
+          {property.property_type}
+        </div>
+        {property.property_code && (
+          <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs font-medium">
+            {property.property_code}
+          </div>
+        )}
       </div>
 
       {/* Botão de favorito */}
