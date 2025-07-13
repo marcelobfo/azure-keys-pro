@@ -46,7 +46,7 @@ export const usePropertyFilters = (properties: Property[]) => {
     city: '',
     purpose: '',
     priceMin: 0,
-    priceMax: 10000000,
+    priceMax: 100000000, // Aumentado para 100M para cobrir propriedades mais caras
     areaMin: 0,
     areaMax: 2000,
     bedrooms: '',
@@ -59,9 +59,6 @@ export const usePropertyFilters = (properties: Property[]) => {
   });
 
   const filteredProperties = useMemo(() => {
-    console.log('Filtering properties:', properties.length);
-    console.log('Current filters:', filters);
-    
     return properties.filter(property => {
       // Search filter - incluir busca por código do imóvel, título e localização
       if (filters.search) {
@@ -76,20 +73,13 @@ export const usePropertyFilters = (properties: Property[]) => {
         }
       }
 
-      // Type filter - melhorar comparação e debugging
+      // Type filter - simplificado para maior compatibilidade
       if (filters.type && filters.type !== 'all' && filters.type !== '') {
         const filterType = filters.type.toLowerCase().trim();
         const propertyType = (property.type || '').toLowerCase().trim();
         
-        console.log(`Comparing types: filter="${filterType}" vs property="${propertyType}"`);
-        
-        // Buscar por correspondência parcial para maior flexibilidade
-        const matchesType = propertyType.includes(filterType) || 
-                           filterType.includes(propertyType) ||
-                           propertyType === filterType;
-        
-        if (!matchesType) {
-          console.log(`Property ${property.id} filtered out by type: "${propertyType}" vs "${filterType}"`);
+        // Comparação exata ou parcial mais flexível
+        if (propertyType !== filterType && !propertyType.includes(filterType)) {
           return false;
         }
       }
@@ -100,7 +90,6 @@ export const usePropertyFilters = (properties: Property[]) => {
         const propertyPurpose = property.purpose?.toLowerCase().trim() || '';
         
         if (propertyPurpose !== filterPurpose) {
-          console.log(`Property ${property.id} filtered out by purpose`);
           return false;
         }
       }
@@ -108,7 +97,6 @@ export const usePropertyFilters = (properties: Property[]) => {
       // City filter
       if (filters.city && filters.city !== 'all' && filters.city !== '') {
         if (!property.location || !property.location.toLowerCase().includes(filters.city.toLowerCase())) {
-          console.log(`Property ${property.id} filtered out by city`);
           return false;
         }
       }
@@ -116,13 +104,11 @@ export const usePropertyFilters = (properties: Property[]) => {
       // Price filter - considera tanto preço de venda quanto aluguel
       const relevantPrice = filters.purpose === 'rent' ? (property.rental_price || property.price) : property.price;
       if (relevantPrice < filters.priceMin || relevantPrice > filters.priceMax) {
-        console.log(`Property ${property.id} filtered out by price: ${relevantPrice}`);
         return false;
       }
 
       // Area filter
       if (property.area && (property.area < filters.areaMin || property.area > filters.areaMax)) {
-        console.log(`Property ${property.id} filtered out by area: ${property.area}`);
         return false;
       }
 
@@ -130,11 +116,9 @@ export const usePropertyFilters = (properties: Property[]) => {
       if (filters.bedrooms && filters.bedrooms !== 'any' && filters.bedrooms !== '') {
         const bedroomCount = parseInt(filters.bedrooms);
         if (filters.bedrooms === '4' && property.bedrooms < 4) {
-          console.log(`Property ${property.id} filtered out by bedrooms (4+): ${property.bedrooms}`);
           return false;
         }
         if (filters.bedrooms !== '4' && property.bedrooms !== bedroomCount) {
-          console.log(`Property ${property.id} filtered out by bedrooms: ${property.bedrooms} !== ${bedroomCount}`);
           return false;
         }
       }
@@ -143,11 +127,9 @@ export const usePropertyFilters = (properties: Property[]) => {
       if (filters.bathrooms && filters.bathrooms !== 'any' && filters.bathrooms !== '') {
         const bathroomCount = parseInt(filters.bathrooms);
         if (filters.bathrooms === '3' && property.bathrooms < 3) {
-          console.log(`Property ${property.id} filtered out by bathrooms (3+): ${property.bathrooms}`);
           return false;
         }
         if (filters.bathrooms !== '3' && property.bathrooms !== bathroomCount) {
-          console.log(`Property ${property.id} filtered out by bathrooms: ${property.bathrooms} !== ${bathroomCount}`);
           return false;
         }
       }
@@ -176,28 +158,23 @@ export const usePropertyFilters = (properties: Property[]) => {
         }
       }
 
-      // Filtros especiais - corrigir lógica
+      // Filtros especiais
       if (filters.isFeatured && !property.is_featured) {
-        console.log(`Property ${property.id} filtered out by featured filter`);
         return false;
       }
 
       if (filters.isBeachfront && !property.is_beachfront) {
-        console.log(`Property ${property.id} filtered out by beachfront filter`);
         return false;
       }
 
       if (filters.isNearBeach && !property.is_near_beach) {
-        console.log(`Property ${property.id} filtered out by near beach filter`);
         return false;
       }
 
       if (filters.isDevelopment && !property.is_development) {
-        console.log(`Property ${property.id} filtered out by development filter`);
         return false;
       }
 
-      console.log(`Property ${property.id} passed all filters`);
       return true;
     });
   }, [properties, filters]);
@@ -209,7 +186,7 @@ export const usePropertyFilters = (properties: Property[]) => {
       city: '',
       purpose: '',
       priceMin: 0,
-      priceMax: 10000000,
+      priceMax: 100000000, // Atualizado para 100M como no estado inicial
       areaMin: 0,
       areaMax: 2000,
       bedrooms: '',
