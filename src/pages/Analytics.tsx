@@ -175,24 +175,41 @@ const Analytics = () => {
             <CardContent>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={funnelData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {funnelData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                  <BarChart
+                    data={[
+                      { name: 'Visualizações', value: totals.page_views, rate: '100%' },
+                      { name: 'Props. Vistas', value: totals.property_views, rate: `${(totals.property_views / totals.page_views * 100).toFixed(1)}%` },
+                      { name: 'Favoritos', value: totals.favorites_added, rate: `${(totals.favorites_added / totals.property_views * 100).toFixed(1)}%` },
+                      { name: 'Leads', value: totals.leads_generated, rate: `${(totals.leads_generated / totals.property_views * 100).toFixed(1)}%` },
+                      { name: 'Visitas', value: totals.visits_scheduled, rate: `${(totals.visits_scheduled / totals.leads_generated * 100).toFixed(1)}%` },
+                    ]}
+                    margin={{ top: 20, right: 80, bottom: 20, left: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="name" type="category" width={100} />
+                    <Tooltip 
+                      formatter={(value, name, props) => [
+                        `${value.toLocaleString()} (${props.payload.rate})`,
+                        'Quantidade'
+                      ]}
+                    />
+                    <Bar dataKey="value" fill="#8884d8">
+                      {[0, 1, 2, 3, 4].map((index) => (
+                        <Cell key={`cell-${index}`} fill={['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00'][index]} />
                       ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
+                    </Bar>
+                  </BarChart>
                 </ResponsiveContainer>
+              </div>
+              <div className="mt-4 space-y-2">
+                <p className="text-sm text-gray-600 dark:text-gray-300">Taxa de conversão:</p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>Visualização → Props: <span className="font-semibold">{(totals.property_views / totals.page_views * 100).toFixed(1)}%</span></div>
+                  <div>Props → Favoritos: <span className="font-semibold">{(totals.favorites_added / totals.property_views * 100).toFixed(1)}%</span></div>
+                  <div>Props → Leads: <span className="font-semibold">{(totals.leads_generated / totals.property_views * 100).toFixed(1)}%</span></div>
+                  <div>Leads → Visitas: <span className="font-semibold">{(totals.visits_scheduled / totals.leads_generated * 100).toFixed(1)}%</span></div>
+                </div>
               </div>
             </CardContent>
           </Card>
