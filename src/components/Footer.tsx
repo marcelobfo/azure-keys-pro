@@ -79,7 +79,7 @@ const Footer = () => {
                   <Home className="w-6 h-6 text-white" />
                 </div>
               )}
-              <span className="text-xl font-bold">RealEstate Pro</span>
+              <span className="text-xl font-bold">Maresia Litoral</span>
             </div>
             <p className="text-gray-300 mb-4">
               {settings.footer_description || t('home.about.text')}
@@ -137,7 +137,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; 2024 RealEstate Pro. Todos os direitos reservados.</p>
+          <p>&copy; 2024 Maresia Litoral. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>

@@ -64,7 +64,7 @@ const AuthPage = () => {
             </div>
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
-            RealEstate Pro
+            Maresia Litoral
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Entre na sua conta ou crie uma nova
