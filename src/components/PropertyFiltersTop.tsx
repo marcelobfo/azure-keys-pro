@@ -89,23 +89,23 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
 
         {/* Quick Filters */}
         <div className="flex items-center gap-2">
-          <Select value={filters.purpose} onValueChange={(value) => updateFilter('purpose', value)}>
+          <Select value={filters.purpose || 'all'} onValueChange={(value) => updateFilter('purpose', value === 'all' ? '' : value)}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Finalidade" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="sale">Venda</SelectItem>
               <SelectItem value="rent">Aluguel</SelectItem>
             </SelectContent>
           </Select>
 
-          <Select value={filters.type} onValueChange={(value) => updateFilter('type', value)}>
+          <Select value={filters.type || 'all'} onValueChange={(value) => updateFilter('type', value === 'all' ? '' : value)}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Tipo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="apartamento">Apartamento</SelectItem>
               <SelectItem value="casa">Casa</SelectItem>
               <SelectItem value="cobertura">Cobertura</SelectItem>
@@ -196,12 +196,12 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
             {/* Bedrooms */}
             <div>
               <label className="block text-sm font-medium mb-1">Quartos</label>
-              <Select value={filters.bedrooms} onValueChange={(value) => updateFilter('bedrooms', value)}>
+              <Select value={filters.bedrooms || 'any'} onValueChange={(value) => updateFilter('bedrooms', value === 'any' ? '' : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Qualquer" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Qualquer</SelectItem>
+                  <SelectItem value="any">Qualquer</SelectItem>
                   <SelectItem value="1">1+</SelectItem>
                   <SelectItem value="2">2+</SelectItem>
                   <SelectItem value="3">3+</SelectItem>
@@ -214,12 +214,12 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
             {/* Bathrooms */}
             <div>
               <label className="block text-sm font-medium mb-1">Banheiros</label>
-              <Select value={filters.bathrooms} onValueChange={(value) => updateFilter('bathrooms', value)}>
+              <Select value={filters.bathrooms || 'any'} onValueChange={(value) => updateFilter('bathrooms', value === 'any' ? '' : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Qualquer" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Qualquer</SelectItem>
+                  <SelectItem value="any">Qualquer</SelectItem>
                   <SelectItem value="1">1+</SelectItem>
                   <SelectItem value="2">2+</SelectItem>
                   <SelectItem value="3">3+</SelectItem>
