@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import PropertyCardSimple from '../components/PropertyCardSimple';
-import PropertyFilters from '../components/PropertyFilters';
+import PropertyFiltersTop from '../components/PropertyFiltersTop';
 import { usePropertyFilters } from '../hooks/usePropertyFilters';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
@@ -33,7 +33,7 @@ const PropertiesPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -111,94 +111,60 @@ const PropertiesPage = () => {
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        <div className="mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
             {filters.purpose === 'rent' ? t('properties.rent') : 
              filters.purpose === 'sale' ? t('properties.sale') : 
              t('properties.title')}
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
+          <p className="text-lg text-muted-foreground">
             {t('properties.subtitle')}
           </p>
         </div>
 
-        {/* Layout with Sidebar */}
-        <div className="flex gap-8">
-          {/* Left Sidebar - Filters */}
-          <div className="hidden lg:block w-80 space-y-6 sticky top-24 self-start">
-            <div className="bg-card border rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold mb-4">{t('properties.filters')}</h3>
-              <PropertyFilters
-                filters={filters}
-                setFilters={setFilters}
-                clearFilters={clearFilters}
-                showAdvanced={true}
-                setShowAdvanced={setShowAdvancedFilters}
-              />
-            </div>
-          </div>
+        {/* Top Filters */}
+        <PropertyFiltersTop
+          filters={filters}
+          setFilters={setFilters}
+          clearFilters={clearFilters}
+          isExpanded={filtersExpanded}
+          setIsExpanded={setFiltersExpanded}
+        />
 
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Mobile Filter Toggle */}
-            <div className="lg:hidden mb-6">
-              <Button
-                variant="outline"
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="w-full"
-              >
-                {showAdvancedFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
-              </Button>
-              
-              {showAdvancedFilters && (
-                <div className="mt-4 bg-card border rounded-lg shadow-sm p-6">
-                  <PropertyFilters
-                    filters={filters}
-                    setFilters={setFilters}
-                    clearFilters={clearFilters}
-                    showAdvanced={true}
-                    setShowAdvanced={setShowAdvancedFilters}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Results Count */}
-            <div className="mb-6">
-              <p className="text-sm text-muted-foreground">
-                {t('properties.found')} {filteredProperties.length} {t('properties.properties')}
-              </p>
-            </div>
-
-            {/* Properties Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredProperties.map((property) => (
-                <PropertyCardSimple key={property.id} property={property} />
-              ))}
-            </div>
-
-            {/* No Results */}
-            {filteredProperties.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-lg text-muted-foreground mb-4">
-                  {t('properties.noResults')}
-                </p>
-                <Button onClick={clearFilters} variant="outline">
-                  {t('properties.clearFilters')}
-                </Button>
-              </div>
-            )}
-
-            {/* Load More */}
-            {filteredProperties.length > 0 && (
-              <div className="text-center mt-12">
-                <Button variant="outline" size="lg">
-                  {t('properties.loadMore')}
-                </Button>
-              </div>
-            )}
-          </div>
+        {/* Results Count */}
+        <div className="mb-6">
+          <p className="text-sm text-muted-foreground">
+            {t('properties.found')} {filteredProperties.length} {t('properties.properties')}
+          </p>
         </div>
+
+        {/* Properties Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredProperties.map((property) => (
+            <PropertyCardSimple key={property.id} property={property} />
+          ))}
+        </div>
+
+        {/* No Results */}
+        {filteredProperties.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-lg text-muted-foreground mb-4">
+              {t('properties.noResults')}
+            </p>
+            <Button onClick={clearFilters} variant="outline">
+              {t('properties.clearFilters')}
+            </Button>
+          </div>
+        )}
+
+        {/* Load More */}
+        {filteredProperties.length > 0 && (
+          <div className="text-center mt-12">
+            <Button variant="outline" size="lg">
+              {t('properties.loadMore')}
+            </Button>
+          </div>
+        )}
       </div>
     </Layout>
   );

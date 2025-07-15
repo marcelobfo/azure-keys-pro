@@ -42,6 +42,9 @@ const translations = {
     'properties.noResults': 'Nenhum imóvel encontrado com os filtros selecionados.',
     'properties.clearFilters': 'Limpar Filtros',
     'properties.loadMore': 'Carregar Mais Imóveis',
+    'properties.filters': 'Filtros',
+    'properties.found': 'Encontrados',
+    'properties.properties': 'imóveis',
     
     // Contact
     'contact.title': 'Entre em Contato',
@@ -103,6 +106,9 @@ const translations = {
     'properties.noResults': 'No properties found with the selected filters.',
     'properties.clearFilters': 'Clear Filters',
     'properties.loadMore': 'Load More Properties',
+    'properties.filters': 'Filters',
+    'properties.found': 'Found',
+    'properties.properties': 'properties',
     
     // Contact
     'contact.title': 'Contact Us',
@@ -152,12 +158,21 @@ const translations = {
     
     // Properties
     'properties.title': 'Nuestras Propiedades',
+    'properties.subtitle': 'Encuentra tu propiedad perfecta',
+    'properties.rent': 'Propiedades en Alquiler',
+    'properties.sale': 'Propiedades en Venta',
     'properties.filter.type': 'Tipo',
     'properties.filter.city': 'Ciudad',
     'properties.filter.price': 'Precio',
     'properties.filter.area': 'Área',
     'properties.filter.advanced': 'Filtros Avanzados',
+    'properties.filters': 'Filtros',
+    'properties.found': 'Encontradas',
+    'properties.properties': 'propiedades',
     'properties.contact': 'Contactar',
+    'properties.noResults': 'No se encontraron propiedades con los filtros seleccionados.',
+    'properties.clearFilters': 'Limpiar Filtros',
+    'properties.loadMore': 'Cargar Más Propiedades',
     
     // Contact
     'contact.title': 'Contáctanos',
