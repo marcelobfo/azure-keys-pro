@@ -122,112 +122,83 @@ const PropertiesPage = () => {
           </p>
         </div>
 
-        {/* Compact Filter Bar */}
-        <div className="mb-8">
-          <div className="bg-card border rounded-lg shadow-sm">
-            {/* Compact Filter Header */}
-            <div className="p-4 border-b">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder={t('properties.search')}
-                      value={filters.search}
-                      onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                      className="px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                  </div>
-                  <select
-                    value={filters.purpose}
-                    onChange={(e) => setFilters(prev => ({ ...prev, purpose: e.target.value }))}
-                    className="px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="">{t('properties.allPurposes')}</option>
-                    <option value="sale">{t('properties.sale')}</option>
-                    <option value="rent">{t('properties.rent')}</option>
-                  </select>
-                  <select
-                    value={filters.type}
-                    onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
-                    className="px-3 py-2 border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="">{t('properties.allTypes')}</option>
-                    <option value="apartment">{t('properties.apartment')}</option>
-                    <option value="house">{t('properties.house')}</option>
-                    <option value="commercial">{t('properties.commercial')}</option>
-                  </select>
+        {/* Layout with Sidebar */}
+        <div className="flex gap-8">
+          {/* Left Sidebar - Filters */}
+          <div className="hidden lg:block w-80 space-y-6 sticky top-24 self-start">
+            <div className="bg-card border rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold mb-4">{t('properties.filters')}</h3>
+              <PropertyFilters
+                filters={filters}
+                setFilters={setFilters}
+                clearFilters={clearFilters}
+                showAdvanced={true}
+                setShowAdvanced={setShowAdvancedFilters}
+              />
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1">
+            {/* Mobile Filter Toggle */}
+            <div className="lg:hidden mb-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="w-full"
+              >
+                {showAdvancedFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+              </Button>
+              
+              {showAdvancedFilters && (
+                <div className="mt-4 bg-card border rounded-lg shadow-sm p-6">
+                  <PropertyFilters
+                    filters={filters}
+                    setFilters={setFilters}
+                    clearFilters={clearFilters}
+                    showAdvanced={true}
+                    setShowAdvanced={setShowAdvancedFilters}
+                  />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearFilters}
-                    className="text-sm"
-                  >
-                    {t('properties.clearFilters')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                    className="text-sm"
-                  >
-                    {showAdvancedFilters ? 'Menos Filtros' : 'Mais Filtros'}
-                  </Button>
-                </div>
-              </div>
+              )}
             </div>
 
-            {/* Advanced Filters - Collapsible */}
-            {showAdvancedFilters && (
-              <div className="p-4 border-t bg-muted/30 animate-fade-in">
-                <PropertyFilters
-                  filters={filters}
-                  setFilters={setFilters}
-                  clearFilters={clearFilters}
-                  showAdvanced={true}
-                  setShowAdvanced={setShowAdvancedFilters}
-                />
+            {/* Results Count */}
+            <div className="mb-6">
+              <p className="text-sm text-muted-foreground">
+                {t('properties.found')} {filteredProperties.length} {t('properties.properties')}
+              </p>
+            </div>
+
+            {/* Properties Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredProperties.map((property) => (
+                <PropertyCardSimple key={property.id} property={property} />
+              ))}
+            </div>
+
+            {/* No Results */}
+            {filteredProperties.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-lg text-muted-foreground mb-4">
+                  {t('properties.noResults')}
+                </p>
+                <Button onClick={clearFilters} variant="outline">
+                  {t('properties.clearFilters')}
+                </Button>
+              </div>
+            )}
+
+            {/* Load More */}
+            {filteredProperties.length > 0 && (
+              <div className="text-center mt-12">
+                <Button variant="outline" size="lg">
+                  {t('properties.loadMore')}
+                </Button>
               </div>
             )}
           </div>
         </div>
-
-        {/* Results Count */}
-        <div className="mb-6">
-          <p className="text-sm text-muted-foreground">
-            {t('properties.found')} {filteredProperties.length} {t('properties.properties')}
-          </p>
-        </div>
-
-        {/* Properties Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredProperties.map((property) => (
-            <PropertyCardSimple key={property.id} property={property} />
-          ))}
-        </div>
-
-        {/* No Results */}
-        {filteredProperties.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-lg text-muted-foreground mb-4">
-              {t('properties.noResults')}
-            </p>
-            <Button onClick={clearFilters} variant="outline">
-              {t('properties.clearFilters')}
-            </Button>
-          </div>
-        )}
-
-        {/* Load More */}
-        {filteredProperties.length > 0 && (
-          <div className="text-center mt-12">
-            <Button variant="outline" size="lg">
-              {t('properties.loadMore')}
-            </Button>
-          </div>
-        )}
       </div>
     </Layout>
   );
