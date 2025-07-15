@@ -7,18 +7,20 @@ import { supabase } from '@/integrations/supabase/client';
 const Footer = () => {
   const { t } = useLanguage();
   const [settings, setSettings] = React.useState<Record<string, string>>({});
+  const [logoHeight, setLogoHeight] = React.useState<number>(32);
 
   React.useEffect(() => {
     async function fetchFooter() {
       const keys = [
         'footer_logo',
-        'footer_description',
+        'footer_description', 
         'footer_email',
         'footer_phone',
         'footer_address',
         'footer_instagram',
         'footer_whatsapp',
-        'footer_facebook'
+        'footer_facebook',
+        'logo_size_footer'
       ];
       const { data } = await supabase
         .from('site_settings')
@@ -29,6 +31,10 @@ const Footer = () => {
         result[item.key] = item.value ?? "";
       });
       setSettings(result);
+      
+      // Configurar altura da logo do footer (padrão: 32px)
+      const size = result.logo_size_footer ? parseInt(result.logo_size_footer) : 32;
+      setLogoHeight(size > 16 && size < 150 ? size : 32); // Limitar entre 16-150px
     }
     fetchFooter();
   }, []);
@@ -62,7 +68,8 @@ const Footer = () => {
                 <img
                   src={settings.footer_logo}
                   alt="Logo"
-                  className="w-10 h-10 rounded-lg object-contain bg-white p-1"
+                  style={{ height: `${logoHeight}px` }}
+                  className="w-auto rounded-lg object-contain bg-white p-1"
                   onError={e => {
                     (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
                   }}

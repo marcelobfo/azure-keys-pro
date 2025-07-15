@@ -96,6 +96,20 @@ const FOOTER_FIELDS = [
     help: 'Logo usada como fallback quando não há logos específicas para tema claro/escuro',
   },
   {
+    key: 'logo_size_header',
+    label: 'Tamanho da Logo no Cabeçalho (px)',
+    placeholder: '150',
+    type: 'number',
+    help: 'Altura da logo no cabeçalho em pixels',
+  },
+  {
+    key: 'logo_size_footer', 
+    label: 'Tamanho da Logo no Rodapé (px)',
+    placeholder: '120',
+    type: 'number',
+    help: 'Altura da logo no rodapé em pixels',
+  },
+  {
     key: 'header_logo_light',
     label: 'Logo para Tema Claro',
     placeholder: 'URL da logo para tema claro',

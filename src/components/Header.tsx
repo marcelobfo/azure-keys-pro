@@ -27,14 +27,15 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [lightLogoUrl, setLightLogoUrl] = useState<string | null>(null);
   const [darkLogoUrl, setDarkLogoUrl] = useState<string | null>(null);
+  const [logoHeight, setLogoHeight] = useState<number>(40);
 
-  // Busca logos separadas para tema claro e escuro
+  // Busca logos separadas para tema claro e escuro + tamanho
   useEffect(() => {
     async function fetchLogos() {
       const { data } = await supabase
         .from('site_settings')
         .select('key, value')
-        .in('key', ['footer_logo', 'header_logo_light', 'header_logo_dark']);
+        .in('key', ['footer_logo', 'header_logo_light', 'header_logo_dark', 'logo_size_header']);
       
       if (data) {
         const settings = data.reduce((acc, item) => {
@@ -45,6 +46,10 @@ const Header = () => {
         // Usar logos específicas se existirem, senão usar footer_logo como fallback
         setLightLogoUrl(settings.header_logo_light || settings.footer_logo || null);
         setDarkLogoUrl(settings.header_logo_dark || settings.footer_logo || null);
+        
+        // Configurar altura da logo (padrão: 40px)
+        const size = settings.logo_size_header ? parseInt(settings.logo_size_header) : 40;
+        setLogoHeight(size > 20 && size < 200 ? size : 40); // Limitar entre 20-200px
       }
     }
     fetchLogos();
@@ -94,8 +99,8 @@ const Header = () => {
               <img
                 src={currentLogo}
                 alt="Logo"
-                className="h-10 w-auto object-contain rounded-lg bg-white dark:bg-transparent"
-                style={{ maxHeight: 40 }}
+                style={{ height: `${logoHeight}px` }}
+                className="w-auto object-contain rounded-lg bg-white dark:bg-transparent"
                 onError={e => {
                   (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
                 }}

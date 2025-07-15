@@ -64,18 +64,26 @@ const WebhookConfiguration = () => {
 
   const fetchWebhooks = async () => {
     try {
+      console.log('Fetching webhooks...');
       const { data, error } = await supabase
         .from('webhook_configurations')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('Webhook fetch result:', { data, error });
+
+      if (error) {
+        console.error('Webhook fetch error:', error);
+        throw error;
+      }
+      
+      console.log('Setting webhooks:', data);
       setWebhooks(data || []);
     } catch (error: any) {
       console.error('Error fetching webhooks:', error);
       toast({
         title: "Erro",
-        description: "Erro ao carregar configurações de webhook",
+        description: `Erro ao carregar webhooks: ${error.message}`,
         variant: "destructive",
       });
     }

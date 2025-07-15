@@ -73,22 +73,38 @@ const AIChat = () => {
     }
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Chat form submitted:', formData);
     
-    // Send initial lead data to webhook
-    fetch('/api/webhook/chat-lead', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        type: 'chat_lead',
-        contact: formData,
-        timestamp: new Date().toISOString()
-      })
-    }).catch(console.error);
+    // Send initial lead data to webhook and create lead record
+    try {
+      // Create lead in database
+      const { error: leadError } = await supabase
+        .from('leads')
+        .insert({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          message: formData.message,
+          status: 'new'
+        });
+
+      if (leadError) {
+        console.error('Error creating lead:', leadError);
+      }
+
+      // Send to webhook
+      await supabase.functions.invoke('webhook-chat-lead', {
+        body: {
+          type: 'chat_lead',
+          contact: formData,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error('Error processing chat lead:', error);
+    }
 
     setStep('chat');
     
@@ -108,12 +124,8 @@ const AIChat = () => {
       
       if (chatConfig?.api_provider === 'google') {
         // Call Gemini API
-        response = await fetch('/api/gemini-chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        const { data, error } = await supabase.functions.invoke('gemini-chat', {
+          body: {
             message,
             systemInstruction: chatConfig.system_instruction,
             context: {
@@ -121,16 +133,15 @@ const AIChat = () => {
               previousMessages: messages.slice(-5),
               customResponses: chatConfig.custom_responses
             }
-          })
+          }
         });
+
+        if (error) throw new Error('Gemini API call failed');
+        return data.response;
       } else {
         // Call OpenAI API (default)
-        response = await fetch('/api/ai-chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        const { data, error } = await supabase.functions.invoke('ai-chat', {
+          body: {
             message,
             systemInstruction: chatConfig?.system_instruction,
             context: {
@@ -138,14 +149,13 @@ const AIChat = () => {
               previousMessages: messages.slice(-5),
               customResponses: chatConfig?.custom_responses
             }
-          })
+          }
         });
+
+        if (error) throw new Error('AI API call failed');
+        return data.response;
       }
 
-      if (!response.ok) throw new Error('Failed to get AI response');
-
-      const data = await response.json();
-      return data.response;
     } catch (error) {
       console.error('AI Chat Error:', error);
       return 'Desculpe, não consegui processar sua mensagem no momento. Pode tentar novamente?';
