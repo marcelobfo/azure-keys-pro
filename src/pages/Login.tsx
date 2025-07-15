@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Home, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -6,12 +6,34 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '../hooks/use-toast';
+import { supabase } from '../integrations/supabase/client';
 
 const LoginPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const [lightLogoUrl, setLightLogoUrl] = useState<string | null>(null);
+  const [logoHeight, setLogoHeight] = useState<number>(48);
+  // Busca logo da Maresia Litoral
+  useEffect(() => {
+    async function fetchLogo() {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('key, value')
+        .in('key', ['header_logo_light', 'logo_size_header']);
+      
+      if (data) {
+        const logoData = data.find(item => item.key === 'header_logo_light');
+        const sizeData = data.find(item => item.key === 'logo_size_header');
+        
+        if (logoData?.value) setLightLogoUrl(logoData.value);
+        if (sizeData?.value) setLogoHeight(parseInt(sizeData.value) * 1.2); // Slightly larger for login
+      }
+    }
+    fetchLogo();
+  }, []);
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -50,9 +72,21 @@ const LoginPage = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center space-x-2">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
-              <Home className="w-6 h-6 text-white" />
-            </div>
+            {lightLogoUrl ? (
+              <img
+                src={lightLogoUrl}
+                alt="Maresia Litoral"
+                style={{ height: `${logoHeight}px` }}
+                className="w-auto object-contain rounded-lg"
+                onError={e => {
+                  (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
+                }}
+              />
+            ) : (
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
+                <Home className="w-6 h-6 text-white" />
+              </div>
+            )}
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
               Maresia Litoral
             </span>
