@@ -35,6 +35,7 @@ import AdminSiteSettings from '@/pages/AdminSiteSettings';
 import ApiTokens from '@/pages/ApiTokens';
 import Analytics from './pages/Analytics';
 import Sitemap from './pages/Sitemap';
+import SEOUpdater from '@/components/SEOUpdater';
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ function App() {
       <AuthProvider>
         <LanguageProvider>
           <ThemeProvider>
+            <SEOUpdater />
             <Router>
               <Routes>
                 {/* Public Routes */}

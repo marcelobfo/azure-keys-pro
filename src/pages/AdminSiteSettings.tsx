@@ -188,7 +188,25 @@ const CONTACT_FIELDS = [
   }
 ];
 
-const FAVICON_FIELDS = [
+const SITE_FIELDS = [
+  {
+    key: 'site_name',
+    label: 'Nome do Site',
+    placeholder: 'Maresia Litoral',
+    help: 'Nome principal do site que aparecerá no título e meta tags.',
+  },
+  {
+    key: 'site_title',
+    label: 'Título do Site',
+    placeholder: 'Maresia Litoral - Encontre o Imóvel dos Seus Sonhos',
+    help: 'Título completo que aparecerá na aba do navegador.',
+  },
+  {
+    key: 'site_description',
+    label: 'Descrição do Site',
+    placeholder: 'Encontre o imóvel dos seus sonhos com a Maresia Litoral.',
+    help: 'Descrição para SEO e meta tags.',
+  },
   {
     key: 'site_favicon_url',
     label: 'URL do favicon (.png ou .jpg)',
@@ -202,7 +220,7 @@ const ALL_FIELDS = [
   ...HOMEPAGE_SETTINGS.filter(f => f.key !== 'home_layout'),
   ...FOOTER_FIELDS,
   ...CONTACT_FIELDS,
-  ...FAVICON_FIELDS,
+  ...SITE_FIELDS,
   // O layout é tratado separadamente (com cards/imagem)
 ];
 
@@ -280,9 +298,19 @@ const AdminSiteSettings = () => {
     // Se favicon for atualizado e for URL válida, salvar no localStorage e pedir refresh
     if (values['site_favicon_url']) {
       localStorage.setItem('site-favicon', values['site_favicon_url']);
+      // Atualizar favicon imediatamente
+      const link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+      if (link) {
+        link.href = values['site_favicon_url'];
+      }
       setTimeout(() => {
         window.location.reload(); // Força update do favicon globalmente
       }, 1000);
+    }
+
+    // Atualizar título do site se mudou
+    if (values['site_title']) {
+      document.title = values['site_title'];
     }
   };
 
@@ -318,7 +346,7 @@ const AdminSiteSettings = () => {
                 <TabsTrigger value="home">Home</TabsTrigger>
                 <TabsTrigger value="footer">Rodapé</TabsTrigger>
                 <TabsTrigger value="contact">Contato</TabsTrigger>
-                <TabsTrigger value="favicon">Logo e Favicon</TabsTrigger>
+                <TabsTrigger value="site">Site e Favicon</TabsTrigger>
               </TabsList>
 
               {/* HOME TAB */}
@@ -462,8 +490,8 @@ const AdminSiteSettings = () => {
                 </form>
               </TabsContent>
 
-              {/* FAVICON/LOGO TAB */}
-              <TabsContent value="favicon">
+              {/* SITE/FAVICON TAB */}
+              <TabsContent value="site">
                 <form
                   className="space-y-6"
                   onSubmit={e => {
@@ -471,12 +499,12 @@ const AdminSiteSettings = () => {
                     saveSettings();
                   }}
                 >
-                  {FAVICON_FIELDS.map(field => (
+                  {SITE_FIELDS.map(field => (
                     <div key={field.key} className="space-y-2">
                       <Label htmlFor={field.key}>{field.label}</Label>
                       <Input
                         id={field.key}
-                        type="url"
+                        type={field.type === 'image' ? 'url' : 'text'}
                         value={values[field.key] || ''}
                         onChange={e => handleChange(field.key, e.target.value)}
                         placeholder={field.placeholder}
@@ -484,12 +512,11 @@ const AdminSiteSettings = () => {
                       {field.help && (
                         <div className="text-xs text-gray-500 dark:text-gray-400">{field.help}</div>
                       )}
-                      {values[field.key] && (
+                      {field.type === 'image' && values[field.key] && (
                         <img
                           src={values[field.key]}
                           alt="Favicon Preview"
                           className="h-10 w-10 mt-2 rounded-lg bg-white border"
-                          style={{ imageRendering: 'pixelated' }}
                           onError={e => {
                             (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'
                           }}

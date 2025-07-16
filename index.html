@@ -4,22 +4,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RealEstate Pro - Encontre o Imóvel dos Seus Sonhos</title>
-    <meta name="description" content="Encontre o imóvel dos seus sonhos com a RealEstate Pro. Casas, apartamentos e terrenos de qualidade em todo o Brasil." />
+    <title>Maresia Litoral - Encontre o Imóvel dos Seus Sonhos</title>
+    <meta name="description" content="Encontre o imóvel dos seus sonhos com a Maresia Litoral. Casas, apartamentos e terrenos de qualidade em todo o Brasil." />
     <meta name="keywords" content="imóveis, casas, apartamentos, venda, aluguel, imobiliária, real estate" />
-    <meta name="author" content="RealEstate Pro" />
+    <meta name="author" content="Maresia Litoral" />
 
     <!-- Open Graph -->
-    <meta property="og:title" content="RealEstate Pro - Encontre o Imóvel dos Seus Sonhos" />
-    <meta property="og:description" content="Encontre o imóvel dos seus sonhos com a RealEstate Pro. Casas, apartamentos e terrenos de qualidade em todo o Brasil." />
+    <meta property="og:title" content="Maresia Litoral - Encontre o Imóvel dos Seus Sonhos" />
+    <meta property="og:description" content="Encontre o imóvel dos seus sonhos com a Maresia Litoral. Casas, apartamentos e terrenos de qualidade em todo o Brasil." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=1200&h=630&fit=crop" />
-    <meta property="og:url" content="https://realestatepro.com" />
+    <meta property="og:url" content="https://maresialitoral.com" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="RealEstate Pro - Encontre o Imóvel dos Seus Sonhos" />
-    <meta name="twitter:description" content="Encontre o imóvel dos seus sonhos com a RealEstate Pro. Casas, apartamentos e terrenos de qualidade em todo o Brasil." />
+    <meta name="twitter:title" content="Maresia Litoral - Encontre o Imóvel dos Seus Sonhos" />
+    <meta name="twitter:description" content="Encontre o imóvel dos seus sonhos com a Maresia Litoral. Casas, apartamentos e terrenos de qualidade em todo o Brasil." />
     <meta name="twitter:image" content="https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=1200&h=630&fit=crop" />
 
     <!-- Favicon dynamic override (script) -->
@@ -28,9 +28,19 @@
       (function() {
         const faviconUrl = localStorage.getItem('site-favicon');
         if (faviconUrl) {
-          var link = document.querySelector("link[rel~='icon']");
-          if (link) {
-            link.href = faviconUrl;
+          // Buscar por diferentes tipos de link de favicon
+          var link = document.querySelector("link[rel*='icon']");
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+          }
+          link.href = faviconUrl;
+          
+          // Atualizar apple-touch-icon também
+          var appleLink = document.querySelector("link[rel='apple-touch-icon']");
+          if (appleLink) {
+            appleLink.href = faviconUrl;
           }
         }
       })();
@@ -78,23 +88,23 @@
     {
       "@context": "https://schema.org",
       "@type": "RealEstateAgent",
-      "name": "RealEstate Pro",
-      "description": "Imobiliária moderna e confiável especializada em conectar pessoas aos seus lares ideais",
-      "url": "https://realestatepro.com",
+      "name": "Maresia Litoral",
+      "description": "Imobiliária moderna e confiável especializada em conectar pessoas aos seus lares ideais no litoral",
+      "url": "https://maresialitoral.com",
       "telephone": "+55-11-99999-9999",
-      "email": "contato@realestatepro.com",
+      "email": "contato@maresialitoral.com",
       "address": {
         "@type": "PostalAddress",
-        "streetAddress": "Av. Paulista, 1000",
-        "addressLocality": "São Paulo",
+        "streetAddress": "Av. Beira Mar, 1000",
+        "addressLocality": "Praia Grande",
         "addressRegion": "SP",
-        "postalCode": "01310-100",
+        "postalCode": "11700-000",
         "addressCountry": "BR"
       },
       "sameAs": [
-        "https://facebook.com/realestatepro",
-        "https://instagram.com/realestatepro",
-        "https://linkedin.com/company/realestatepro"
+        "https://facebook.com/maresialitoral",
+        "https://instagram.com/maresialitoral",
+        "https://linkedin.com/company/maresialitoral"
       ]
     }
     </script>
