@@ -20,7 +20,7 @@ const PropertyTag: React.FC<PropertyTagProps> = ({ tag, variant = 'default' }) =
   return (
     <Badge 
       variant={variant !== 'default' ? variant : getTagVariant(tag)}
-      className="text-xs font-medium"
+      className="text-xs md:text-sm font-medium px-2 py-1 whitespace-nowrap"
     >
       {tag}
     </Badge>
