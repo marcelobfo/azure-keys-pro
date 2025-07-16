@@ -22,10 +22,9 @@ serve(async (req) => {
           persistSession: false
         }
       }
-  )
+    );
 
-  try {
-    const { email, password, full_name, role, phone } = await req.json()
+    const { email, password, full_name, role, phone } = await req.json();
 
     // Create the user using Supabase Auth Admin API
     const { data: user, error: userError } = await supabaseClient.auth.admin.createUser({
@@ -91,11 +90,11 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
-      },
-    )
+      }
+    );
 
   } catch (error) {
-    console.error('Error creating user:', error)
+    console.error('Error creating user:', error);
     return new Response(
       JSON.stringify({ 
         error: 'Erro interno do servidor',
@@ -104,7 +103,7 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
-      },
-    )
+      }
+    );
   }
-})
+});
