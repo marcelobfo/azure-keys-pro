@@ -51,27 +51,29 @@ const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-6 gap-4">
           <div className="flex-1">
-            <div className="flex flex-col md:flex-row md:items-center gap-3 mb-3">
-              <h1 className="text-2xl md:text-4xl font-bold text-gray-900 dark:text-white leading-tight">
+            <div className="mb-3">
+              <h1 className="text-2xl md:text-4xl font-bold text-gray-900 dark:text-white leading-tight mb-2">
                 {property.title}
               </h1>
-              {property.property_code && (
-                <Badge variant="outline" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 w-fit">
-                  {property.property_code}
-                </Badge>
-              )}
             </div>
             <div className="flex items-center text-gray-600 dark:text-gray-300 mb-3">
               <MapPin className="w-4 h-4 md:w-5 md:h-5 mr-2 text-blue-600" />
               <span className="text-base md:text-lg">{property.location}, {property.city}</span>
             </div>
           </div>
-          <Badge 
-            variant="secondary" 
-            className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1 md:px-4 md:py-2 text-sm font-medium w-fit"
-          >
-            {property.property_type}
-          </Badge>
+          <div className="flex flex-col md:flex-row gap-2 md:gap-3 items-start md:items-center">
+            <Badge 
+              variant="secondary" 
+              className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1 md:px-4 md:py-2 text-sm font-medium w-fit"
+            >
+              {property.property_type}
+            </Badge>
+            {property.property_code && (
+              <Badge variant="outline" className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 w-fit">
+                {property.property_code}
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Tags */}
