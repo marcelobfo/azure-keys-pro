@@ -62,10 +62,15 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
       });
 
       if (error) {
-        throw error;
+        console.error('Supabase function error:', error);
+        throw new Error('Erro na comunicação com o servidor');
       }
 
       if (!data.success) {
+        // Handle specific error cases
+        if (data.code === 'email_exists') {
+          throw new Error('Este email já está cadastrado no sistema. Tente com outro email.');
+        }
         throw new Error(data.error || 'Erro desconhecido');
       }
 
@@ -86,9 +91,17 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
 
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error);
+      let errorMessage = error.message || 'Erro desconhecido';
+      
+      // Handle different error types
+      if (error.message?.includes('already been registered') || 
+          error.message?.includes('email já está cadastrado')) {
+        errorMessage = 'Este email já está cadastrado no sistema. Tente com outro email.';
+      }
+      
       toast({
         title: "Erro",
-        description: `Erro ao criar usuário: ${error.message}`,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

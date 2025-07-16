@@ -22,8 +22,9 @@ serve(async (req) => {
           persistSession: false
         }
       }
-    )
+  )
 
+  try {
     const { email, password, full_name, role, phone } = await req.json()
 
     // Create the user using Supabase Auth Admin API
@@ -37,7 +38,32 @@ serve(async (req) => {
     });
 
     if (userError) {
-      throw userError;
+      // Handle specific error cases
+      if (userError.message?.includes('already been registered') || (userError as any).code === 'email_exists') {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Este email já está cadastrado no sistema',
+            success: false,
+            code: 'email_exists'
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 409, // Conflict
+          }
+        );
+      }
+      
+      // Handle other auth errors
+      return new Response(
+        JSON.stringify({ 
+          error: userError.message || 'Erro ao criar usuário',
+          success: false
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
     }
 
     // Insert the profile with additional information
@@ -53,6 +79,7 @@ serve(async (req) => {
 
     if (profileError) {
       console.error('Error updating profile:', profileError);
+      // Don't fail the request if profile update fails, just log it
     }
 
     return new Response(
@@ -71,12 +98,12 @@ serve(async (req) => {
     console.error('Error creating user:', error)
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: 'Erro interno do servidor',
         success: false 
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 500,
       },
     )
   }
