@@ -75,9 +75,9 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
   return (
     <Card className="mb-6 p-4">
       {/* Top Row - Always Visible */}
-      <div className="flex flex-wrap items-center gap-4 mb-4">
-        {/* Search Input */}
-        <div className="flex-1 min-w-[200px]">
+      <div className="space-y-4">
+        {/* Search Input - Full Width */}
+        <div className="w-full">
           <Input
             type="text"
             placeholder="Buscar imóveis..."
@@ -87,60 +87,66 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
           />
         </div>
 
-        {/* Quick Filters */}
-        <div className="flex items-center gap-2">
-          <Select value={filters.purpose || 'all'} onValueChange={(value) => updateFilter('purpose', value === 'all' ? '' : value)}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Finalidade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="sale">Venda</SelectItem>
-              <SelectItem value="rent">Aluguel</SelectItem>
-            </SelectContent>
-          </Select>
+        {/* Filters Row - Stacked on Mobile */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          {/* Quick Filters */}
+          <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 xs:gap-3 flex-1">
+            <Select value={filters.purpose || 'all'} onValueChange={(value) => updateFilter('purpose', value === 'all' ? '' : value)}>
+              <SelectTrigger className="w-full xs:w-32">
+                <SelectValue placeholder="Finalidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="sale">Venda</SelectItem>
+                <SelectItem value="rent">Aluguel</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={filters.type || 'all'} onValueChange={(value) => updateFilter('type', value === 'all' ? '' : value)}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="apartamento">Apartamento</SelectItem>
-              <SelectItem value="casa">Casa</SelectItem>
-              <SelectItem value="cobertura">Cobertura</SelectItem>
-              <SelectItem value="lote">Lote</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={filters.type || 'all'} onValueChange={(value) => updateFilter('type', value === 'all' ? '' : value)}>
+              <SelectTrigger className="w-full xs:w-32">
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="apartamento">Apartamento</SelectItem>
+                <SelectItem value="casa">Casa</SelectItem>
+                <SelectItem value="cobertura">Cobertura</SelectItem>
+                <SelectItem value="lote">Lote</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          {/* Expand/Collapse Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-2"
-          >
-            {t('properties.filters')}
-            {getActiveFilterCount() > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {getActiveFilterCount()}
-              </Badge>
-            )}
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
-
-          {/* Clear Filters Button */}
-          {hasActiveFilters && (
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            {/* Expand/Collapse Button */}
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={clearFilters}
-              className="flex items-center gap-1 text-muted-foreground"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex items-center gap-2 whitespace-nowrap"
             >
-              <X className="h-4 w-4" />
-              Limpar
+              {t('properties.filters')}
+              {getActiveFilterCount() > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {getActiveFilterCount()}
+                </Badge>
+              )}
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
-          )}
+
+            {/* Clear Filters Button */}
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="flex items-center gap-1 text-muted-foreground whitespace-nowrap"
+              >
+                <X className="h-4 w-4" />
+                Limpar
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
