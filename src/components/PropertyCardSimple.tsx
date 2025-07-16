@@ -7,6 +7,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 
 interface Property {
   id: string;
+  slug?: string;
   title: string;
   price: number;
   rental_price?: number;
@@ -60,7 +61,7 @@ const PropertyCardSimple: React.FC<PropertyCardSimpleProps> = ({ property }) => 
 
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 overflow-hidden bg-white dark:bg-slate-800">
-      <div className="relative overflow-hidden cursor-pointer" onClick={() => navigate(`/property/${property.id}`)}>
+      <div className="relative overflow-hidden cursor-pointer" onClick={() => navigate(property.slug ? `/imovel/${property.slug}` : `/property/${property.id}`)}>
         <img
           src={property.image}
           alt={property.title}
@@ -117,7 +118,7 @@ const PropertyCardSimple: React.FC<PropertyCardSimpleProps> = ({ property }) => 
         
         <Button 
           className="w-full bg-blue-600 hover:bg-blue-700"
-          onClick={() => navigate(`/property/${property.id}`)}
+          onClick={() => navigate(property.slug ? `/imovel/${property.slug}` : `/property/${property.id}`)}
         >
           Ver Detalhes
         </Button>

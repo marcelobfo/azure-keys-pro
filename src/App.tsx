@@ -34,6 +34,7 @@ import VisitsManagement from '@/pages/VisitsManagement';
 import AdminSiteSettings from '@/pages/AdminSiteSettings';
 import ApiTokens from '@/pages/ApiTokens';
 import Analytics from './pages/Analytics';
+import Sitemap from './pages/Sitemap';
 
 const queryClient = new QueryClient();
 
@@ -49,11 +50,23 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/home" element={<Home />} />
                 <Route path="/properties" element={<PropertiesPage />} />
-                <Route path="/property/:id" element={<PropertyDetail />} />
+                <Route path="/imoveis" element={<PropertiesPage />} />
+                
+                {/* Property Detail Routes - SEO Friendly */}
+                <Route path="/imovel/:identifier" element={<PropertyDetail />} />
+                <Route path="/property/:identifier" element={<PropertyDetail />} />
+                
+                {/* Category Routes */}
+                <Route path="/imoveis/destaque" element={<PropertiesPage />} />
+                <Route path="/imoveis/frente-mar" element={<PropertiesPage />} />
+                <Route path="/imoveis/quadra-mar" element={<PropertiesPage />} />
+                <Route path="/imoveis/empreendimentos" element={<PropertiesPage />} />
+                
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/favorites" element={<Favorites />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/sitemap.xml" element={<Sitemap />} />
 
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={<Dashboard />} />

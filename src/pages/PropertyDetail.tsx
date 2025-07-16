@@ -9,9 +9,12 @@ import Layout from '@/components/Layout';
 import PropertyImageGallery from '@/components/PropertyImageGallery';
 import PropertyMainInfo from '@/components/PropertyMainInfo';
 import PropertySidebar from '@/components/PropertySidebar';
+import Breadcrumb from '@/components/Breadcrumb';
+import { useSEO, generatePropertySEO } from '@/hooks/useSEO';
 
 interface Property {
   id: string;
+  slug: string;
   title: string;
   description: string;
   price: number;
@@ -36,31 +39,52 @@ interface Property {
 }
 
 const PropertyDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { identifier } = useParams<{ identifier: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
+    if (identifier) {
       fetchProperty();
     }
-  }, [id]);
+  }, [identifier]);
+
+  const isUUID = (str: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
 
   const fetchProperty = async () => {
     try {
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('id', id)
-        .single();
+      let query = supabase.from('properties').select('*');
+      
+      if (isUUID(identifier!)) {
+        // Se for UUID, buscar por ID e redirecionar para slug
+        query = query.eq('id', identifier);
+      } else {
+        // Se for slug, buscar por slug
+        query = query.eq('slug', identifier);
+      }
+
+      const { data, error } = await query.single();
 
       if (error) {
         throw error;
       }
 
       setProperty(data);
+
+      // Se encontrou por UUID, redirecionar para slug
+      if (isUUID(identifier!) && data.slug) {
+        navigate(`/imovel/${data.slug}`, { replace: true });
+        return;
+      }
+
+      // Incrementar contador de visualizações
+      await supabase.rpc('increment_property_views', { property_id: data.id });
+      
     } catch (error: any) {
       console.error('Erro ao buscar propriedade:', error);
       toast({
@@ -73,6 +97,12 @@ const PropertyDetail = () => {
       setLoading(false);
     }
   };
+
+  // Usar hook de SEO
+  useSEO(property ? generatePropertySEO(property) : {
+    title: 'Carregando...',
+    description: 'Carregando detalhes da propriedade...'
+  });
 
   if (loading) {
     return (
@@ -100,6 +130,8 @@ const PropertyDetail = () => {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Breadcrumb property={property} />
+        
         <div className="mb-6">
           <Button
             variant="outline"

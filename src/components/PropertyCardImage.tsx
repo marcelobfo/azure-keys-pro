@@ -10,6 +10,7 @@ import PropertyCardTags from './PropertyCardTags';
 
 interface FeaturedProperty {
   id: string;
+  slug?: string;
   title: string;
   price: number;
   rental_price?: number;
@@ -44,7 +45,7 @@ const PropertyCardImage: React.FC<PropertyCardImageProps> = ({
       property_type: property.property_type,
       price: property.price
     });
-    navigate(`/property/${property.id}`);
+    navigate(property.slug ? `/imovel/${property.slug}` : `/property/${property.id}`);
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {

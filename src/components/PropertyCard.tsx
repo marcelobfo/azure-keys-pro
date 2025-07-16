@@ -10,6 +10,7 @@ import ScheduleVisitModal from './ScheduleVisitModal';
 
 interface Property {
   id: string;
+  slug?: string;
   title: string;
   price: number;
   location: string;
@@ -103,7 +104,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
         <div className="space-y-2">
           <Button 
             className="w-full bg-blue-600 hover:bg-blue-700"
-            onClick={() => navigate(`/property/${property.id}`)}
+            onClick={() => navigate(property.slug ? `/imovel/${property.slug}` : `/property/${property.id}`)}
           >
             Ver Detalhes
           </Button>

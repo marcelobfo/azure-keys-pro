@@ -364,6 +364,7 @@ export type Database = {
           purpose: string | null
           reference_point: string | null
           rental_price: number | null
+          slug: string | null
           state: string | null
           status: string | null
           suites: number | null
@@ -406,6 +407,7 @@ export type Database = {
           purpose?: string | null
           reference_point?: string | null
           rental_price?: number | null
+          slug?: string | null
           state?: string | null
           status?: string | null
           suites?: number | null
@@ -448,6 +450,7 @@ export type Database = {
           purpose?: string | null
           reference_point?: string | null
           rental_price?: number | null
+          slug?: string | null
           state?: string | null
           status?: string | null
           suites?: number | null
@@ -646,8 +649,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_clean_slug: {
+        Args: { input_text: string }
+        Returns: string
+      }
       generate_property_code: {
         Args: { property_type: string }
+        Returns: string
+      }
+      generate_property_slug: {
+        Args: {
+          property_type_input: string
+          city_input: string
+          title_input: string
+          property_code_input?: string
+        }
         Returns: string
       }
       increment_property_views: {
