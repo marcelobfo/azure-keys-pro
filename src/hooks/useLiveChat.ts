@@ -237,7 +237,7 @@ export const useLiveChat = () => {
           leads!chat_sessions_lead_id_fkey (name, email, phone),
           profiles!chat_sessions_attendant_id_fkey (full_name, avatar_url)
         `)
-        .order('created_at', { ascending: false });
+        .order('started_at', { ascending: false });
 
       if (error) throw error;
       
@@ -251,6 +251,24 @@ export const useLiveChat = () => {
       setSessions(formattedSessions);
     } catch (error) {
       console.error('Erro ao buscar sessões:', error);
+    }
+  };
+
+  // Buscar disponibilidade de atendentes
+  const fetchAttendantAvailability = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('attendant_availability')
+        .select('*')
+        .eq('is_online', true);
+
+      if (error) throw error;
+      
+      const onlineAttendants = data?.length || 0;
+      return onlineAttendants > 0;
+    } catch (error) {
+      console.error('Erro ao buscar disponibilidade:', error);
+      return false;
     }
   };
 
@@ -351,6 +369,7 @@ export const useLiveChat = () => {
     markMessagesAsRead,
     updateAvailability,
     fetchMessages,
-    fetchChatSessions
+    fetchChatSessions,
+    fetchAttendantAvailability
   };
 };

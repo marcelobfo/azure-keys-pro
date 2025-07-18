@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 const LiveChat = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { createChatSession, sendMessage, sessions } = useLiveChat();
+  const { createChatSession, sendMessage, sessions, fetchAttendantAvailability } = useLiveChat();
   
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<'contact' | 'chat'>('contact');
@@ -92,6 +92,24 @@ const LiveChat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Verificar disponibilidade de atendentes
+  useEffect(() => {
+    const checkAttendantAvailability = async () => {
+      try {
+        const isOnline = await fetchAttendantAvailability();
+        setIsAttendantOnline(isOnline);
+      } catch (error) {
+        console.error('Erro ao verificar disponibilidade:', error);
+      }
+    };
+    
+    checkAttendantAvailability();
+    
+    // Verificar a cada 30 segundos
+    const interval = setInterval(checkAttendantAvailability, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
