@@ -298,31 +298,61 @@ export const useLiveChat = () => {
     }
   };
 
-  // Enviar mensagem
+  // Enviar mensagem com retry
   const sendMessage = async (
     sessionId: string, 
     message: string, 
     senderType: 'lead' | 'attendant' | 'bot' = 'attendant'
   ) => {
-    try {
-      const { error } = await supabase
-        .from('chat_messages')
-        .insert({
-          session_id: sessionId,
-          sender_type: senderType,
-          sender_id: senderType === 'attendant' ? user?.id : null,
-          message,
-          read_status: false
-        });
+    console.log('=== ENVIANDO MENSAGEM ===');
+    console.log('SessionId:', sessionId);
+    console.log('Mensagem:', message);
+    console.log('Sender Type:', senderType);
+    
+    const messagePayload = {
+      session_id: sessionId,
+      sender_type: senderType,
+      sender_id: senderType === 'attendant' ? user?.id : null,
+      message: message.trim(),
+      read_status: false
+    };
 
-      if (error) throw error;
-    } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível enviar a mensagem.',
-        variant: 'destructive',
-      });
+    // Retry logic para envio de mensagem
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.log(`Tentativa ${attempt} de envio...`);
+        
+        const { data, error } = await supabase
+          .from('chat_messages')
+          .insert(messagePayload)
+          .select()
+          .single();
+
+        if (error) {
+          console.error(`Tentativa ${attempt} - Erro ao enviar:`, error);
+          
+          if (attempt === 3) {
+            throw error;
+          }
+          
+          // Aguardar antes de tentar novamente
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+
+        console.log('Mensagem enviada com sucesso:', data);
+        return data;
+
+      } catch (error) {
+        console.error(`Tentativa ${attempt} falhou:`, error);
+        
+        if (attempt === 3) {
+          console.error('Todas as tentativas falharam');
+          throw error;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
     }
   };
 

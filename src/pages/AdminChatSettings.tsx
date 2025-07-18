@@ -11,11 +11,13 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
 import { useChatConfiguration } from '@/hooks/useChatConfiguration';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminChatSettings = () => {
   const { profile, loading: profileLoading } = useProfile();
   const { configuration, loading: configLoading, updateField } = useChatConfiguration();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [localConfig, setLocalConfig] = useState({
     whatsapp_number: '',
     welcome_message: '',

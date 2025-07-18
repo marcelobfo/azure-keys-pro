@@ -14,11 +14,12 @@ import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2 } from '
 import { cn } from '@/lib/utils';
 import { useChatConfiguration } from '@/hooks/useChatConfiguration';
 import { useChatBusinessHours } from '@/hooks/useChatBusinessHours';
+import { supabase } from '@/integrations/supabase/client';
 
 const LiveChat = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { createChatSession, sendMessage } = useLiveChat();
+  const { createChatSession, sendMessage, sessions } = useLiveChat();
   const { configuration } = useChatConfiguration();
   const { isWithinBusinessHours, getBusinessHoursMessage } = useChatBusinessHours();
   
@@ -34,6 +35,7 @@ const LiveChat = () => {
   const [newMessage, setNewMessage] = useState('');
   const [isAttendantOnline, setIsAttendantOnline] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState({
@@ -61,6 +63,69 @@ const LiveChat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Verificar se há atendentes online
+  useEffect(() => {
+    const checkAttendantAvailability = async () => {
+      try {
+        const { data } = await supabase
+          .from('attendant_availability')
+          .select('*')
+          .eq('is_online', true)
+          .limit(1);
+        
+        setIsAttendantOnline(data && data.length > 0);
+      } catch (error) {
+        console.error('Erro ao verificar disponibilidade:', error);
+        setIsAttendantOnline(false);
+      }
+    };
+
+    checkAttendantAvailability();
+    
+    // Verificar a cada 30 segundos
+    const interval = setInterval(checkAttendantAvailability, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Atualizar mensagens em tempo real para a sessão atual
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const channel = supabase
+      .channel(`chat-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `session_id=eq.${sessionId}`
+        },
+        (payload) => {
+          const newMessage = {
+            id: payload.new.id,
+            message: payload.new.message,
+            sender_type: payload.new.sender_type as 'lead' | 'attendant' | 'bot',
+            timestamp: payload.new.timestamp
+          };
+          
+          // Só adicionar se não for uma mensagem duplicada
+          setMessages(prev => {
+            const messageExists = prev.some(msg => msg.id === newMessage.id);
+            if (!messageExists) {
+              return [...prev, newMessage];
+            }
+            return prev;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,24 +205,36 @@ const LiveChat = () => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newMessage.trim() || !sessionId) return;
+    if (!newMessage.trim() || !sessionId || sendingMessage) return;
 
-    const message = {
-      id: Date.now().toString(),
-      message: newMessage,
+    const messageText = newMessage.trim();
+    const tempMessage = {
+      id: `temp-${Date.now()}`,
+      message: messageText,
       sender_type: 'lead' as const,
       timestamp: new Date().toISOString()
     };
 
-    setMessages(prev => [...prev, message]);
+    // Adicionar mensagem temporária ao estado
+    setMessages(prev => [...prev, tempMessage]);
+    setNewMessage('');
+    setSendingMessage(true);
     
     try {
-      await sendMessage(sessionId, newMessage, 'lead');
+      await sendMessage(sessionId, messageText, 'lead');
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
+      // Remover mensagem temporária em caso de erro
+      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      setNewMessage(messageText); // Restaurar texto
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível enviar a mensagem. Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingMessage(false);
     }
-    
-    setNewMessage('');
   };
 
   const resetChat = () => {
@@ -209,9 +286,14 @@ const LiveChat = () => {
                 <div className="flex items-center gap-2 text-xs">
                   <div className={cn(
                     "h-2 w-2 rounded-full",
-                    isAttendantOnline ? "bg-green-400" : "bg-red-400"
+                    (isAttendantOnline || isWithinBusinessHours) ? "bg-green-400" : "bg-yellow-400"
                   )} />
-                  {isAttendantOnline ? 'Online' : 'Offline'}
+                  {isAttendantOnline 
+                    ? 'Atendente Online' 
+                    : isWithinBusinessHours 
+                      ? 'Horário de Atendimento' 
+                      : 'Fora do horário'
+                  }
                 </div>
               </div>
             </div>
@@ -386,8 +468,12 @@ const LiveChat = () => {
                     onChange={(e) => setNewMessage(e.target.value)}
                     className="flex-1"
                   />
-                  <Button type="submit" size="sm" disabled={!newMessage.trim()}>
-                    <Send className="h-4 w-4" />
+                  <Button type="submit" size="sm" disabled={!newMessage.trim() || sendingMessage}>
+                    {sendingMessage ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
                   </Button>
                 </form>
               </div>

@@ -40,9 +40,9 @@ export const useChatBusinessHours = () => {
     const fim = configuration.custom_responses.horario_fim;
 
     if (isWithinBusinessHours) {
-      return `Estamos online! Horário de atendimento: ${inicio} às ${fim}`;
+      return `Nosso horário de atendimento é das ${inicio} às ${fim}. Responderemos em breve!`;
     } else {
-      return `Estamos fora do horário de atendimento. Voltaremos às ${inicio}. Deixe sua mensagem!`;
+      return `Estamos fora do horário de atendimento (${inicio} às ${fim}). Deixe sua mensagem e retornaremos assim que possível!`;
     }
   };
 

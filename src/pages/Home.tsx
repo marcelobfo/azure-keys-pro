@@ -46,11 +46,14 @@ const HomePage = () => {
   };
 
   // Loading state para evitar tela branca
-  if (loadingFeatured && Object.keys(settings).length === 0) {
+  if (loadingFeatured || Object.keys(settings).length === 0) {
     return (
       <Layout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p className="text-muted-foreground">Carregando...</p>
+          </div>
         </div>
       </Layout>
     );
