@@ -36,6 +36,7 @@ import ApiTokens from '@/pages/ApiTokens';
 import Analytics from './pages/Analytics';
 import Sitemap from './pages/Sitemap';
 import Atendimento from '@/pages/Atendimento';
+import AttendantChat from '@/pages/AttendantChat';
 import LiveChat from '@/components/LiveChat';
 import SEOUpdater from '@/components/SEOUpdater';
 
@@ -98,6 +99,7 @@ function App() {
                 <Route path="/schedule-visit/:propertyId" element={<ScheduleVisit />} />
                 <Route path="/chat-settings" element={<ChatSettings />} />
                 <Route path="/atendimento" element={<Atendimento />} />
+                <Route path="/chat-attendant" element={<AttendantChat />} />
 
                 {/* User Routes */}
                 <Route path="/user/*" element={<UserDashboard />} />

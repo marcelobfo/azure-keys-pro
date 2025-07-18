@@ -281,8 +281,6 @@ export const useLiveChat = () => {
 
   // Configurar real-time subscriptions
   useEffect(() => {
-    if (!user) return;
-
     const channel = supabase
       .channel('live-chat')
       .on(
@@ -333,15 +331,13 @@ export const useLiveChat = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, []);
 
   // Carregar dados iniciais
   useEffect(() => {
-    if (user) {
-      fetchChatSessions();
-      setLoading(false);
-    }
-  }, [user]);
+    fetchChatSessions();
+    setLoading(false);
+  }, []);
 
   return {
     sessions,

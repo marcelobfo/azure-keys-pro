@@ -4,107 +4,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Phone, Mail, Calendar, MessageSquare, Search, Filter } from 'lucide-react';
+import { Phone, Mail, Calendar, MessageSquare, Search, Filter, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLeads } from '@/hooks/useLeads';
 import Layout from '@/components/Layout';
-
-interface Lead {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  message: string | null;
-  status: string;
-  created_at: string;
-  property_id: string | null;
-  properties?: {
-    title: string;
-  };
-}
+import EditLeadDialog from '@/components/EditLeadDialog';
 
 const LeadsManagement = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { leads, loading, updateLeadStatus, updateLead, deleteLead } = useLeads();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  useEffect(() => {
-    if (user) {
-      fetchLeads();
-    }
-  }, [user]);
-
-  const fetchLeads = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select(`
-          *,
-          properties (
-            title
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
-      setLeads(data || []);
-    } catch (error: any) {
-      console.error('Erro ao buscar leads:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar leads",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateLeadStatus = async (leadId: string, newStatus: string) => {
-    // Defina valores válidos para comparação (todos minúsculos)
-    const validStatuses = ['new', 'contacted', 'qualified', 'converted', 'lost'];
-    if (!validStatuses.includes(newStatus)) {
-      toast({
-        title: "Status inválido",
-        description: "Selecione um status válido.",
-        variant: "destructive"
-      });
-      return;
-    }
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .update({ status: newStatus })
-        .eq('id', leadId);
-
-      if (error) {
-        throw error;
-      }
-
-      setLeads(prev =>
-        prev.map(lead =>
-          lead.id === leadId ? { ...lead, status: newStatus } : lead
-        )
-      );
-
-      toast({
-        title: "Status atualizado",
-        description: "Status do lead foi atualizado com sucesso",
-      });
-    } catch (error: any) {
-      console.error('Erro ao atualizar status:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar status do lead",
-        variant: "destructive",
-      });
+  const handleDeleteLead = async (leadId: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este lead?')) {
+      await deleteLead(leadId);
     }
   };
 
@@ -309,6 +225,10 @@ const LeadsManagement = () => {
                       </Select>
 
                       <div className="flex gap-2">
+                        <EditLeadDialog
+                          lead={lead}
+                          onSave={updateLead}
+                        />
                         <Button
                           variant="outline"
                           size="sm"
@@ -329,6 +249,14 @@ const LeadsManagement = () => {
                           onClick={() => handleWhatsApp(lead.phone || '')}
                         >
                           <MessageSquare className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteLead(lead.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>

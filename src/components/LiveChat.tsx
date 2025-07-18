@@ -12,11 +12,12 @@ import { useLiveChat } from '@/hooks/useLiveChat';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 const LiveChat = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { createChatSession, sendMessage } = useLiveChat();
+  const { createChatSession, sendMessage, sessions } = useLiveChat();
   
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<'contact' | 'chat'>('contact');
@@ -31,6 +32,40 @@ const LiveChat = () => {
   const [isAttendantOnline, setIsAttendantOnline] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Conectar ao sistema de real-time para receber mensagens
+  useEffect(() => {
+    if (sessionId) {
+      const channel = supabase.channel(`session-${sessionId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'chat_messages',
+            filter: `session_id=eq.${sessionId}`
+          },
+          (payload) => {
+            const newMessage = {
+              id: payload.new.id,
+              message: payload.new.message,
+              sender_type: payload.new.sender_type,
+              timestamp: payload.new.timestamp
+            };
+            
+            // Só adiciona se não for uma mensagem que o próprio usuário enviou
+            if (payload.new.sender_type !== 'lead') {
+              setMessages(prev => [...prev, newMessage]);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [sessionId]);
   
   const [formData, setFormData] = useState({
     name: '',

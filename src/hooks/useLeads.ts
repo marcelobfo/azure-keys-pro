@@ -14,6 +14,9 @@ export interface Lead {
   assigned_to: string | null;
   created_at: string;
   updated_at: string | null;
+  properties?: {
+    title: string;
+  };
 }
 
 export const useLeads = () => {
@@ -26,7 +29,12 @@ export const useLeads = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('leads')
-        .select('*')
+        .select(`
+          *,
+          properties (
+            title
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -79,6 +87,39 @@ export const useLeads = () => {
     }
   };
 
+  const updateLead = async (leadId: string, updates: Partial<Lead>) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', leadId);
+
+      if (error) {
+        throw error;
+      }
+
+      setLeads(prev => 
+        prev.map(lead => 
+          lead.id === leadId 
+            ? { ...lead, ...updates, updated_at: new Date().toISOString() }
+            : lead
+        )
+      );
+
+      toast({
+        title: "Sucesso",
+        description: "Lead atualizado com sucesso",
+      });
+    } catch (error: any) {
+      console.error('Erro ao atualizar lead:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar lead",
+        variant: "destructive",
+      });
+    }
+  };
+
   const deleteLead = async (leadId: string) => {
     try {
       const { error } = await supabase
@@ -106,6 +147,39 @@ export const useLeads = () => {
     }
   };
 
+  const assignLead = async (leadId: string, userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ assigned_to: userId, updated_at: new Date().toISOString() })
+        .eq('id', leadId);
+
+      if (error) {
+        throw error;
+      }
+
+      setLeads(prev => 
+        prev.map(lead => 
+          lead.id === leadId 
+            ? { ...lead, assigned_to: userId, updated_at: new Date().toISOString() }
+            : lead
+        )
+      );
+
+      toast({
+        title: "Sucesso",
+        description: "Lead atribuído com sucesso",
+      });
+    } catch (error: any) {
+      console.error('Erro ao atribuir lead:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atribuir lead",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     fetchLeads();
   }, []);
@@ -115,7 +189,9 @@ export const useLeads = () => {
     loading,
     fetchLeads,
     updateLeadStatus,
+    updateLead,
     deleteLead,
+    assignLead,
     refetch: fetchLeads
   };
 };
