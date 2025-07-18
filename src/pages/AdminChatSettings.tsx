@@ -1,15 +1,39 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Bot, Phone, Settings, Users, BarChart3 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { MessageCircle, Bot, Phone, Settings, Users, BarChart3, Save, Clock } from 'lucide-react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
-import { Navigate } from 'react-router-dom';
+import { useChatConfiguration } from '@/hooks/useChatConfiguration';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 const AdminChatSettings = () => {
-  const { profile, loading } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
+  const { configuration, loading: configLoading, updateField } = useChatConfiguration();
+  const navigate = useNavigate();
+  const [localConfig, setLocalConfig] = useState({
+    whatsapp_number: '',
+    welcome_message: '',
+    system_instruction: ''
+  });
+
+  // Atualizar estado local quando configuração carrega
+  React.useEffect(() => {
+    if (configuration) {
+      setLocalConfig({
+        whatsapp_number: configuration.whatsapp_number || '',
+        welcome_message: configuration.welcome_message || '',
+        system_instruction: configuration.system_instruction || ''
+      });
+    }
+  }, [configuration]);
+
+  const loading = profileLoading || configLoading;
 
   if (loading) {
     return (
@@ -57,15 +81,24 @@ const AdminChatSettings = () => {
                   <p className="font-medium">Chat Habilitado</p>
                   <p className="text-sm text-muted-foreground">Ativar chat ao vivo no site</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={configuration?.active || false}
+                  onCheckedChange={(checked) => updateField('active', checked)}
+                />
               </div>
               
-              <div className="flex items-center justify-between">
+              <div className="space-y-4">
                 <div>
-                  <p className="font-medium">Notificações em Tempo Real</p>
-                  <p className="text-sm text-muted-foreground">Alertas para novos chats</p>
+                  <Label htmlFor="welcome_message">Mensagem de Boas-vindas</Label>
+                  <Textarea
+                    id="welcome_message"
+                    value={localConfig.welcome_message}
+                    onChange={(e) => setLocalConfig(prev => ({ ...prev, welcome_message: e.target.value }))}
+                    onBlur={() => updateField('welcome_message', localConfig.welcome_message)}
+                    placeholder="Digite a mensagem de boas-vindas..."
+                    rows={3}
+                  />
                 </div>
-                <Switch defaultChecked />
               </div>
 
               <div className="flex items-center justify-between">
@@ -76,7 +109,12 @@ const AdminChatSettings = () => {
                 <Badge variant="secondary">24/7</Badge>
               </div>
 
-              <Button className="w-full" variant="outline">
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={() => navigate('/admin/chat-schedules')}
+              >
+                <Clock className="h-4 w-4 mr-2" />
                 Configurar Horários
               </Button>
             </CardContent>
@@ -99,7 +137,10 @@ const AdminChatSettings = () => {
                   <p className="font-medium">IA Habilitada</p>
                   <p className="text-sm text-muted-foreground">Ativar respostas automáticas</p>
                 </div>
-                <Switch />
+                <Switch 
+                  checked={configuration?.ai_chat_enabled || false}
+                  onCheckedChange={(checked) => updateField('ai_chat_enabled', checked)}
+                />
               </div>
               
               <div className="flex items-center justify-between">
@@ -107,19 +148,28 @@ const AdminChatSettings = () => {
                   <p className="font-medium">Provedor</p>
                   <p className="text-sm text-muted-foreground">OpenAI GPT ou Google Gemini</p>
                 </div>
-                <Badge>OpenAI</Badge>
+                <Badge>{configuration?.api_provider || 'OpenAI'}</Badge>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Conhecimento do Site</p>
-                  <p className="text-sm text-muted-foreground">IA treinada com dados do site</p>
-                </div>
-                <Badge variant="secondary">Ativo</Badge>
+              <div className="space-y-2">
+                <Label htmlFor="system_instruction">Instrução do Sistema</Label>
+                <Textarea
+                  id="system_instruction"
+                  value={localConfig.system_instruction}
+                  onChange={(e) => setLocalConfig(prev => ({ ...prev, system_instruction: e.target.value }))}
+                  onBlur={() => updateField('system_instruction', localConfig.system_instruction)}
+                  placeholder="Digite as instruções para a IA..."
+                  rows={3}
+                />
               </div>
 
-              <Button className="w-full" variant="outline">
-                Configurar IA
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={() => navigate('/admin/ai-config')}
+              >
+                <Bot className="h-4 w-4 mr-2" />
+                Configurar IA Avançado
               </Button>
             </CardContent>
           </Card>
@@ -141,27 +191,42 @@ const AdminChatSettings = () => {
                   <p className="font-medium">WhatsApp Habilitado</p>
                   <p className="text-sm text-muted-foreground">Redirecionar para WhatsApp</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={configuration?.whatsapp_enabled || false}
+                  onCheckedChange={(checked) => updateField('whatsapp_enabled', checked)}
+                />
               </div>
               
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Número Configurado</p>
-                  <p className="text-sm text-muted-foreground">+55 47 9164-8836</p>
-                </div>
-                <Badge variant="secondary">Ativo</Badge>
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp_number">Número do WhatsApp</Label>
+                <Input
+                  id="whatsapp_number"
+                  value={localConfig.whatsapp_number}
+                  onChange={(e) => setLocalConfig(prev => ({ ...prev, whatsapp_number: e.target.value }))}
+                  onBlur={() => updateField('whatsapp_number', localConfig.whatsapp_number)}
+                  placeholder="+55 47 91234-5678"
+                />
               </div>
 
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium">Mensagem Automática</p>
-                  <p className="text-sm text-muted-foreground">Texto pré-definido</p>
+                  <p className="font-medium">Status</p>
+                  <p className="text-sm text-muted-foreground">
+                    {configuration?.whatsapp_number ? 'Configurado' : 'Pendente'}
+                  </p>
                 </div>
-                <Badge>Configurado</Badge>
+                <Badge variant={configuration?.whatsapp_number ? "default" : "secondary"}>
+                  {configuration?.whatsapp_number ? 'Ativo' : 'Inativo'}
+                </Badge>
               </div>
 
-              <Button className="w-full" variant="outline">
-                Configurar WhatsApp
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={() => navigate('/admin/whatsapp-config')}
+              >
+                <Phone className="h-4 w-4 mr-2" />
+                Configurar WhatsApp Avançado
               </Button>
             </CardContent>
           </Card>
@@ -202,7 +267,12 @@ const AdminChatSettings = () => {
                 <Switch defaultChecked />
               </div>
 
-              <Button className="w-full" variant="outline">
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={() => navigate('/admin/team-management')}
+              >
+                <Users className="h-4 w-4 mr-2" />
                 Gerenciar Equipe
               </Button>
             </CardContent>
@@ -211,21 +281,33 @@ const AdminChatSettings = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button className="h-16" variant="outline">
+          <Button 
+            className="h-16" 
+            variant="outline"
+            onClick={() => navigate('/admin/advanced-settings')}
+          >
             <div className="text-center">
               <Settings className="h-6 w-6 mx-auto mb-1" />
               <p className="text-sm">Configurações Avançadas</p>
             </div>
           </Button>
           
-          <Button className="h-16" variant="outline">
+          <Button 
+            className="h-16" 
+            variant="outline"
+            onClick={() => navigate('/admin/chat-reports')}
+          >
             <div className="text-center">
               <BarChart3 className="h-6 w-6 mx-auto mb-1" />
               <p className="text-sm">Relatórios de Chat</p>
             </div>
           </Button>
           
-          <Button className="h-16" variant="outline">
+          <Button 
+            className="h-16" 
+            variant="outline"
+            onClick={() => navigate('/atendimento')}
+          >
             <div className="text-center">
               <MessageCircle className="h-6 w-6 mx-auto mb-1" />
               <p className="text-sm">Acessar Atendimento</p>
