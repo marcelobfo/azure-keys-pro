@@ -299,8 +299,9 @@ export const useLiveChat = () => {
 
   // Configurar real-time subscriptions
   useEffect(() => {
+    const channelName = `live-chat-${Math.random().toString(36).substr(2, 9)}`;
     const channel = supabase
-      .channel('live-chat')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
