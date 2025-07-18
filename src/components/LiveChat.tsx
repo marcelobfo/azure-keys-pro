@@ -111,7 +111,7 @@ const LiveChat = () => {
             message: payload.new.message,
             sender_type: payload.new.sender_type as 'lead' | 'attendant' | 'bot',
             timestamp: payload.new.timestamp,
-            status: 'sent'
+            status: 'sent' as const
           };
           
           // Só adicionar se não for uma mensagem duplicada e não for do lead atual
