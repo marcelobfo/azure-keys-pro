@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -49,7 +48,7 @@ export const useLiveChat = () => {
   const [availability, setAvailability] = useState<AttendantAvailability | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Criar nova sessão de chat SIMPLIFICADO
+  // Criar nova sessão de chat
   const createChatSession = async (leadData: {
     name: string;
     email: string;
@@ -57,81 +56,53 @@ export const useLiveChat = () => {
     message?: string;
     subject?: string;
   }) => {
-    console.log('=== CRIANDO CHAT SESSION SIMPLIFICADO ===');
-    console.log('Dados:', leadData);
-    
     try {
-      // STEP 1: Criar lead
+      // Primeiro criar o lead
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert({
-          name: leadData.name.trim(),
-          email: leadData.email.trim().toLowerCase(),
-          phone: leadData.phone?.trim() || null,
-          message: leadData.message?.trim() || null,
+          name: leadData.name,
+          email: leadData.email,
+          phone: leadData.phone,
+          message: leadData.message,
           status: 'new'
         })
         .select()
         .single();
 
-      if (leadError) {
-        console.error('❌ Erro ao criar lead:', leadError);
-        throw leadError;
-      }
+      if (leadError) throw leadError;
 
-      console.log('✅ Lead criado:', lead);
-
-      // STEP 2: Criar sessão
+      // Depois criar a sessão de chat
       const { data: session, error: sessionError } = await supabase
         .from('chat_sessions')
         .insert({
           lead_id: lead.id,
-          subject: leadData.subject?.trim() || 'Atendimento Geral',
+          subject: leadData.subject,
           status: 'waiting'
         })
         .select()
         .single();
 
-      if (sessionError) {
-        console.error('❌ Erro ao criar sessão:', sessionError);
-        throw sessionError;
-      }
+      if (sessionError) throw sessionError;
 
-      console.log('✅ Sessão criada com ID:', session.id);
-
-      // STEP 3: Mensagem inicial (se houver)
-      if (leadData.message?.trim()) {
-        try {
-          await supabase
-            .from('chat_messages')
-            .insert({
-              session_id: session.id,
-              sender_type: 'lead',
-              message: leadData.message.trim(),
-              read_status: false
-            });
-          console.log('✅ Mensagem inicial enviada');
-        } catch (messageError) {
-          console.warn('⚠️ Erro ao enviar mensagem inicial (não crítico):', messageError);
-        }
+      // Enviar mensagem inicial se houver
+      if (leadData.message) {
+        await sendMessage(session.id, leadData.message, 'lead');
       }
 
       toast({
         title: 'Chat iniciado!',
-        description: 'Você já pode conversar conosco.',
+        description: 'Aguarde um momento que um de nossos atendentes irá te ajudar.',
       });
 
       return session;
-      
     } catch (error) {
-      console.error('❌ Erro ao criar chat session:', error);
-      
+      console.error('Erro ao criar sessão de chat:', error);
       toast({
-        title: 'Erro ao iniciar chat',
-        description: 'Tente novamente em alguns segundos.',
+        title: 'Erro',
+        description: 'Não foi possível iniciar o chat. Tente novamente.',
         variant: 'destructive',
       });
-      
       throw error;
     }
   };
@@ -162,7 +133,7 @@ export const useLiveChat = () => {
         description: 'Você agora está atendendo este cliente.',
       });
     } catch (error) {
-      console.error('❌ Erro ao aceitar chat:', error);
+      console.error('Erro ao aceitar chat:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível aceitar o chat.',
@@ -194,52 +165,35 @@ export const useLiveChat = () => {
           .eq('user_id', user?.id);
       }
     } catch (error) {
-      console.error('❌ Erro ao finalizar chat:', error);
+      console.error('Erro ao finalizar chat:', error);
     }
   };
 
-  // Enviar mensagem CORRIGIDO
+  // Enviar mensagem
   const sendMessage = async (
     sessionId: string, 
     message: string, 
     senderType: 'lead' | 'attendant' | 'bot' = 'attendant'
   ) => {
-    console.log('📤 Enviando mensagem:', { sessionId, message: message.substring(0, 50), senderType });
-
-    // CORREÇÃO: Validação simples e direta
-    if (!sessionId || sessionId.length < 10) {
-      console.error('❌ SessionId inválido:', sessionId);
-      throw new Error('ID de sessão inválido');
-    }
-
-    const messagePayload = {
-      session_id: sessionId,
-      sender_type: senderType,
-      sender_id: senderType === 'attendant' ? user?.id : null,
-      message: message.trim(),
-      read_status: false
-    };
-
-    console.log('📤 Payload da mensagem:', messagePayload);
-
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('chat_messages')
-        .insert(messagePayload)
-        .select()
-        .single();
+        .insert({
+          session_id: sessionId,
+          sender_type: senderType,
+          sender_id: senderType === 'attendant' ? user?.id : null,
+          message,
+          read_status: false
+        });
 
-      if (error) {
-        console.error('❌ Erro direto ao enviar:', error);
-        throw error;
-      }
-
-      console.log('✅ Mensagem enviada com sucesso:', data);
-      return data;
-
+      if (error) throw error;
     } catch (error) {
-      console.error('❌ Erro ao enviar mensagem:', error);
-      throw error;
+      console.error('Erro ao enviar mensagem:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível enviar a mensagem.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -252,7 +206,7 @@ export const useLiveChat = () => {
         .eq('session_id', sessionId)
         .eq('read_status', false);
     } catch (error) {
-      console.error('❌ Erro ao marcar mensagens como lidas:', error);
+      console.error('Erro ao marcar mensagens como lidas:', error);
     }
   };
 
@@ -269,7 +223,7 @@ export const useLiveChat = () => {
 
       if (error) throw error;
     } catch (error) {
-      console.error('❌ Erro ao atualizar disponibilidade:', error);
+      console.error('Erro ao atualizar disponibilidade:', error);
     }
   };
 
@@ -296,7 +250,7 @@ export const useLiveChat = () => {
       
       setSessions(formattedSessions);
     } catch (error) {
-      console.error('❌ Erro ao buscar sessões:', error);
+      console.error('Erro ao buscar sessões:', error);
     }
   };
 
@@ -321,15 +275,13 @@ export const useLiveChat = () => {
         [sessionId]: formattedMessages
       }));
     } catch (error) {
-      console.error('❌ Erro ao buscar mensagens:', error);
+      console.error('Erro ao buscar mensagens:', error);
     }
   };
 
   // Configurar real-time subscriptions
   useEffect(() => {
     if (!user) return;
-
-    console.log('🔄 Configurando real-time subscriptions');
 
     const channel = supabase
       .channel('live-chat')
@@ -341,7 +293,6 @@ export const useLiveChat = () => {
           table: 'chat_sessions'
         },
         () => {
-          console.log('🔔 Nova sessão criada');
           fetchChatSessions();
         }
       )
@@ -353,7 +304,6 @@ export const useLiveChat = () => {
           table: 'chat_sessions'
         },
         () => {
-          console.log('🔔 Sessão atualizada');
           fetchChatSessions();
         }
       )
@@ -365,7 +315,6 @@ export const useLiveChat = () => {
           table: 'chat_messages'
         },
         (payload) => {
-          console.log('🔔 Nova mensagem recebida:', payload.new);
           const newMessage = {
             ...payload.new,
             sender_type: payload.new.sender_type as 'lead' | 'attendant' | 'bot'
@@ -382,7 +331,6 @@ export const useLiveChat = () => {
       .subscribe();
 
     return () => {
-      console.log('🧹 Removendo real-time subscriptions');
       supabase.removeChannel(channel);
     };
   }, [user]);
@@ -390,7 +338,6 @@ export const useLiveChat = () => {
   // Carregar dados iniciais
   useEffect(() => {
     if (user) {
-      console.log('👤 Usuário logado, carregando dados iniciais');
       fetchChatSessions();
       setLoading(false);
     }
@@ -408,7 +355,6 @@ export const useLiveChat = () => {
     markMessagesAsRead,
     updateAvailability,
     fetchMessages,
-    fetchChatSessions,
-    messageQueue: 0 // Simplificado - sem queue por enquanto
+    fetchChatSessions
   };
 };

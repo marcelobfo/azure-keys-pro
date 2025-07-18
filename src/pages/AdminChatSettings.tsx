@@ -1,390 +1,422 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageCircle, Bot, Phone, Settings, Users, BarChart3, Save, Clock } from 'lucide-react';
-import DashboardLayout from '@/components/DashboardLayout';
-import { useProfile } from '@/hooks/useProfile';
-import { useChatConfiguration } from '@/hooks/useChatConfiguration';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import Layout from '@/components/Layout';
+import AutomaticMessages from '@/components/AutomaticMessages';
+
+interface ChatConfig {
+  id: string;
+  company: string;
+  ai_chat_enabled: boolean;
+  whatsapp_enabled: boolean;
+  api_provider: string;
+  api_key_encrypted?: string;
+  welcome_message?: string;
+  whatsapp_number?: string;
+  system_instruction?: string;
+  custom_responses: any;
+}
 
 const AdminChatSettings = () => {
-  const { profile, loading: profileLoading } = useProfile();
-  const { configuration, loading: configLoading, updateField } = useChatConfiguration();
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [localConfig, setLocalConfig] = useState({
+  const [config, setConfig] = useState<ChatConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    company: '',
+    ai_chat_enabled: true,
+    whatsapp_enabled: false,
+    api_provider: 'openai',
+    api_key: '',
+    welcome_message: 'Olá! Como posso ajudá-lo hoje?',
     whatsapp_number: '',
-    welcome_message: '',
-    system_instruction: ''
+    system_instruction: `Você é Maria, uma consultora imobiliária virtual especializada e experiente. Você trabalha para uma imobiliária premium e sua missão é ajudar clientes a encontrar o imóvel dos seus sonhos.
+
+PERSONALIDADE E ABORDAGEM:
+- Seja calorosa, profissional e sempre prestativa
+- Use linguagem natural e acessível, evitando jargões técnicos
+- Seja proativa em fazer perguntas para entender melhor as necessidades
+- Demonstre expertise sem ser arrogante
+- Seja empática com o orçamento e necessidades familiares
+
+CONHECIMENTO ESPECIALIZADO:
+- Tipos de imóveis: Casas, Apartamentos, Coberturas, Lofts, Studios, Empreendimentos
+- Categorias especiais: Imóveis Frente Mar, Quadra Mar, Lançamentos
+- Documentação: ITBI, escritura, registro, financiamento, FGTS
+- Financiamento: CEF, Itaú, Bradesco, Santander, financiamento próprio
+- Processo de compra: visitação, proposta, contrato, entrega das chaves
+- Investimento: rentabilidade, valorização, locação
+
+INFORMAÇÕES DA IMOBILIÁRIA:
+- Atendemos toda a região metropolitana
+- Especialistas em imóveis de alto padrão
+- Temos parcerias com os melhores bancos
+- Oferecemos acompanhamento completo do processo
+- Visitas agendadas 7 dias por semana
+
+FLUXO DE ATENDIMENTO:
+1. Cumprimente calorosamente e apresente-se
+2. Pergunte sobre o tipo de imóvel desejado
+3. Investigue: finalidade (morar/investir), localização preferida, orçamento
+4. Pergunte sobre características importantes: quartos, banheiros, área, garagem
+5. Ofereça opções e agende visitas
+6. Colete dados para follow-up: nome completo, WhatsApp, melhor horário
+
+PERGUNTAS ESTRATÉGICAS PARA FAZER:
+- "Qual seria a localização ideal para você?"
+- "Tem alguma preferência por andar alto ou baixo?"
+- "Precisa de quantos quartos e banheiros?"
+- "Tem interesse em imóveis frente ao mar?"
+- "É para morar ou investimento?"
+- "Qual seria um orçamento confortável?"
+- "Quando gostaria de fazer uma visita?"
+
+SEMPRE TERMINE SUAS RESPOSTAS COM:
+- Uma pergunta para manter a conversa fluindo
+- Oferta de agendamento de visita quando apropriado
+- Disponibilidade para mais informações
+
+Responda sempre em português brasileiro, de forma natural e útil.`,
+    custom_responses: {
+      greeting: 'Olá! Bem-vindo à nossa imobiliária!',
+      contact_info: 'Para entrar em contato, ligue para (11) 99999-9999 ou envie um email para contato@imobiliaria.com',
+      business_hours: 'Funcionamos de segunda a sexta das 8h às 18h, e sábados das 8h às 12h.'
+    }
   });
 
-  // Atualizar estado local quando configuração carrega
-  React.useEffect(() => {
-    if (configuration) {
-      setLocalConfig({
-        whatsapp_number: configuration.whatsapp_number || '',
-        welcome_message: configuration.welcome_message || '',
-        system_instruction: configuration.system_instruction || ''
-      });
-    }
-  }, [configuration]);
+  useEffect(() => {
+    fetchChatConfig();
+  }, []);
 
-  const loading = profileLoading || configLoading;
+  const fetchChatConfig = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('chat_configurations')
+        .select('*')
+        .limit(1)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        setConfig(data);
+        setFormData({
+          company: data.company || '',
+          ai_chat_enabled: data.ai_chat_enabled || false,
+          whatsapp_enabled: data.whatsapp_enabled || false,
+          api_provider: data.api_provider || 'openai',
+          api_key: '', // Não mostrar a chave por segurança
+          welcome_message: data.welcome_message || 'Olá! Como posso ajudá-lo hoje?',
+          whatsapp_number: data.whatsapp_number || '',
+          system_instruction: data.system_instruction || formData.system_instruction,
+          custom_responses: typeof data.custom_responses === 'object' && data.custom_responses 
+            ? data.custom_responses as any
+            : formData.custom_responses
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao buscar configurações:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar configurações do chat",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveChatConfig = async () => {
+    setSaving(true);
+    try {
+      const configData = {
+        company: formData.company,
+        ai_chat_enabled: formData.ai_chat_enabled,
+        whatsapp_enabled: formData.whatsapp_enabled,
+        api_provider: formData.api_provider,
+        welcome_message: formData.welcome_message,
+        whatsapp_number: formData.whatsapp_number,
+        system_instruction: formData.system_instruction,
+        custom_responses: formData.custom_responses,
+        ...(formData.api_key && { api_key_encrypted: btoa(formData.api_key) }), // Simples encoding
+        active: true,
+      };
+
+      if (config) {
+        // Atualizar configuração existente
+        const { error } = await supabase
+          .from('chat_configurations')
+          .update(configData)
+          .eq('id', config.id);
+
+        if (error) throw error;
+      } else {
+        // Criar nova configuração
+        const { error } = await supabase
+          .from('chat_configurations')
+          .insert(configData);
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Configurações do chat salvas com sucesso",
+      });
+
+      fetchChatConfig();
+    } catch (error: any) {
+      console.error('Erro ao salvar:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar configurações",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCustomResponseChange = (key: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      custom_responses: {
+        ...prev.custom_responses,
+        [key]: value
+      }
+    }));
+  };
 
   if (loading) {
     return (
-      <DashboardLayout title="Configurações do Chat" userRole="admin">
-        <div className="flex items-center justify-center h-64">
+      <Layout>
+        <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
-      </DashboardLayout>
+      </Layout>
     );
   }
 
-  if (!profile || profile.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   return (
-    <DashboardLayout title="Configurações do Chat" userRole="admin">
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
-          <h2 className="text-2xl font-bold mb-2">
-            Configurações do Sistema de Chat
-          </h2>
-          <p className="text-blue-100">
-            Configure o chat ao vivo, IA e funcionalidades de atendimento.
-          </p>
+    <Layout>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold">Configurações do Chat IA</h2>
+          <p className="text-muted-foreground">Configure o chat com IA e integração WhatsApp</p>
         </div>
 
-        {/* Chat Configuration Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Live Chat Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
-                Chat Ao Vivo
-              </CardTitle>
-              <CardDescription>
-                Configure o sistema de chat em tempo real
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Chat Habilitado</p>
-                  <p className="text-sm text-muted-foreground">Ativar chat ao vivo no site</p>
-                </div>
-                <Switch 
-                  checked={configuration?.active || false}
-                  onCheckedChange={(checked) => updateField('active', checked)}
-                />
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="welcome_message">Mensagem de Boas-vindas</Label>
-                  <Textarea
-                    id="welcome_message"
-                    value={localConfig.welcome_message}
-                    onChange={(e) => setLocalConfig(prev => ({ ...prev, welcome_message: e.target.value }))}
-                    onBlur={() => updateField('welcome_message', localConfig.welcome_message)}
-                    placeholder="Digite a mensagem de boas-vindas..."
-                    rows={3}
-                  />
-                </div>
+        <div className="space-y-6">
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="basic">Configurações Básicas</TabsTrigger>
+              <TabsTrigger value="ai">Chat com IA</TabsTrigger>
+              <TabsTrigger value="automatic">Mensagens Automáticas</TabsTrigger>
+            </TabsList>
 
-                <div>
-                  <Label htmlFor="chat_avatar">Avatar do Atendente</Label>
-                  <Input
-                    id="chat_avatar"
-                    value={configuration?.custom_responses?.chat_avatar || ''}
-                    onChange={(e) => updateField('custom_responses', {
-                      ...configuration?.custom_responses,
-                      chat_avatar: e.target.value
-                    })}
-                    placeholder="https://exemplo.com/avatar.jpg"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    URL da imagem do avatar que aparecerá no chat
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label>Horário de Funcionamento</Label>
-                  <div className="grid grid-cols-2 gap-4 mt-2">
-                    <div>
-                      <Label htmlFor="horario_inicio" className="text-sm">Início</Label>
-                      <Input
-                        id="horario_inicio"
-                        type="time"
-                        value={configuration?.custom_responses?.horario_inicio || '08:00'}
-                        onChange={(e) => updateField('custom_responses', {
-                          ...configuration?.custom_responses,
-                          horario_inicio: e.target.value
-                        })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="horario_fim" className="text-sm">Fim</Label>
-                      <Input
-                        id="horario_fim"
-                        type="time"
-                        value={configuration?.custom_responses?.horario_fim || '18:00'}
-                        onChange={(e) => updateField('custom_responses', {
-                          ...configuration?.custom_responses,
-                          horario_fim: e.target.value
-                        })}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Chat ficará disponível apenas neste horário
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between">
+            <TabsContent value="basic" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informações Básicas</CardTitle>
+                  <CardDescription>
+                    Configure as informações básicas da empresa
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div>
-                    <p className="font-medium">Status Atual</p>
-                    <p className="text-sm text-muted-foreground">
-                      {(() => {
-                        const now = new Date();
-                        const inicio = configuration?.custom_responses?.horario_inicio || '08:00';
-                        const fim = configuration?.custom_responses?.horario_fim || '18:00';
-                        const horaAtual = now.toTimeString().slice(0, 5);
-                        const dentroHorario = horaAtual >= inicio && horaAtual <= fim;
-                        return dentroHorario ? 'Horário de funcionamento' : 'Fora do horário';
-                      })()}
-                    </p>
+                    <Label htmlFor="company">Nome da Empresa</Label>
+                    <Input
+                      id="company"
+                      value={formData.company}
+                      onChange={(e) => setFormData({...formData, company: e.target.value})}
+                      placeholder="Ex: Imobiliária XYZ"
+                    />
                   </div>
-                  <Badge variant={(() => {
-                    const now = new Date();
-                    const inicio = configuration?.custom_responses?.horario_inicio || '08:00';
-                    const fim = configuration?.custom_responses?.horario_fim || '18:00';
-                    const horaAtual = now.toTimeString().slice(0, 5);
-                    const dentroHorario = horaAtual >= inicio && horaAtual <= fim;
-                    return dentroHorario ? 'default' : 'secondary';
-                  })()}>
-                    {(() => {
-                      const now = new Date();
-                      const inicio = configuration?.custom_responses?.horario_inicio || '08:00';
-                      const fim = configuration?.custom_responses?.horario_fim || '18:00';
-                      const horaAtual = now.toTimeString().slice(0, 5);
-                      const dentroHorario = horaAtual >= inicio && horaAtual <= fim;
-                      return dentroHorario ? 'Aberto' : 'Fechado';
-                    })()}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  
+                  <div>
+                    <Label htmlFor="welcome">Mensagem de Boas-vindas</Label>
+                    <Textarea
+                      id="welcome"
+                      value={formData.welcome_message}
+                      onChange={(e) => setFormData({...formData, welcome_message: e.target.value})}
+                      placeholder="Digite a mensagem que será exibida quando o chat iniciar"
+                      rows={3}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* AI Chat Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
-                Chat com IA
-              </CardTitle>
-              <CardDescription>
-                Configure o assistente virtual inteligente
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">IA Habilitada</p>
-                  <p className="text-sm text-muted-foreground">Ativar respostas automáticas</p>
-                </div>
-                <Switch 
-                  checked={configuration?.ai_chat_enabled || false}
-                  onCheckedChange={(checked) => updateField('ai_chat_enabled', checked)}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Provedor</p>
-                  <p className="text-sm text-muted-foreground">OpenAI GPT ou Google Gemini</p>
-                </div>
-                <Badge>{configuration?.api_provider || 'OpenAI'}</Badge>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Integração WhatsApp</CardTitle>
+                  <CardDescription>
+                    Configure redirecionamento para WhatsApp
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="whatsapp"
+                      checked={formData.whatsapp_enabled}
+                      onCheckedChange={(checked) => setFormData({...formData, whatsapp_enabled: checked})}
+                    />
+                    <Label htmlFor="whatsapp">Habilitar WhatsApp</Label>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="system_instruction">Instrução do Sistema</Label>
-                <Textarea
-                  id="system_instruction"
-                  value={localConfig.system_instruction}
-                  onChange={(e) => setLocalConfig(prev => ({ ...prev, system_instruction: e.target.value }))}
-                  onBlur={() => updateField('system_instruction', localConfig.system_instruction)}
-                  placeholder="Digite as instruções para a IA..."
-                  rows={3}
-                />
+                  {formData.whatsapp_enabled && (
+                    <div>
+                      <Label htmlFor="whatsapp-number">Número do WhatsApp</Label>
+                      <Input
+                        id="whatsapp-number"
+                        value={formData.whatsapp_number}
+                        onChange={(e) => setFormData({...formData, whatsapp_number: e.target.value})}
+                        placeholder="Ex: 5511999999999"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Digite apenas números (com código do país)
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end">
+                <Button onClick={saveChatConfig} disabled={saving}>
+                  {saving ? 'Salvando...' : 'Salvar Configurações'}
+                </Button>
               </div>
+            </TabsContent>
 
-              <Button 
-                className="w-full" 
-                variant="outline"
-                onClick={() => navigate('/admin/ai-config')}
-              >
-                <Bot className="h-4 w-4 mr-2" />
-                Configurar IA Avançado
-              </Button>
-            </CardContent>
-          </Card>
+            <TabsContent value="ai" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Chat com IA</CardTitle>
+                  <CardDescription>
+                    Configure o assistente virtual com IA
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="ai-chat"
+                      checked={formData.ai_chat_enabled}
+                      onCheckedChange={(checked) => setFormData({...formData, ai_chat_enabled: checked})}
+                    />
+                    <Label htmlFor="ai-chat">Habilitar Chat com IA</Label>
+                  </div>
 
-          {/* WhatsApp Integration */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Phone className="h-5 w-5" />
-                Integração WhatsApp
-              </CardTitle>
-              <CardDescription>
-                Configure a integração com WhatsApp Business
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">WhatsApp Habilitado</p>
-                  <p className="text-sm text-muted-foreground">Redirecionar para WhatsApp</p>
-                </div>
-                <Switch 
-                  checked={configuration?.whatsapp_enabled || false}
-                  onCheckedChange={(checked) => updateField('whatsapp_enabled', checked)}
-                />
+                  {formData.ai_chat_enabled && (
+                    <>
+                      <div>
+                        <Label htmlFor="provider">Provedor de IA</Label>
+                        <Select
+                          value={formData.api_provider}
+                          onValueChange={(value) => setFormData({...formData, api_provider: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o provedor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="openai">OpenAI</SelectItem>
+                            <SelectItem value="google">Google Gemini</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="api-key">Chave da API</Label>
+                        <Input
+                          id="api-key"
+                          type="password"
+                          value={formData.api_key}
+                          onChange={(e) => setFormData({...formData, api_key: e.target.value})}
+                          placeholder="Insira sua chave da API"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Deixe em branco para manter a chave atual
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="system_instruction">Instruções do Sistema (System Instruction)</Label>
+                        <Textarea
+                          id="system_instruction"
+                          value={formData.system_instruction}
+                          onChange={(e) => setFormData({...formData, system_instruction: e.target.value})}
+                          placeholder="Configure como o assistente deve se comportar e responder..."
+                          rows={15}
+                          className="font-mono text-sm"
+                        />
+                        <p className="text-sm text-gray-500 mt-1">
+                          Define a personalidade, conhecimento e comportamento do assistente IA.
+                        </p>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Respostas Personalizadas</h3>
+                        
+                        <div>
+                          <Label htmlFor="greeting-admin">Saudação</Label>
+                          <Textarea
+                            id="greeting-admin"
+                            value={formData.custom_responses?.greeting || ''}
+                            onChange={(e) => handleCustomResponseChange('greeting', e.target.value)}
+                            placeholder="Mensagem de saudação"
+                            rows={2}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="contact_info-admin">Informações de Contato</Label>
+                          <Textarea
+                            id="contact_info-admin"
+                            value={formData.custom_responses?.contact_info || ''}
+                            onChange={(e) => handleCustomResponseChange('contact_info', e.target.value)}
+                            placeholder="Como entrar em contato"
+                            rows={2}
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="business_hours-admin">Horário de Funcionamento</Label>
+                          <Textarea
+                            id="business_hours-admin"
+                            value={formData.custom_responses?.business_hours || ''}
+                            onChange={(e) => handleCustomResponseChange('business_hours', e.target.value)}
+                            placeholder="Horários de atendimento"
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end">
+                <Button onClick={saveChatConfig} disabled={saving}>
+                  {saving ? 'Salvando...' : 'Salvar Configurações'}
+                </Button>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp_number">Número do WhatsApp</Label>
-                <Input
-                  id="whatsapp_number"
-                  value={localConfig.whatsapp_number}
-                  onChange={(e) => setLocalConfig(prev => ({ ...prev, whatsapp_number: e.target.value }))}
-                  onBlur={() => updateField('whatsapp_number', localConfig.whatsapp_number)}
-                  placeholder="+55 47 91234-5678"
-                />
-              </div>
+            </TabsContent>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Status</p>
-                  <p className="text-sm text-muted-foreground">
-                    {configuration?.whatsapp_number ? 'Configurado' : 'Pendente'}
-                  </p>
-                </div>
-                <Badge variant={configuration?.whatsapp_number ? "default" : "secondary"}>
-                  {configuration?.whatsapp_number ? 'Ativo' : 'Inativo'}
-                </Badge>
-              </div>
-
-              <Button 
-                className="w-full" 
-                variant="outline"
-                onClick={() => navigate('/admin/whatsapp-config')}
-              >
-                <Phone className="h-4 w-4 mr-2" />
-                Configurar WhatsApp Avançado
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Team Management */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Equipe de Atendimento
-              </CardTitle>
-              <CardDescription>
-                Gerencie atendentes e disponibilidade
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Atendentes Ativos</p>
-                  <p className="text-sm text-muted-foreground">Corretores habilitados</p>
-                </div>
-                <Badge>2</Badge>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Online Agora</p>
-                  <p className="text-sm text-muted-foreground">Disponíveis para chat</p>
-                </div>
-                <Badge variant="secondary">0</Badge>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Distribuição Automática</p>
-                  <p className="text-sm text-muted-foreground">Chats distribuídos por disponibilidade</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-
-              <Button 
-                className="w-full" 
-                variant="outline"
-                onClick={() => navigate('/admin/team-management')}
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Gerenciar Equipe
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button 
-            className="h-16" 
-            variant="outline"
-            onClick={() => navigate('/admin/advanced-settings')}
-          >
-            <div className="text-center">
-              <Settings className="h-6 w-6 mx-auto mb-1" />
-              <p className="text-sm">Configurações Avançadas</p>
-            </div>
-          </Button>
-          
-          <Button 
-            className="h-16" 
-            variant="outline"
-            onClick={() => navigate('/admin/chat-reports')}
-          >
-            <div className="text-center">
-              <BarChart3 className="h-6 w-6 mx-auto mb-1" />
-              <p className="text-sm">Relatórios de Chat</p>
-            </div>
-          </Button>
-          
-          <Button 
-            className="h-16" 
-            variant="outline"
-            onClick={() => navigate('/atendimento')}
-          >
-            <div className="text-center">
-              <MessageCircle className="h-6 w-6 mx-auto mb-1" />
-              <p className="text-sm">Acessar Atendimento</p>
-            </div>
-          </Button>
+            <TabsContent value="automatic" className="space-y-6">
+              <AutomaticMessages />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
-    </DashboardLayout>
+    </Layout>
   );
 };
 

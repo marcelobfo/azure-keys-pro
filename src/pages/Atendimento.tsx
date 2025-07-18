@@ -49,7 +49,7 @@ const Atendimento = () => {
   const [isOnline, setIsOnline] = useState(false);
 
   // Verificar se o usuário tem permissão para acessar
-  if (!user || !profile || !['admin', 'corretor'].includes(profile.role)) {
+  if (!user || !profile || !['admin', 'corretor', 'super_admin'].includes(profile.role)) {
     return <Navigate to="/dashboard" replace />;
   }
 

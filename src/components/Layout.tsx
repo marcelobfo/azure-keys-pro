@@ -4,7 +4,6 @@ import Header from './Header';
 import Footer from './Footer';
 import AIChat from './AIChat';
 import WhatsAppButton from './WhatsAppButton';
-import LiveChat from './LiveChat';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,7 +17,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {children}
       </main>
       <Footer />
-      <LiveChat />
       <AIChat />
       <WhatsAppButton />
     </div>

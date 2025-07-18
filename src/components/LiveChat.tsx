@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,18 +10,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useLiveChat } from '@/hooks/useLiveChat';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useChatConfiguration } from '@/hooks/useChatConfiguration';
-import { useChatBusinessHours } from '@/hooks/useChatBusinessHours';
-import { supabase } from '@/integrations/supabase/client';
 
 const LiveChat = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { createChatSession, sendMessage } = useLiveChat();
-  const { configuration } = useChatConfiguration();
-  const { isWithinBusinessHours, getBusinessHoursMessage } = useChatBusinessHours();
   
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<'contact' | 'chat'>('contact');
@@ -32,12 +26,10 @@ const LiveChat = () => {
     message: string;
     sender_type: 'lead' | 'attendant' | 'bot';
     timestamp: string;
-    status?: 'sending' | 'sent' | 'error';
   }>>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isAttendantOnline, setIsAttendantOnline] = useState(false);
-  const [sendingMessage, setSendingMessage] = useState(false);
-  const [creatingSession, setCreatingSession] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [formData, setFormData] = useState({
@@ -66,76 +58,6 @@ const LiveChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Verificar se há atendentes online
-  useEffect(() => {
-    const checkAttendantAvailability = async () => {
-      try {
-        const { data } = await supabase
-          .from('attendant_availability')
-          .select('*')
-          .eq('is_online', true)
-          .limit(1);
-        
-        setIsAttendantOnline(data && data.length > 0);
-      } catch (error) {
-        console.error('❌ Erro ao verificar disponibilidade:', error);
-        setIsAttendantOnline(false);
-      }
-    };
-
-    checkAttendantAvailability();
-    
-    // Verificar a cada 30 segundos
-    const interval = setInterval(checkAttendantAvailability, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Atualizar mensagens em tempo real para a sessão atual
-  useEffect(() => {
-    if (!sessionId) return;
-
-    console.log('🔄 Configurando real-time para sessão:', sessionId);
-
-    const channel = supabase
-      .channel(`chat-${sessionId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `session_id=eq.${sessionId}`
-        },
-        (payload) => {
-          console.log('🔔 Nova mensagem real-time:', payload.new);
-          const newMessage = {
-            id: payload.new.id,
-            message: payload.new.message,
-            sender_type: payload.new.sender_type as 'lead' | 'attendant' | 'bot',
-            timestamp: payload.new.timestamp,
-            status: 'sent' as const
-          };
-          
-          // Só adicionar se não for uma mensagem duplicada e não for do lead atual
-          setMessages(prev => {
-            const messageExists = prev.some(msg => msg.id === newMessage.id);
-            if (!messageExists && newMessage.sender_type !== 'lead') {
-              return [...prev, newMessage];
-            }
-            return prev;
-          });
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 Real-time status:', status);
-      });
-
-    return () => {
-      console.log('🧹 Removendo canal real-time');
-      supabase.removeChannel(channel);
-    };
-  }, [sessionId]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -148,11 +70,7 @@ const LiveChat = () => {
       return;
     }
 
-    setCreatingSession(true);
-
     try {
-      console.log('🚀 Iniciando criação de sessão...');
-      
       const session = await createChatSession({
         name: formData.name,
         email: formData.email,
@@ -161,120 +79,57 @@ const LiveChat = () => {
         subject: formData.subject
       });
 
-      if (session?.id) {
-        console.log('✅ Sessão criada com ID:', session.id);
-        setSessionId(session.id);
-        setStep('chat');
-        
-        // Adicionar mensagem de boas-vindas
-        const welcomeMessage = {
-          id: 'welcome',
-          message: configuration?.welcome_message || `Olá ${formData.name}! ${getBusinessHoursMessage()}`,
-          sender_type: 'bot' as const,
-          timestamp: new Date().toISOString(),
-          status: 'sent' as const
+      setSessionId(session.id);
+      setStep('chat');
+      
+      // Adicionar mensagem de boas-vindas
+      const welcomeMessage = {
+        id: 'welcome',
+        message: `Olá ${formData.name}! Obrigado por entrar em contato. ${isAttendantOnline ? 'Um de nossos atendentes estará com você em breve.' : 'No momento nossos atendentes estão offline, mas responderemos assim que possível.'}`,
+        sender_type: 'bot' as const,
+        timestamp: new Date().toISOString()
+      };
+      
+      setMessages([welcomeMessage]);
+      
+      if (formData.message) {
+        const userMessage = {
+          id: 'initial',
+          message: formData.message,
+          sender_type: 'lead' as const,
+          timestamp: new Date().toISOString()
         };
-        
-        setMessages([welcomeMessage]);
-        
-        // Adicionar mensagem inicial do usuário se houver
-        if (formData.message) {
-          const userMessage = {
-            id: 'initial',
-            message: formData.message,
-            sender_type: 'lead' as const,
-            timestamp: new Date().toISOString(),
-            status: 'sent' as const
-          };
-          setMessages(prev => [...prev, userMessage]);
-        }
-        
-      } else {
-        throw new Error('Sessão criada mas sem ID válido');
+        setMessages(prev => [...prev, userMessage]);
       }
     } catch (error) {
-      console.error('❌ Erro ao criar sessão:', error);
-      
-      toast({
-        title: 'Erro ao iniciar chat',
-        description: 'Verifique sua conexão e tente novamente.',
-        variant: 'destructive',
-      });
-    } finally {
-      setCreatingSession(false);
+      console.error('Erro ao iniciar chat:', error);
     }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newMessage.trim()) {
-      console.log('⚠️ Mensagem vazia, não enviando');
-      return;
-    }
-    
-    if (!sessionId) {
-      console.error('❌ Não há sessionId');
-      toast({
-        title: 'Erro',
-        description: 'Sessão de chat não encontrada. Reinicie o chat.',
-        variant: 'destructive',
-      });
-      return;
-    }
+    if (!newMessage.trim() || !sessionId) return;
 
-    const messageText = newMessage.trim();
-    const tempId = `temp-${Date.now()}`;
-    
-    console.log('📤 Enviando mensagem:', { sessionId, messageText });
-    
-    // Adicionar mensagem temporária com status "sending"
-    const tempMessage = {
-      id: tempId,
-      message: messageText,
+    const message = {
+      id: Date.now().toString(),
+      message: newMessage,
       sender_type: 'lead' as const,
-      timestamp: new Date().toISOString(),
-      status: 'sending' as const
+      timestamp: new Date().toISOString()
     };
 
-    setMessages(prev => [...prev, tempMessage]);
-    setNewMessage('');
-    setSendingMessage(true);
+    setMessages(prev => [...prev, message]);
     
     try {
-      await sendMessage(sessionId, messageText, 'lead');
-      
-      console.log('✅ Mensagem enviada com sucesso');
-      
-      // Atualizar status da mensagem para "sent"
-      setMessages(prev => prev.map(msg => 
-        msg.id === tempId 
-          ? { ...msg, status: 'sent' as const }
-          : msg
-      ));
-      
+      await sendMessage(sessionId, newMessage, 'lead');
     } catch (error) {
-      console.error('❌ Erro ao enviar mensagem:', error);
-      
-      // Atualizar status da mensagem para "error"
-      setMessages(prev => prev.map(msg => 
-        msg.id === tempId 
-          ? { ...msg, status: 'error' as const }
-          : msg
-      ));
-      
-      toast({
-        title: 'Erro ao enviar',
-        description: 'Falha ao enviar mensagem. Tente novamente.',
-        variant: 'destructive',
-      });
-    } finally {
-      setSendingMessage(false);
+      console.error('Erro ao enviar mensagem:', error);
     }
+    
+    setNewMessage('');
   };
 
   const resetChat = () => {
-    console.log('🔄 Resetando chat');
     setStep('contact');
     setSessionId(null);
     setMessages([]);
@@ -287,23 +142,14 @@ const LiveChat = () => {
     });
   };
 
-  // Não mostrar chat se não estiver configurado como ativo
-  if (!configuration?.active) {
-    return null;
-  }
-
   if (!isOpen) {
     return (
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsOpen(true)}
-          className="h-14 w-14 rounded-full bg-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 relative"
-          title={isWithinBusinessHours ? 'Chat disponível' : 'Fora do horário - Deixe sua mensagem'}
+          className="h-14 w-14 rounded-full bg-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
         >
           <MessageCircle className="h-6 w-6" />
-          {!isWithinBusinessHours && (
-            <div className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-500 rounded-full animate-pulse" />
-          )}
         </Button>
       </div>
     );
@@ -323,14 +169,9 @@ const LiveChat = () => {
                 <div className="flex items-center gap-2 text-xs">
                   <div className={cn(
                     "h-2 w-2 rounded-full",
-                    (isAttendantOnline || isWithinBusinessHours) ? "bg-green-400" : "bg-yellow-400"
+                    isAttendantOnline ? "bg-green-400" : "bg-red-400"
                   )} />
-                  {isAttendantOnline 
-                    ? 'Atendente Online' 
-                    : isWithinBusinessHours 
-                      ? 'Horário de Atendimento' 
-                      : 'Fora do horário'
-                  }
+                  {isAttendantOnline ? 'Online' : 'Offline'}
                 </div>
               </div>
             </div>
@@ -365,7 +206,6 @@ const LiveChat = () => {
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       className="pl-10"
                       required
-                      disabled={creatingSession}
                     />
                   </div>
                   
@@ -378,7 +218,6 @@ const LiveChat = () => {
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                       className="pl-10"
                       required
-                      disabled={creatingSession}
                     />
                   </div>
                   
@@ -389,16 +228,11 @@ const LiveChat = () => {
                       value={formData.phone}
                       onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                       className="pl-10"
-                      disabled={creatingSession}
                     />
                   </div>
                 </div>
 
-                <Select 
-                  value={formData.subject} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, subject: value }))}
-                  disabled={creatingSession}
-                >
+                <Select value={formData.subject} onValueChange={(value) => setFormData(prev => ({ ...prev, subject: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o assunto" />
                   </SelectTrigger>
@@ -417,18 +251,10 @@ const LiveChat = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
                   rows={3}
                   className="resize-none"
-                  disabled={creatingSession}
                 />
 
-                <Button type="submit" className="w-full" disabled={creatingSession}>
-                  {creatingSession ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Iniciando...
-                    </>
-                  ) : (
-                    'Iniciar Conversa'
-                  )}
+                <Button type="submit" className="w-full">
+                  Iniciar Conversa
                 </Button>
               </form>
             </div>
@@ -440,6 +266,16 @@ const LiveChat = () => {
                     <Badge variant="secondary" className="text-xs">
                       {subjects.find(s => s.value === formData.subject)?.label || 'Chat'}
                     </Badge>
+                    {isTyping && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <div className="flex gap-1">
+                          <div className="w-1 h-1 bg-current rounded-full animate-bounce" />
+                          <div className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.1s]" />
+                          <div className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.2s]" />
+                        </div>
+                        Digitando...
+                      </div>
+                    )}
                   </div>
                   <Button
                     variant="ghost"
@@ -464,7 +300,7 @@ const LiveChat = () => {
                     >
                       {message.sender_type !== 'lead' && (
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={configuration?.custom_responses?.chat_avatar || "/placeholder-avatar.png"} />
+                          <AvatarImage src="/placeholder-avatar.png" />
                           <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                             {message.sender_type === 'bot' ? '🤖' : 'AT'}
                           </AvatarFallback>
@@ -492,11 +328,7 @@ const LiveChat = () => {
                             minute: '2-digit'
                           })}
                           {message.sender_type === 'lead' && (
-                            <>
-                              {message.status === 'sending' && <Loader2 className="h-3 w-3 animate-spin" />}
-                              {message.status === 'sent' && <CheckCircle2 className="h-3 w-3" />}
-                              {message.status === 'error' && <AlertCircle className="h-3 w-3 text-red-400" />}
-                            </>
+                            <CheckCircle2 className="h-3 w-3" />
                           )}
                         </div>
                       </div>
@@ -513,14 +345,9 @@ const LiveChat = () => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     className="flex-1"
-                    disabled={sendingMessage}
                   />
-                  <Button type="submit" size="sm" disabled={!newMessage.trim() || sendingMessage}>
-                    {sendingMessage ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
+                  <Button type="submit" size="sm" disabled={!newMessage.trim()}>
+                    <Send className="h-4 w-4" />
                   </Button>
                 </form>
               </div>
