@@ -200,11 +200,42 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
 
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/atendimento')}>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Gerenciamento de Chat
+                <MessageCircle className="h-5 w-5" />
+              </CardTitle>
+              <CardDescription>
+                Gerencie chats ao vivo e atendimento aos clientes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm">Chats Ativos</span>
+                  <Badge variant="default">0</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Em Espera</span>
+                  <Badge variant="secondary">0</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Atendentes Online</span>
+                  <Badge>0</Badge>
+                </div>
+              </div>
+              <Button className="w-full mt-4" variant="outline">
+                Acessar Atendimento
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/chat-settings')}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 Configurações do Chat
-                <MessageCircle className="h-5 w-5" />
+                <Settings className="h-5 w-5" />
               </CardTitle>
               <CardDescription>
                 Configure chat com IA e mensagens automáticas

@@ -79,27 +79,29 @@ const LiveChat = () => {
         subject: formData.subject
       });
 
-      setSessionId(session.id);
-      setStep('chat');
-      
-      // Adicionar mensagem de boas-vindas
-      const welcomeMessage = {
-        id: 'welcome',
-        message: `Olá ${formData.name}! Obrigado por entrar em contato. ${isAttendantOnline ? 'Um de nossos atendentes estará com você em breve.' : 'No momento nossos atendentes estão offline, mas responderemos assim que possível.'}`,
-        sender_type: 'bot' as const,
-        timestamp: new Date().toISOString()
-      };
-      
-      setMessages([welcomeMessage]);
-      
-      if (formData.message) {
-        const userMessage = {
-          id: 'initial',
-          message: formData.message,
-          sender_type: 'lead' as const,
+      if (session?.id) {
+        setSessionId(session.id);
+        setStep('chat');
+        
+        // Adicionar mensagem de boas-vindas
+        const welcomeMessage = {
+          id: 'welcome',
+          message: `Olá ${formData.name}! Obrigado por entrar em contato. ${isAttendantOnline ? 'Um de nossos atendentes estará com você em breve.' : 'No momento nossos atendentes estão offline, mas responderemos assim que possível.'}`,
+          sender_type: 'bot' as const,
           timestamp: new Date().toISOString()
         };
-        setMessages(prev => [...prev, userMessage]);
+        
+        setMessages([welcomeMessage]);
+        
+        if (formData.message) {
+          const userMessage = {
+            id: 'initial',
+            message: formData.message,
+            sender_type: 'lead' as const,
+            timestamp: new Date().toISOString()
+          };
+          setMessages(prev => [...prev, userMessage]);
+        }
       }
     } catch (error) {
       console.error('Erro ao iniciar chat:', error);

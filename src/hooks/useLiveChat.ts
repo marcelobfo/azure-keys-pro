@@ -87,7 +87,14 @@ export const useLiveChat = () => {
 
       // Enviar mensagem inicial se houver
       if (leadData.message) {
-        await sendMessage(session.id, leadData.message, 'lead');
+        await supabase
+          .from('chat_messages')
+          .insert({
+            session_id: session.id,
+            sender_type: 'lead',
+            message: leadData.message,
+            read_status: false
+          });
       }
 
       toast({
