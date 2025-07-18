@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,7 +49,15 @@ export const useLiveChat = () => {
   const [availability, setAvailability] = useState<AttendantAvailability | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Criar nova sessão de chat com fallback robusto
+  // Queue para mensagens pendentes
+  const [messageQueue, setMessageQueue] = useState<Array<{
+    sessionId: string;
+    message: string;
+    tempId: string;
+    retries: number;
+  }>>([]);
+
+  // Criar nova sessão de chat SIMPLIFICADO
   const createChatSession = async (leadData: {
     name: string;
     email: string;
@@ -56,135 +65,50 @@ export const useLiveChat = () => {
     message?: string;
     subject?: string;
   }) => {
-    console.log('=== INICIANDO CRIAÇÃO DE CHAT SESSION ===');
-    console.log('Dados do lead:', leadData);
-    
-    let lead = null;
-    let session = null;
+    console.log('=== CRIANDO CHAT SESSION SIMPLIFICADO ===');
+    console.log('Dados:', leadData);
     
     try {
-      // STEP 1: Criar lead com retry
-      console.log('1. Criando lead...');
-      
-      const leadPayload = {
-        name: leadData.name.trim(),
-        email: leadData.email.trim().toLowerCase(),
-        phone: leadData.phone?.trim() || null,
-        message: leadData.message?.trim() || null,
-        status: 'new'
-      };
-      
-      console.log('Payload do lead:', leadPayload);
-      
-      // Retry para criação do lead
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          const { data: leadResult, error: leadError } = await supabase
-            .from('leads')
-            .insert(leadPayload)
-            .select()
-            .single();
+      // STEP 1: Criar lead
+      const { data: lead, error: leadError } = await supabase
+        .from('leads')
+        .insert({
+          name: leadData.name.trim(),
+          email: leadData.email.trim().toLowerCase(),
+          phone: leadData.phone?.trim() || null,
+          message: leadData.message?.trim() || null,
+          status: 'new'
+        })
+        .select()
+        .single();
 
-          if (leadError) {
-            console.error(`Tentativa ${attempt} - Erro ao criar lead:`, leadError);
-            if (attempt === 3) throw leadError;
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-            continue;
-          }
-
-          if (!leadResult?.id) {
-            console.error(`Tentativa ${attempt} - Lead sem ID válido:`, leadResult);
-            if (attempt === 3) throw new Error('Lead criado mas sem ID válido');
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-            continue;
-          }
-
-          lead = leadResult;
-          console.log('Lead criado com sucesso:', lead);
-          break;
-        } catch (retryError) {
-          console.error(`Tentativa ${attempt} falhou:`, retryError);
-          if (attempt === 3) throw retryError;
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        }
+      if (leadError) {
+        console.error('Erro ao criar lead:', leadError);
+        throw leadError;
       }
 
-      if (!lead) {
-        throw new Error('Falha ao criar lead após 3 tentativas');
+      console.log('Lead criado:', lead);
+
+      // STEP 2: Criar sessão
+      const { data: session, error: sessionError } = await supabase
+        .from('chat_sessions')
+        .insert({
+          lead_id: lead.id,
+          subject: leadData.subject?.trim() || 'Atendimento Geral',
+          status: 'waiting'
+        })
+        .select()
+        .single();
+
+      if (sessionError) {
+        console.error('Erro ao criar sessão:', sessionError);
+        throw sessionError;
       }
 
-      // STEP 2: Criar sessão de chat com fallback
-      console.log('2. Criando sessão de chat...');
-      
-      // Aguardar para garantir que o lead foi persistido
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const sessionPayload = {
-        lead_id: lead.id,
-        subject: leadData.subject?.trim() || 'Atendimento Geral',
-        status: 'waiting'
-      };
-      
-      console.log('Payload da sessão:', sessionPayload);
-      
-      // Retry para criação da sessão
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          const { data: sessionResult, error: sessionError } = await supabase
-            .from('chat_sessions')
-            .insert(sessionPayload)
-            .select()
-            .single();
+      console.log('Sessão criada:', session);
 
-          if (sessionError) {
-            console.error(`Tentativa ${attempt} - Erro ao criar sessão:`, sessionError);
-            if (attempt === 3) {
-              // Se falhar, pelo menos o lead foi criado
-              console.log('FALLBACK: Lead criado mas sessão falhou. Usuário pode tentar novamente.');
-              toast({
-                title: 'Lead registrado!',
-                description: 'Não foi possível iniciar o chat, mas seu contato foi registrado. Retornaremos em breve!',
-                variant: 'default',
-              });
-              return { id: 'fallback-' + lead.id, lead_id: lead.id };
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-            continue;
-          }
-
-          if (!sessionResult?.id) {
-            console.error(`Tentativa ${attempt} - Sessão sem ID:`, sessionResult);
-            if (attempt === 3) {
-              toast({
-                title: 'Lead registrado!',
-                description: 'Não foi possível iniciar o chat, mas seu contato foi registrado.',
-              });
-              return { id: 'fallback-' + lead.id, lead_id: lead.id };
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-            continue;
-          }
-
-          session = sessionResult;
-          console.log('Sessão criada com sucesso:', session);
-          break;
-        } catch (retryError) {
-          console.error(`Tentativa ${attempt} de sessão falhou:`, retryError);
-          if (attempt === 3) {
-            toast({
-              title: 'Lead registrado!',
-              description: 'Não foi possível iniciar o chat, mas seu contato foi registrado.',
-            });
-            return { id: 'fallback-' + lead.id, lead_id: lead.id };
-          }
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-        }
-      }
-
-      // STEP 3: Enviar mensagem inicial (opcional, não bloqueia)
-      if (session && leadData.message?.trim()) {
-        console.log('3. Tentando enviar mensagem inicial...');
-        
+      // STEP 3: Mensagem inicial (se houver)
+      if (leadData.message?.trim()) {
         try {
           await supabase
             .from('chat_messages')
@@ -196,39 +120,23 @@ export const useLiveChat = () => {
             });
           console.log('Mensagem inicial enviada');
         } catch (messageError) {
-          console.error('Erro ao enviar mensagem inicial (não crítico):', messageError);
+          console.warn('Erro ao enviar mensagem inicial (não crítico):', messageError);
         }
       }
 
-      console.log('=== CHAT SESSION CRIADO COM SUCESSO ===');
-      
       toast({
-        title: 'Chat iniciado com sucesso!',
-        description: 'Um de nossos atendentes estará com você em breve.',
+        title: 'Chat iniciado!',
+        description: 'Você já pode conversar conosco.',
       });
 
       return session;
       
     } catch (error) {
-      console.error('=== ERRO CRÍTICO NA CRIAÇÃO DO CHAT ===');
-      console.error('Erro completo:', error);
-      
-      // Se chegou aqui, mesmo o lead falhou
-      let errorMessage = 'Não foi possível processar sua solicitação. Tente novamente em alguns minutos.';
-      
-      if (error instanceof Error) {
-        if (error.message.includes('permission') || error.message.includes('policy')) {
-          errorMessage = 'Sistema em configuração. Tente novamente em alguns minutos.';
-        } else if (error.message.includes('network') || error.message.includes('timeout')) {
-          errorMessage = 'Problema de conexão. Verifique sua internet e tente novamente.';
-        } else if (error.message.includes('duplicate') || error.message.includes('unique')) {
-          errorMessage = 'Você já possui um contato registrado. Nossa equipe entrará em contato.';
-        }
-      }
+      console.error('Erro ao criar chat session:', error);
       
       toast({
-        title: 'Erro ao processar solicitação',
-        description: errorMessage,
+        title: 'Erro ao iniciar chat',
+        description: 'Tente novamente em alguns segundos.',
         variant: 'destructive',
       });
       
@@ -298,17 +206,72 @@ export const useLiveChat = () => {
     }
   };
 
-  // Enviar mensagem com retry
+  // Processar queue de mensagens
+  const processMessageQueue = async () => {
+    if (messageQueue.length === 0) return;
+
+    const pendingMessage = messageQueue[0];
+    
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          session_id: pendingMessage.sessionId,
+          sender_type: 'lead',
+          message: pendingMessage.message,
+          read_status: false
+        });
+
+      if (error) throw error;
+
+      // Remover da queue se sucesso
+      setMessageQueue(prev => prev.slice(1));
+      
+    } catch (error) {
+      console.error('Erro ao processar mensagem da queue:', error);
+      
+      // Incrementar retries
+      setMessageQueue(prev => {
+        const updated = [...prev];
+        if (updated[0]) {
+          updated[0].retries += 1;
+          
+          // Se muitas tentativas, remover da queue
+          if (updated[0].retries >= 3) {
+            toast({
+              title: 'Erro ao enviar mensagem',
+              description: 'Mensagem não pôde ser enviada após várias tentativas.',
+              variant: 'destructive',
+            });
+            return updated.slice(1);
+          }
+        }
+        return updated;
+      });
+    }
+  };
+
+  // Processar queue periodicamente
+  useEffect(() => {
+    if (messageQueue.length > 0) {
+      const timer = setTimeout(processMessageQueue, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [messageQueue]);
+
+  // Enviar mensagem ROBUSTO
   const sendMessage = async (
     sessionId: string, 
     message: string, 
     senderType: 'lead' | 'attendant' | 'bot' = 'attendant'
   ) => {
-    console.log('=== ENVIANDO MENSAGEM ===');
-    console.log('SessionId:', sessionId);
-    console.log('Mensagem:', message);
-    console.log('Sender Type:', senderType);
-    
+    if (!sessionId || !sessionId.startsWith('fallback-')) {
+      // Verificar se sessionId é válido
+      if (!sessionId || sessionId.length < 10) {
+        throw new Error('ID de sessão inválido');
+      }
+    }
+
     const messagePayload = {
       session_id: sessionId,
       sender_type: senderType,
@@ -317,42 +280,36 @@ export const useLiveChat = () => {
       read_status: false
     };
 
-    // Retry logic para envio de mensagem
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        console.log(`Tentativa ${attempt} de envio...`);
-        
-        const { data, error } = await supabase
-          .from('chat_messages')
-          .insert(messagePayload)
-          .select()
-          .single();
+    console.log('📤 Enviando mensagem:', messagePayload);
 
-        if (error) {
-          console.error(`Tentativa ${attempt} - Erro ao enviar:`, error);
-          
-          if (attempt === 3) {
-            throw error;
-          }
-          
-          // Aguardar antes de tentar novamente
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-          continue;
-        }
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert(messagePayload)
+        .select()
+        .single();
 
-        console.log('Mensagem enviada com sucesso:', data);
-        return data;
-
-      } catch (error) {
-        console.error(`Tentativa ${attempt} falhou:`, error);
+      if (error) {
+        console.error('Erro direto ao enviar:', error);
         
-        if (attempt === 3) {
-          console.error('Todas as tentativas falharam');
-          throw error;
-        }
+        // Adicionar à queue para retry
+        const tempId = `temp-${Date.now()}`;
+        setMessageQueue(prev => [...prev, {
+          sessionId,
+          message: message.trim(),
+          tempId,
+          retries: 0
+        }]);
         
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        throw error;
       }
+
+      console.log('✅ Mensagem enviada:', data);
+      return data;
+
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      throw error;
     }
   };
 
@@ -514,6 +471,7 @@ export const useLiveChat = () => {
     markMessagesAsRead,
     updateAvailability,
     fetchMessages,
-    fetchChatSessions
+    fetchChatSessions,
+    messageQueue: messageQueue.length
   };
 };
