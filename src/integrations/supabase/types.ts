@@ -128,6 +128,47 @@ export type Database = {
         }
         Relationships: []
       }
+      attendant_availability: {
+        Row: {
+          created_at: string
+          current_chats: number
+          id: string
+          is_online: boolean
+          last_seen: string
+          max_concurrent_chats: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_chats?: number
+          id?: string
+          is_online?: boolean
+          last_seen?: string
+          max_concurrent_chats?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_chats?: number
+          id?: string
+          is_online?: boolean
+          last_seen?: string
+          max_concurrent_chats?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendant_availability_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_configurations: {
         Row: {
           active: boolean | null
@@ -175,6 +216,98 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read_status: boolean
+          sender_id: string | null
+          sender_type: string
+          session_id: string
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read_status?: boolean
+          sender_id?: string | null
+          sender_type: string
+          session_id: string
+          timestamp?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read_status?: boolean
+          sender_id?: string | null
+          sender_type?: string
+          session_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_sessions: {
+        Row: {
+          attendant_id: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          lead_id: string
+          started_at: string
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          attendant_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          lead_id: string
+          started_at?: string
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attendant_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          lead_id?: string
+          started_at?: string
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_sessions_attendant_id_fkey"
+            columns: ["attendant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_sessions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       favorites: {
         Row: {

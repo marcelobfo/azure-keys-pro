@@ -35,6 +35,8 @@ import AdminSiteSettings from '@/pages/AdminSiteSettings';
 import ApiTokens from '@/pages/ApiTokens';
 import Analytics from './pages/Analytics';
 import Sitemap from './pages/Sitemap';
+import Atendimento from '@/pages/Atendimento';
+import LiveChat from '@/components/LiveChat';
 import SEOUpdater from '@/components/SEOUpdater';
 
 const queryClient = new QueryClient();
@@ -95,6 +97,7 @@ function App() {
                 <Route path="/schedule-visit" element={<ScheduleVisit />} />
                 <Route path="/schedule-visit/:propertyId" element={<ScheduleVisit />} />
                 <Route path="/chat-settings" element={<ChatSettings />} />
+                <Route path="/atendimento" element={<Atendimento />} />
 
                 {/* User Routes */}
                 <Route path="/user/*" element={<UserDashboard />} />
@@ -103,6 +106,7 @@ function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Router>
+            <LiveChat />
             <Toaster />
           </ThemeProvider>
         </LanguageProvider>
