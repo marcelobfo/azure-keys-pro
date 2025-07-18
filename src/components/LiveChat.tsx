@@ -71,6 +71,9 @@ const LiveChat = () => {
     }
 
     try {
+      console.log('=== FORMULÁRIO ENVIADO ===');
+      console.log('Dados do formulário:', formData);
+      
       const session = await createChatSession({
         name: formData.name,
         email: formData.email,
@@ -79,7 +82,10 @@ const LiveChat = () => {
         subject: formData.subject
       });
 
+      console.log('Session retornada:', session);
+
       if (session?.id) {
+        console.log('Chat criado com sucesso, ID:', session.id);
         setSessionId(session.id);
         setStep('chat');
         
@@ -102,9 +108,23 @@ const LiveChat = () => {
           };
           setMessages(prev => [...prev, userMessage]);
         }
+      } else {
+        console.error('Session criada mas sem ID válido:', session);
+        toast({
+          title: 'Erro',
+          description: 'Problema ao criar sessão de chat. Tente novamente.',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
-      console.error('Erro ao iniciar chat:', error);
+      console.error('=== ERRO NO FORMULÁRIO ===');
+      console.error('Erro completo:', error);
+      
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível iniciar o chat. Tente novamente em alguns minutos.',
+        variant: 'destructive',
+      });
     }
   };
 

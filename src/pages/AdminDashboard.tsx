@@ -203,11 +203,11 @@ const AdminDashboard = () => {
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/atendimento')}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Gerenciamento de Chat
+                Atendimento ao Cliente
                 <MessageCircle className="h-5 w-5" />
               </CardTitle>
               <CardDescription>
-                Gerencie chats ao vivo e atendimento aos clientes
+                Acesse o painel de atendimento ao vivo
               </CardDescription>
             </CardHeader>
             <CardContent>

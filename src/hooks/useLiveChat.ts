@@ -56,8 +56,12 @@ export const useLiveChat = () => {
     message?: string;
     subject?: string;
   }) => {
+    console.log('=== INICIANDO CRIAÇÃO DE CHAT SESSION ===');
+    console.log('Dados do lead:', leadData);
+    
     try {
       // Primeiro criar o lead
+      console.log('1. Criando lead...');
       const { data: lead, error: leadError } = await supabase
         .from('leads')
         .insert({
@@ -70,9 +74,15 @@ export const useLiveChat = () => {
         .select()
         .single();
 
-      if (leadError) throw leadError;
+      if (leadError) {
+        console.error('Erro ao criar lead:', leadError);
+        throw leadError;
+      }
+
+      console.log('2. Lead criado com sucesso:', lead);
 
       // Depois criar a sessão de chat
+      console.log('3. Criando sessão de chat...');
       const { data: session, error: sessionError } = await supabase
         .from('chat_sessions')
         .insert({
@@ -83,11 +93,17 @@ export const useLiveChat = () => {
         .select()
         .single();
 
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        console.error('Erro ao criar sessão:', sessionError);
+        throw sessionError;
+      }
+
+      console.log('4. Sessão criada com sucesso:', session);
 
       // Enviar mensagem inicial se houver
       if (leadData.message) {
-        await supabase
+        console.log('5. Enviando mensagem inicial...');
+        const { error: messageError } = await supabase
           .from('chat_messages')
           .insert({
             session_id: session.id,
@@ -95,8 +111,17 @@ export const useLiveChat = () => {
             message: leadData.message,
             read_status: false
           });
+
+        if (messageError) {
+          console.error('Erro ao enviar mensagem inicial:', messageError);
+          // Não bloqueamos o fluxo por causa da mensagem
+        } else {
+          console.log('6. Mensagem inicial enviada com sucesso');
+        }
       }
 
+      console.log('=== CHAT SESSION CRIADO COM SUCESSO ===');
+      
       toast({
         title: 'Chat iniciado!',
         description: 'Aguarde um momento que um de nossos atendentes irá te ajudar.',
@@ -104,12 +129,27 @@ export const useLiveChat = () => {
 
       return session;
     } catch (error) {
-      console.error('Erro ao criar sessão de chat:', error);
+      console.error('=== ERRO NA CRIAÇÃO DO CHAT ===');
+      console.error('Erro completo:', error);
+      
+      // Tentar mostrar erro mais específico
+      let errorMessage = 'Não foi possível iniciar o chat. Tente novamente.';
+      
+      if (error instanceof Error) {
+        console.error('Mensagem do erro:', error.message);
+        if (error.message.includes('permission')) {
+          errorMessage = 'Problema de permissão. Tente atualizar a página.';
+        } else if (error.message.includes('network')) {
+          errorMessage = 'Problema de conexão. Verifique sua internet.';
+        }
+      }
+      
       toast({
-        title: 'Erro',
-        description: 'Não foi possível iniciar o chat. Tente novamente.',
+        title: 'Erro ao iniciar chat',
+        description: errorMessage,
         variant: 'destructive',
       });
+      
       throw error;
     }
   };
