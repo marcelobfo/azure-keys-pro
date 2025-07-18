@@ -99,24 +99,91 @@ const AdminChatSettings = () => {
                     rows={3}
                   />
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium">Horário de Funcionamento</p>
-                  <p className="text-sm text-muted-foreground">24/7 ou horário comercial</p>
+                  <Label htmlFor="chat_avatar">Avatar do Atendente</Label>
+                  <Input
+                    id="chat_avatar"
+                    value={configuration?.custom_responses?.chat_avatar || ''}
+                    onChange={(e) => updateField('custom_responses', {
+                      ...configuration?.custom_responses,
+                      chat_avatar: e.target.value
+                    })}
+                    placeholder="https://exemplo.com/avatar.jpg"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    URL da imagem do avatar que aparecerá no chat
+                  </p>
                 </div>
-                <Badge variant="secondary">24/7</Badge>
               </div>
 
-              <Button 
-                className="w-full" 
-                variant="outline"
-                onClick={() => navigate('/admin/chat-schedules')}
-              >
-                <Clock className="h-4 w-4 mr-2" />
-                Configurar Horários
-              </Button>
+              <div className="space-y-4">
+                <div>
+                  <Label>Horário de Funcionamento</Label>
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <Label htmlFor="horario_inicio" className="text-sm">Início</Label>
+                      <Input
+                        id="horario_inicio"
+                        type="time"
+                        value={configuration?.custom_responses?.horario_inicio || '08:00'}
+                        onChange={(e) => updateField('custom_responses', {
+                          ...configuration?.custom_responses,
+                          horario_inicio: e.target.value
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="horario_fim" className="text-sm">Fim</Label>
+                      <Input
+                        id="horario_fim"
+                        type="time"
+                        value={configuration?.custom_responses?.horario_fim || '18:00'}
+                        onChange={(e) => updateField('custom_responses', {
+                          ...configuration?.custom_responses,
+                          horario_fim: e.target.value
+                        })}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Chat ficará disponível apenas neste horário
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Status Atual</p>
+                    <p className="text-sm text-muted-foreground">
+                      {(() => {
+                        const now = new Date();
+                        const inicio = configuration?.custom_responses?.horario_inicio || '08:00';
+                        const fim = configuration?.custom_responses?.horario_fim || '18:00';
+                        const horaAtual = now.toTimeString().slice(0, 5);
+                        const dentroHorario = horaAtual >= inicio && horaAtual <= fim;
+                        return dentroHorario ? 'Horário de funcionamento' : 'Fora do horário';
+                      })()}
+                    </p>
+                  </div>
+                  <Badge variant={(() => {
+                    const now = new Date();
+                    const inicio = configuration?.custom_responses?.horario_inicio || '08:00';
+                    const fim = configuration?.custom_responses?.horario_fim || '18:00';
+                    const horaAtual = now.toTimeString().slice(0, 5);
+                    const dentroHorario = horaAtual >= inicio && horaAtual <= fim;
+                    return dentroHorario ? 'default' : 'secondary';
+                  })()}>
+                    {(() => {
+                      const now = new Date();
+                      const inicio = configuration?.custom_responses?.horario_inicio || '08:00';
+                      const fim = configuration?.custom_responses?.horario_fim || '18:00';
+                      const horaAtual = now.toTimeString().slice(0, 5);
+                      const dentroHorario = horaAtual >= inicio && horaAtual <= fim;
+                      return dentroHorario ? 'Aberto' : 'Fechado';
+                    })()}
+                  </Badge>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

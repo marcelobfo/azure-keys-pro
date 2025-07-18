@@ -12,11 +12,15 @@ import { useLiveChat } from '@/hooks/useLiveChat';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useChatConfiguration } from '@/hooks/useChatConfiguration';
+import { useChatBusinessHours } from '@/hooks/useChatBusinessHours';
 
 const LiveChat = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { createChatSession, sendMessage } = useLiveChat();
+  const { configuration } = useChatConfiguration();
+  const { isWithinBusinessHours, getBusinessHoursMessage } = useChatBusinessHours();
   
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<'contact' | 'chat'>('contact');
@@ -92,7 +96,7 @@ const LiveChat = () => {
         // Adicionar mensagem de boas-vindas
         const welcomeMessage = {
           id: 'welcome',
-          message: `Olá ${formData.name}! Obrigado por entrar em contato. ${isAttendantOnline ? 'Um de nossos atendentes estará com você em breve.' : 'No momento nossos atendentes estão offline, mas responderemos assim que possível.'}`,
+          message: configuration?.welcome_message || `Olá ${formData.name}! Obrigado por entrar em contato. ${getBusinessHoursMessage()}`,
           sender_type: 'bot' as const,
           timestamp: new Date().toISOString()
         };
@@ -169,14 +173,23 @@ const LiveChat = () => {
     });
   };
 
+  // Não mostrar chat se não estiver configurado como ativo
+  if (!configuration?.active) {
+    return null;
+  }
+
   if (!isOpen) {
     return (
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsOpen(true)}
           className="h-14 w-14 rounded-full bg-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+          title={isWithinBusinessHours ? 'Chat disponível' : 'Fora do horário - Deixe sua mensagem'}
         >
           <MessageCircle className="h-6 w-6" />
+          {!isWithinBusinessHours && (
+            <div className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-500 rounded-full animate-pulse" />
+          )}
         </Button>
       </div>
     );
@@ -327,7 +340,7 @@ const LiveChat = () => {
                     >
                       {message.sender_type !== 'lead' && (
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src="/placeholder-avatar.png" />
+                          <AvatarImage src={configuration?.custom_responses?.chat_avatar || "/placeholder-avatar.png"} />
                           <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                             {message.sender_type === 'bot' ? '🤖' : 'AT'}
                           </AvatarFallback>

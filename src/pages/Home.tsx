@@ -45,6 +45,17 @@ const HomePage = () => {
     }
   };
 
+  // Loading state para evitar tela branca
+  if (loadingFeatured && Object.keys(settings).length === 0) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="min-h-screen">
