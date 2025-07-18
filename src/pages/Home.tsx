@@ -18,14 +18,12 @@ const HomePage = () => {
 
   const [isVisible, setIsVisible] = useState(true);
 
-  // Gerenciar visibilidade da página para evitar tela branca
+  // Gerenciar visibilidade da página
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // Página ficou oculta - não fazer nada crítico
         console.log('🔍 Page hidden');
       } else {
-        // Página voltou a ser visível - garantir que o estado está correto
         console.log('👁️ Page visible');
         setIsVisible(true);
       }
@@ -36,19 +34,12 @@ const HomePage = () => {
       setIsVisible(true);
     };
 
-    const handleBlur = () => {
-      console.log('😴 Window blurred');
-      // Não alterar isVisible no blur para evitar tela branca
-    };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
-    window.addEventListener('blur', handleBlur);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('blur', handleBlur);
     };
   }, []);
 
@@ -81,7 +72,7 @@ const HomePage = () => {
     }
   };
 
-  // Loading state mais robusto para evitar tela branca
+  // Loading state mais robusto
   if (loadingFeatured || Object.keys(settings).length === 0) {
     return (
       <Layout>
@@ -115,20 +106,6 @@ const HomePage = () => {
                 ))}
               </div>
             </div>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  // Garantir que sempre renderiza algo visível
-  if (!isVisible) {
-    return (
-      <Layout>
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">Carregando...</p>
           </div>
         </div>
       </Layout>
