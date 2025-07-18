@@ -108,6 +108,11 @@ const LiveChat = () => {
           };
           setMessages(prev => [...prev, userMessage]);
         }
+        
+        toast({
+          title: 'Chat iniciado com sucesso!',
+          description: 'Agora você pode conversar conosco.',
+        });
       } else {
         console.error('Session criada mas sem ID válido:', session);
         toast({

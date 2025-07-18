@@ -200,7 +200,7 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/atendimento')}>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 Atendimento ao Cliente
@@ -225,7 +225,15 @@ const AdminDashboard = () => {
                   <Badge>0</Badge>
                 </div>
               </div>
-              <Button className="w-full mt-4" variant="outline">
+              <Button 
+                className="w-full mt-4" 
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('Navegando para /atendimento');
+                  navigate('/atendimento');
+                }}
+              >
                 Acessar Atendimento
               </Button>
             </CardContent>

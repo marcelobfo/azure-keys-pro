@@ -60,57 +60,96 @@ export const useLiveChat = () => {
     console.log('Dados do lead:', leadData);
     
     try {
-      // Primeiro criar o lead
       console.log('1. Criando lead...');
+      
+      // Primeiro criar o lead - com dados obrigatórios
+      const leadPayload = {
+        name: leadData.name.trim(),
+        email: leadData.email.trim(),
+        phone: leadData.phone?.trim() || null,
+        message: leadData.message?.trim() || null,
+        status: 'new'
+      };
+      
+      console.log('Payload do lead:', leadPayload);
+      
       const { data: lead, error: leadError } = await supabase
         .from('leads')
-        .insert({
-          name: leadData.name,
-          email: leadData.email,
-          phone: leadData.phone,
-          message: leadData.message,
-          status: 'new'
-        })
+        .insert(leadPayload)
         .select()
         .single();
 
       if (leadError) {
-        console.error('Erro ao criar lead:', leadError);
-        throw leadError;
+        console.error('Erro detalhado ao criar lead:', {
+          error: leadError,
+          code: leadError.code,
+          message: leadError.message,
+          details: leadError.details
+        });
+        throw new Error(`Erro ao criar lead: ${leadError.message}`);
+      }
+
+      if (!lead || !lead.id) {
+        console.error('Lead criado mas sem ID válido:', lead);
+        throw new Error('Lead criado mas sem ID válido');
       }
 
       console.log('2. Lead criado com sucesso:', lead);
 
-      // Depois criar a sessão de chat
+      // Aguardar um pouco para garantir que o lead foi persistido
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       console.log('3. Criando sessão de chat...');
+      
+      // Criar a sessão de chat
+      const sessionPayload = {
+        lead_id: lead.id,
+        subject: leadData.subject?.trim() || null,
+        status: 'waiting'
+      };
+      
+      console.log('Payload da sessão:', sessionPayload);
+      
       const { data: session, error: sessionError } = await supabase
         .from('chat_sessions')
-        .insert({
-          lead_id: lead.id,
-          subject: leadData.subject,
-          status: 'waiting'
-        })
+        .insert(sessionPayload)
         .select()
         .single();
 
       if (sessionError) {
-        console.error('Erro ao criar sessão:', sessionError);
-        throw sessionError;
+        console.error('Erro detalhado ao criar sessão:', {
+          error: sessionError,
+          code: sessionError.code,
+          message: sessionError.message,
+          details: sessionError.details,
+          hint: sessionError.hint
+        });
+        throw new Error(`Erro ao criar sessão: ${sessionError.message}`);
+      }
+
+      if (!session || !session.id) {
+        console.error('Sessão criada mas sem ID válido:', session);
+        throw new Error('Sessão criada mas sem ID válido');
       }
 
       console.log('4. Sessão criada com sucesso:', session);
 
       // Enviar mensagem inicial se houver
-      if (leadData.message) {
+      if (leadData.message && leadData.message.trim()) {
         console.log('5. Enviando mensagem inicial...');
+        
+        const messagePayload = {
+          session_id: session.id,
+          sender_type: 'lead',
+          message: leadData.message.trim(),
+          read_status: false
+        };
+        
+        console.log('Payload da mensagem:', messagePayload);
+        
         const { error: messageError } = await supabase
           .from('chat_messages')
-          .insert({
-            session_id: session.id,
-            sender_type: 'lead',
-            message: leadData.message,
-            read_status: false
-          });
+          .insert(messagePayload);
 
         if (messageError) {
           console.error('Erro ao enviar mensagem inicial:', messageError);
@@ -121,6 +160,7 @@ export const useLiveChat = () => {
       }
 
       console.log('=== CHAT SESSION CRIADO COM SUCESSO ===');
+      console.log('Session final:', session);
       
       toast({
         title: 'Chat iniciado!',
@@ -137,10 +177,12 @@ export const useLiveChat = () => {
       
       if (error instanceof Error) {
         console.error('Mensagem do erro:', error.message);
-        if (error.message.includes('permission')) {
-          errorMessage = 'Problema de permissão. Tente atualizar a página.';
+        if (error.message.includes('permission') || error.message.includes('policy')) {
+          errorMessage = 'Problema de permissão. O sistema está sendo configurado.';
         } else if (error.message.includes('network')) {
           errorMessage = 'Problema de conexão. Verifique sua internet.';
+        } else if (error.message.includes('foreign key')) {
+          errorMessage = 'Erro de referência no banco de dados.';
         }
       }
       
