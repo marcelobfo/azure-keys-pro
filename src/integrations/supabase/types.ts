@@ -265,9 +265,11 @@ export type Database = {
           ended_at: string | null
           id: string
           lead_id: string
+          notes: string | null
           started_at: string
           status: string
           subject: string | null
+          tags: string[] | null
           updated_at: string
         }
         Insert: {
@@ -276,9 +278,11 @@ export type Database = {
           ended_at?: string | null
           id?: string
           lead_id: string
+          notes?: string | null
           started_at?: string
           status?: string
           subject?: string | null
+          tags?: string[] | null
           updated_at?: string
         }
         Update: {
@@ -287,9 +291,11 @@ export type Database = {
           ended_at?: string | null
           id?: string
           lead_id?: string
+          notes?: string | null
           started_at?: string
           status?: string
           subject?: string | null
+          tags?: string[] | null
           updated_at?: string
         }
         Relationships: [
