@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import Layout from '@/components/Layout';
+import DashboardLayout from '@/components/DashboardLayout';
+import BusinessHoursSettings from '@/components/BusinessHoursSettings';
 import AutomaticMessages from '@/components/AutomaticMessages';
 
 interface ChatConfig {
@@ -149,7 +150,7 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
         whatsapp_number: formData.whatsapp_number,
         system_instruction: formData.system_instruction,
         custom_responses: formData.custom_responses,
-        ...(formData.api_key && { api_key_encrypted: btoa(formData.api_key) }), // Simples encoding
+        ...(formData.api_key && { api_key_encrypted: formData.api_key }),
         active: true,
       };
 
@@ -200,27 +201,28 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
 
   if (loading) {
     return (
-      <Layout>
+      <DashboardLayout title="Configurações do Chat" userRole="admin">
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
-      </Layout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <Layout>
+    <DashboardLayout title="Configurações do Chat" userRole="admin">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold">Configurações do Chat IA</h2>
-          <p className="text-muted-foreground">Configure o chat com IA e integração WhatsApp</p>
+          <p className="text-muted-foreground">Configure o chat com IA, integração WhatsApp e horários comerciais</p>
         </div>
 
         <div className="space-y-6">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="basic">Configurações Básicas</TabsTrigger>
               <TabsTrigger value="ai">Chat com IA</TabsTrigger>
+              <TabsTrigger value="hours">Horários Comerciais</TabsTrigger>
               <TabsTrigger value="automatic">Mensagens Automáticas</TabsTrigger>
             </TabsList>
 
@@ -253,17 +255,7 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
                       rows={3}
                     />
                   </div>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Integração WhatsApp</CardTitle>
-                  <CardDescription>
-                    Configure redirecionamento para WhatsApp
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="whatsapp"
@@ -410,13 +402,17 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
               </div>
             </TabsContent>
 
+            <TabsContent value="hours" className="space-y-6">
+              <BusinessHoursSettings />
+            </TabsContent>
+
             <TabsContent value="automatic" className="space-y-6">
               <AutomaticMessages />
             </TabsContent>
           </Tabs>
         </div>
       </div>
-    </Layout>
+    </DashboardLayout>
   );
 };
 

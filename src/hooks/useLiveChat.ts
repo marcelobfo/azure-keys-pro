@@ -14,6 +14,7 @@ export interface ChatSession {
   ended_at?: string;
   tags?: string[];
   notes?: string;
+  ticket_id?: string;
   lead?: {
     name: string;
     email: string;
@@ -59,7 +60,7 @@ export const useLiveChat = () => {
     return `${prefix}-${timestamp}-${random}`;
   };
 
-  // Criar nova sessão de chat
+  // Criar nova sessão de chat usando Edge Function
   const createChatSession = async (leadData: {
     name: string;
     email: string;
@@ -68,57 +69,34 @@ export const useLiveChat = () => {
     subject?: string;
   }) => {
     try {
-      console.log('Criando nova sessão de chat...', leadData);
+      console.log('Criando nova sessão de chat via Edge Function...', leadData);
       
-      // Primeiro criar o lead
-      const { data: lead, error: leadError } = await supabase
-        .from('leads')
-        .insert({
-          name: leadData.name,
-          email: leadData.email,
-          phone: leadData.phone,
-          message: leadData.message,
-          status: 'new'
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke('chat-processor', {
+        body: {
+          action: 'create_chat_session',
+          data: {
+            leadData: leadData
+          }
+        }
+      });
 
-      if (leadError) {
-        console.error('Erro ao criar lead:', leadError);
-        throw leadError;
+      if (error) {
+        console.error('Erro na Edge Function:', error);
+        throw error;
       }
 
-      console.log('Lead criado:', lead);
-
-      // Depois criar a sessão de chat
-      const { data: session, error: sessionError } = await supabase
-        .from('chat_sessions')
-        .insert({
-          lead_id: lead.id,
-          subject: leadData.subject,
-          status: 'waiting'
-        })
-        .select()
-        .single();
-
-      if (sessionError) {
-        console.error('Erro ao criar sessão:', sessionError);
-        throw sessionError;
+      if (!data.success) {
+        throw new Error('Falha ao criar sessão de chat');
       }
 
-      console.log('Sessão criada:', session);
-
-      // Enviar mensagem inicial se houver
-      if (leadData.message) {
-        await sendMessage(session.id, leadData.message, 'lead');
-      }
+      console.log('Sessão criada via Edge Function:', data.session);
 
       toast({
         title: 'Chat iniciado!',
-        description: 'Aguarde um momento que um de nossos atendentes irá te ajudar.',
+        description: `Seu protocolo é: ${data.session.ticket_protocol}`,
       });
 
-      return session;
+      return data.session;
     } catch (error) {
       console.error('Erro ao criar sessão de chat:', error);
       toast({
@@ -228,31 +206,37 @@ export const useLiveChat = () => {
     }
   };
 
-  // Enviar mensagem
+  // Enviar mensagem usando Edge Function
   const sendMessage = async (
     sessionId: string, 
     message: string, 
     senderType: 'lead' | 'attendant' | 'bot' = 'attendant'
   ) => {
     try {
-      console.log('Enviando mensagem:', { sessionId, message, senderType });
+      console.log('Enviando mensagem via Edge Function:', { sessionId, message, senderType });
       
-      const { error } = await supabase
-        .from('chat_messages')
-        .insert({
-          session_id: sessionId,
-          sender_type: senderType,
-          sender_id: senderType === 'attendant' ? user?.id : null,
-          message,
-          read_status: false
-        });
+      const { data, error } = await supabase.functions.invoke('chat-processor', {
+        body: {
+          action: 'send_message',
+          data: {
+            sessionId: sessionId,
+            message: message,
+            senderType: senderType,
+            senderId: senderType === 'attendant' ? user?.id : null
+          }
+        }
+      });
 
       if (error) {
-        console.error('Erro ao inserir mensagem no banco:', error);
+        console.error('Erro na Edge Function ao enviar mensagem:', error);
         throw error;
       }
 
-      console.log('Mensagem inserida no banco com sucesso');
+      if (!data.success) {
+        throw new Error('Falha ao enviar mensagem');
+      }
+
+      console.log('Mensagem enviada via Edge Function com sucesso');
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
       toast({
@@ -260,6 +244,7 @@ export const useLiveChat = () => {
         description: 'Não foi possível enviar a mensagem.',
         variant: 'destructive',
       });
+      throw error;
     }
   };
 

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -18,22 +19,33 @@ export const useBusinessHours = () => {
   const [loading, setLoading] = useState(true);
   const [isBusinessTime, setIsBusinessTime] = useState(false);
 
-  // Buscar horários comerciais  
+  // Buscar horários comerciais
   const fetchBusinessHours = async () => {
     try {
       setLoading(true);
       
-      // Usar horários padrão para desenvolvimento
-      const defaultHours: BusinessHour[] = [
-        { id: '1', day_of_week: 1, start_time: '08:00', end_time: '18:00', is_active: true, created_at: '', updated_at: '' },
-        { id: '2', day_of_week: 2, start_time: '08:00', end_time: '18:00', is_active: true, created_at: '', updated_at: '' },
-        { id: '3', day_of_week: 3, start_time: '08:00', end_time: '18:00', is_active: true, created_at: '', updated_at: '' },
-        { id: '4', day_of_week: 4, start_time: '08:00', end_time: '18:00', is_active: true, created_at: '', updated_at: '' },
-        { id: '5', day_of_week: 5, start_time: '08:00', end_time: '18:00', is_active: true, created_at: '', updated_at: '' }
-      ];
+      const { data, error } = await supabase
+        .from('business_hours')
+        .select('*')
+        .order('day_of_week');
+
+      if (error) {
+        console.error('Erro ao buscar horários:', error);
+        // Usar horários padrão em caso de erro
+        const defaultHours: BusinessHour[] = [
+          { id: '1', day_of_week: 1, start_time: '08:00', end_time: '18:00', is_active: true, created_at: '', updated_at: '' },
+          { id: '2', day_of_week: 2, start_time: '08:00', end_time: '18:00', is_active: true, created_at: '', updated_at: '' },
+          { id: '3', day_of_week: 3, start_time: '08:00', end_time: '18:00', is_active: true, created_at: '', updated_at: '' },
+          { id: '4', day_of_week: 4, start_time: '08:00', end_time: '18:00', is_active: true, created_at: '', updated_at: '' },
+          { id: '5', day_of_week: 5, start_time: '08:00', end_time: '18:00', is_active: true, created_at: '', updated_at: '' }
+        ];
+        setBusinessHours(defaultHours);
+        checkBusinessHours(defaultHours);
+        return;
+      }
       
-      setBusinessHours(defaultHours);
-      checkBusinessHours(defaultHours);
+      setBusinessHours(data || []);
+      checkBusinessHours(data || []);
     } catch (error) {
       console.error('Erro ao buscar horários comerciais:', error);
       toast({
@@ -72,45 +84,48 @@ export const useBusinessHours = () => {
   // Verificar horário comercial via função do banco
   const checkBusinessHoursFromDB = async () => {
     try {
-      // Usar verificação local se não conseguir acessar a função
+      const { data, error } = await supabase.rpc('is_business_hours');
+      
+      if (error) {
+        console.error('Erro ao verificar horário via RPC:', error);
+        // Fallback para verificação local
+        const result = checkBusinessHours();
+        setIsBusinessTime(result);
+        return result;
+      }
+      
+      setIsBusinessTime(data || false);
+      return data || false;
+    } catch (error) {
+      console.error('Erro ao verificar horário comercial:', error);
+      // Fallback para verificação local
       const result = checkBusinessHours();
       setIsBusinessTime(result);
       return result;
-    } catch (error) {
-      console.error('Erro ao verificar horário comercial:', error);
-      return false;
     }
   };
 
   // Atualizar horário comercial
   const updateBusinessHour = async (dayOfWeek: number, startTime: string, endTime: string, isActive: boolean) => {
     try {
-      // Como não temos acesso direto à tabela, simular a atualização
-      const updatedHours = businessHours.map(h => 
-        h.day_of_week === dayOfWeek 
-          ? { ...h, start_time: startTime, end_time: endTime, is_active: isActive }
-          : h
-      );
-      
-      // Se não existe, adicionar
-      if (!businessHours.find(h => h.day_of_week === dayOfWeek)) {
-        updatedHours.push({
-          id: Date.now().toString(),
+      const { error } = await supabase
+        .from('business_hours')
+        .upsert({
           day_of_week: dayOfWeek,
           start_time: startTime,
           end_time: endTime,
-          is_active: isActive,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          is_active: isActive
+        }, {
+          onConflict: 'day_of_week'
         });
-      }
+
+      if (error) throw error;
       
-      setBusinessHours(updatedHours);
-      checkBusinessHours(updatedHours);
+      await fetchBusinessHours();
       
       toast({
         title: 'Sucesso',
-        description: 'Horário comercial atualizado localmente',
+        description: 'Horário comercial atualizado com sucesso',
       });
     } catch (error) {
       console.error('Erro ao atualizar horário comercial:', error);

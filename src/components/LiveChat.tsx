@@ -2,26 +2,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { useLiveChat } from '@/hooks/useLiveChat';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useBusinessHours } from '@/hooks/useBusinessHours';
 import { useTicketsSimple } from '@/hooks/useTicketsSimple';
 import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
 const LiveChat = () => {
-  const { t } = useLanguage();
   const { toast } = useToast();
-  const { createChatSession, sendMessage, fetchAttendantAvailability } = useLiveChat();
-  const { isBusinessTime, getNextBusinessTime, formatDayOfWeek } = useBusinessHours();
   const { createTicket } = useTicketsSimple();
   
   const [isOpen, setIsOpen] = useState(false);
@@ -34,12 +27,42 @@ const LiveChat = () => {
     timestamp: string;
   }>>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isAttendantOnline, setIsAttendantOnline] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
+  const [isBusinessTime, setIsBusinessTime] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
   const [protocolNumber, setProtocolNumber] = useState<string>('');
+  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: ''
+  });
+
+  const subjects = [
+    { value: 'compra', label: 'Quero comprar um imóvel' },
+    { value: 'venda', label: 'Quero vender meu imóvel' },
+    { value: 'aluguel', label: 'Quero alugar um imóvel' },
+    { value: 'avaliacao', label: 'Quero avaliar meu imóvel' },
+    { value: 'financiamento', label: 'Informações sobre financiamento' },
+    { value: 'documentacao', label: 'Dúvidas sobre documentação' },
+    { value: 'outros', label: 'Outros assuntos' }
+  ];
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    checkBusinessHours();
+  }, []);
 
   // Conectar ao sistema de real-time para receber mensagens
   useEffect(() => {
@@ -75,13 +98,6 @@ const LiveChat = () => {
                 }
                 return [...prev, newMessage];
               });
-              
-              // Reproduzir som de notificação
-              const audio = new Audio('/notification.mp3');
-              audio.volume = 0.5;
-              audio.play().catch(() => {
-                // Falha silenciosa se áudio não puder ser reproduzido
-              });
             }
           }
         )
@@ -101,50 +117,23 @@ const LiveChat = () => {
       };
     }
   }, [sessionId, realtimeChannel]);
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: ''
-  });
 
-  const subjects = [
-    { value: 'compra', label: 'Quero comprar um imóvel' },
-    { value: 'venda', label: 'Quero vender meu imóvel' },
-    { value: 'aluguel', label: 'Quero alugar um imóvel' },
-    { value: 'avaliacao', label: 'Quero avaliar meu imóvel' },
-    { value: 'financiamento', label: 'Informações sobre financiamento' },
-    { value: 'documentacao', label: 'Dúvidas sobre documentação' },
-    { value: 'outros', label: 'Outros assuntos' }
-  ];
+  const checkBusinessHours = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('chat-processor', {
+        body: { action: 'check_business_hours' }
+      });
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Verificar disponibilidade de atendentes
-  useEffect(() => {
-    const checkAttendantAvailability = async () => {
-      try {
-        const isOnline = await fetchAttendantAvailability();
-        setIsAttendantOnline(isOnline);
-      } catch (error) {
-        console.error('Erro ao verificar disponibilidade:', error);
+      if (error) {
+        console.error('Erro ao verificar horário comercial:', error);
+        return;
       }
-    };
-    
-    checkAttendantAvailability();
-    
-    // Verificar a cada 30 segundos
-    const interval = setInterval(checkAttendantAvailability, 30000);
-    return () => clearInterval(interval);
-  }, []);
+
+      setIsBusinessTime(data?.isBusinessHours || false);
+    } catch (error) {
+      console.error('Erro ao verificar horário comercial:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,59 +147,42 @@ const LiveChat = () => {
       return;
     }
 
+    setLoading(true);
+
     try {
       console.log('Iniciando nova sessão de chat...', formData);
       
-      const session = await createChatSession({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        message: formData.message,
-        subject: formData.subject
+      // Usar a edge function para criar a sessão
+      const { data, error } = await supabase.functions.invoke('chat-processor', {
+        body: {
+          action: 'create_chat_session',
+          data: {
+            leadData: formData
+          }
+        }
       });
 
-      console.log('Sessão criada:', session);
-      setSessionId(session.id);
+      if (error) {
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error('Falha ao criar sessão de chat');
+      }
+
+      console.log('Sessão criada com sucesso:', data.session);
+      setSessionId(data.session.id);
+      setProtocolNumber(data.session.ticket_protocol);
       setStep('chat');
       
-      // Criar ticket associado
-      const ticket = await createTicket({
-        lead_id: session.lead_id || session.id,
-        subject: formData.subject || 'Atendimento via chat',
-        initial_message: formData.message,
-        priority: 'normal'
+      // Buscar mensagens iniciais
+      await fetchMessages(data.session.id);
+
+      toast({
+        title: 'Chat iniciado!',
+        description: `Seu protocolo é: ${data.session.ticket_protocol}`,
       });
-      
-      setProtocolNumber(ticket.protocol_number);
-      
-      // Adicionar mensagem de boas-vindas com protocolo
-      const statusMessage = isBusinessTime 
-        ? 'Um de nossos atendentes estará com você em breve.'
-        : 'No momento estamos fora do horário comercial, mas responderemos assim que possível.';
-        
-      const nextTime = getNextBusinessTime();
-      const nextTimeMessage = nextTime && !isBusinessTime 
-        ? ` Próximo atendimento: ${formatDayOfWeek(nextTime.day)} às ${nextTime.time}.`
-        : '';
-      
-      const welcomeMessage = {
-        id: 'welcome-' + Date.now(),
-        message: `Olá ${formData.name}! Obrigado por entrar em contato. Seu protocolo é: ${ticket.protocol_number}. ${statusMessage}${nextTimeMessage}`,
-        sender_type: 'bot' as const,
-        timestamp: new Date().toISOString()
-      };
-      
-      setMessages([welcomeMessage]);
-      
-      if (formData.message) {
-        const userMessage = {
-          id: 'initial-' + Date.now(),
-          message: formData.message,
-          sender_type: 'lead' as const,
-          timestamp: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, userMessage]);
-      }
+
     } catch (error) {
       console.error('Erro ao iniciar chat:', error);
       toast({
@@ -218,6 +190,34 @@ const LiveChat = () => {
         description: 'Não foi possível iniciar o chat. Tente novamente.',
         variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMessages = async (sessionId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('timestamp', { ascending: true });
+
+      if (error) {
+        console.error('Erro ao buscar mensagens:', error);
+        return;
+      }
+
+      const formattedMessages = data?.map(msg => ({
+        id: msg.id,
+        message: msg.message,
+        sender_type: msg.sender_type as 'lead' | 'attendant' | 'bot',
+        timestamp: msg.timestamp
+      })) || [];
+
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error('Erro ao buscar mensagens:', error);
     }
   };
 
@@ -239,8 +239,30 @@ const LiveChat = () => {
     setNewMessage('');
     
     try {
-      console.log('Enviando mensagem:', messageToSend);
-      await sendMessage(sessionId, messageToSend, 'lead');
+      const { data, error } = await supabase.functions.invoke('chat-processor', {
+        body: {
+          action: 'send_message',
+          data: {
+            sessionId: sessionId,
+            message: messageToSend,
+            senderType: 'lead'
+          }
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Atualizar mensagem temp com dados reais
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === tempMessage.id 
+            ? { ...msg, id: data.message.id }
+            : msg
+        )
+      );
+
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
       // Remover mensagem em caso de erro
@@ -262,6 +284,7 @@ const LiveChat = () => {
     setStep('contact');
     setSessionId(null);
     setMessages([]);
+    setProtocolNumber('');
     setConnectionStatus('disconnected');
     setFormData({
       name: '',
@@ -296,7 +319,7 @@ const LiveChat = () => {
               </div>
               <div>
                 <CardTitle className="text-sm font-medium">Chat Atendimento</CardTitle>
-                  <div className="flex items-center gap-2 text-xs">
+                <div className="flex items-center gap-2 text-xs">
                   <div className={cn(
                     "h-2 w-2 rounded-full",
                     connectionStatus === 'connected' ? "bg-green-400" :
@@ -340,6 +363,7 @@ const LiveChat = () => {
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       className="pl-10"
                       required
+                      disabled={loading}
                     />
                   </div>
                   
@@ -352,6 +376,7 @@ const LiveChat = () => {
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                       className="pl-10"
                       required
+                      disabled={loading}
                     />
                   </div>
                   
@@ -362,11 +387,16 @@ const LiveChat = () => {
                       value={formData.phone}
                       onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                       className="pl-10"
+                      disabled={loading}
                     />
                   </div>
                 </div>
 
-                <Select value={formData.subject} onValueChange={(value) => setFormData(prev => ({ ...prev, subject: value }))}>
+                <Select 
+                  value={formData.subject} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, subject: value }))}
+                  disabled={loading}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o assunto" />
                   </SelectTrigger>
@@ -379,16 +409,15 @@ const LiveChat = () => {
                   </SelectContent>
                 </Select>
 
-                <Textarea
+                <Input
                   placeholder="Como podemos ajudar você? (opcional)"
                   value={formData.message}
                   onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
-                  rows={3}
-                  className="resize-none"
+                  disabled={loading}
                 />
 
-                <Button type="submit" className="w-full">
-                  Iniciar Conversa
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'Iniciando conversa...' : 'Iniciar Conversa'}
                 </Button>
               </form>
             </div>
@@ -404,16 +433,6 @@ const LiveChat = () => {
                       <Badge variant="outline" className="text-xs">
                         #{protocolNumber}
                       </Badge>
-                    )}
-                    {isTyping && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <div className="flex gap-1">
-                          <div className="w-1 h-1 bg-current rounded-full animate-bounce" />
-                          <div className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.1s]" />
-                          <div className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.2s]" />
-                        </div>
-                        Digitando...
-                      </div>
                     )}
                   </div>
                   <Button
@@ -439,7 +458,6 @@ const LiveChat = () => {
                     >
                       {message.sender_type !== 'lead' && (
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src="/placeholder-avatar.png" />
                           <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                             {message.sender_type === 'bot' ? '🤖' : 'AT'}
                           </AvatarFallback>

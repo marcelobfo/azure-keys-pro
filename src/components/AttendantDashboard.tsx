@@ -1,214 +1,122 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useLiveChat } from '@/hooks/useLiveChat';
-import { useTicketsSimple } from '@/hooks/useTicketsSimple';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   MessageCircle, 
   Clock, 
   User, 
   Send, 
-  CheckCircle2, 
+  Phone, 
+  Mail,
+  CheckCircle2,
   AlertCircle,
-  Star,
-  Archive
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import AttendantStatusToggle from '@/components/AttendantStatusToggle';
 
 const AttendantDashboard = () => {
-  const { toast } = useToast();
   const { user } = useAuth();
-  const { 
-    sessions, 
-    messages, 
-    acceptChatSession, 
-    endChatSession, 
-    sendMessage, 
-    markMessagesAsRead,
-    updateAvailability 
+  const { toast } = useToast();
+  const {
+    sessions,
+    messages,
+    loading,
+    acceptChatSession,
+    sendMessage,
+    fetchMessages,
+    fetchChatSessions
   } = useLiveChat();
-  
-  const { tickets, updateTicketStatus, rateTicket } = useTicketsSimple();
-  
-  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+
+  const [activeSession, setActiveSession] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
-  const [isOnline, setIsOnline] = useState(false);
-  const [sessionNotes, setSessionNotes] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
 
-  // Filtrar sessões ativas e pendentes
-  const activeSessions = sessions.filter(s => s.status === 'active' && s.attendant_id === user?.id);
-  const pendingSessions = sessions.filter(s => s.status === 'waiting');
-  const ticketsToday = tickets.filter(t => {
-    const today = new Date().toDateString();
-    const ticketDate = new Date(t.created_at).toDateString();
-    return today === ticketDate;
-  });
+  useEffect(() => {
+    if (user) {
+      fetchChatSessions();
+    }
+  }, [user]);
 
-  // Aceitar sessão de chat
+  useEffect(() => {
+    if (activeSession) {
+      fetchMessages(activeSession);
+    }
+  }, [activeSession]);
+
   const handleAcceptSession = async (sessionId: string) => {
     try {
       await acceptChatSession(sessionId);
-      setSelectedSession(sessionId);
-      
+      setActiveSession(sessionId);
       toast({
-        title: 'Sucesso',
-        description: 'Chat aceito com sucesso',
+        title: "Chat aceito",
+        description: "Você está agora atendendo este cliente",
       });
     } catch (error) {
       console.error('Erro ao aceitar chat:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao aceitar chat',
-        variant: 'destructive',
-      });
     }
   };
 
-  // Enviar mensagem
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newMessage.trim() || !selectedSession) return;
+    if (!newMessage.trim() || !activeSession || sendingMessage) return;
 
+    setSendingMessage(true);
     try {
-      await sendMessage(selectedSession, newMessage, 'attendant');
+      await sendMessage(activeSession, newMessage, 'attendant');
       setNewMessage('');
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao enviar mensagem',
-        variant: 'destructive',
-      });
+    } finally {
+      setSendingMessage(false);
     }
   };
 
-  // Finalizar sessão
-  const handleEndSession = async (sessionId: string) => {
-    try {
-      await endChatSession(sessionId, sessionNotes);
-      setSelectedSession(null);
-      setSessionNotes('');
-      
-      toast({
-        title: 'Sucesso',
-        description: 'Chat finalizado com sucesso',
-      });
-    } catch (error) {
-      console.error('Erro ao finalizar chat:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao finalizar chat',
-        variant: 'destructive',
-      });
-    }
-  };
+  const waitingSessions = sessions.filter(s => s.status === 'waiting');
+  const activeSessions = sessions.filter(s => s.status === 'active' && s.attendant_id === user?.id);
+  const activeSessionData = sessions.find(s => s.id === activeSession);
+  const sessionMessages = activeSession ? messages[activeSession] || [] : [];
 
-  // Alternar disponibilidade
-  const toggleAvailability = async () => {
-    try {
-      const newStatus = !isOnline;
-      await updateAvailability(newStatus);
-      setIsOnline(newStatus);
-      
-      toast({
-        title: 'Sucesso',
-        description: newStatus ? 'Você está online' : 'Você está offline',
-      });
-    } catch (error) {
-      console.error('Erro ao atualizar disponibilidade:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao atualizar disponibilidade',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Obter mensagens da sessão selecionada
-  const sessionMessages = selectedSession ? (messages[selectedSession] || []) : [];
-  const selectedSessionData = sessions.find(s => s.id === selectedSession);
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-2rem)]">
-      {/* Sidebar - Lista de sessões e tickets */}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-8rem)]">
+      {/* Status e Controles */}
       <div className="lg:col-span-1 space-y-4">
-        {/* Status de disponibilidade */}
+        <AttendantStatusToggle />
+        
+        {/* Chats em Espera */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Status do Atendente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className={cn(
-                  "h-3 w-3 rounded-full",
-                  isOnline ? "bg-green-500" : "bg-red-500"
-                )} />
-                <span className="text-sm font-medium">
-                  {isOnline ? 'Online' : 'Offline'}
-                </span>
-              </div>
-              <Button
-                onClick={toggleAvailability}
-                variant={isOnline ? 'destructive' : 'default'}
-                size="sm"
-              >
-                {isOnline ? 'Ficar Offline' : 'Ficar Online'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Estatísticas do dia */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Estatísticas Hoje</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Chats ativos:</span>
-              <span className="font-medium">{activeSessions.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Tickets hoje:</span>
-              <span className="font-medium">{ticketsToday.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Em espera:</span>
-              <span className="font-medium">{pendingSessions.length}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Sessões pendentes */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-orange-500" />
-              Chats em Espera ({pendingSessions.length})
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-500" />
+              Chats em Espera ({waitingSessions.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-32">
-              <div className="space-y-2">
-                {pendingSessions.map((session) => (
-                  <div 
-                    key={session.id}
-                    className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                    onClick={() => handleAcceptSession(session.id)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-sm">{session.lead?.name}</p>
-                        <p className="text-xs text-muted-foreground">{session.subject}</p>
+            <ScrollArea className="h-64">
+              <div className="space-y-3">
+                {waitingSessions.map((session) => (
+                  <div key={session.id} className="p-3 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        <span className="font-medium">{session.lead?.name}</span>
                       </div>
                       <Badge variant="outline" className="text-xs">
                         {new Date(session.started_at).toLocaleTimeString('pt-BR', {
@@ -217,63 +125,76 @@ const AttendantDashboard = () => {
                         })}
                       </Badge>
                     </div>
+                    
+                    {session.subject && (
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Assunto: {session.subject}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                      <Mail className="h-3 w-3" />
+                      <span>{session.lead?.email}</span>
+                      {session.lead?.phone && (
+                        <>
+                          <Phone className="h-3 w-3 ml-2" />
+                          <span>{session.lead.phone}</span>
+                        </>
+                      )}
+                    </div>
+                    
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleAcceptSession(session.id)}
+                      className="w-full"
+                    >
+                      Aceitar Chat
+                    </Button>
                   </div>
                 ))}
-                {pendingSessions.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    Nenhum chat em espera
-                  </p>
+                
+                {waitingSessions.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>Nenhum chat em espera</p>
+                  </div>
                 )}
               </div>
             </ScrollArea>
           </CardContent>
         </Card>
 
-        {/* Sessões ativas */}
+        {/* Chats Ativos */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <MessageCircle className="h-5 w-5 text-green-500" />
-              Chats Ativos ({activeSessions.length})
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-green-500" />
+              Meus Chats Ativos ({activeSessions.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-40">
+            <ScrollArea className="h-32">
               <div className="space-y-2">
                 {activeSessions.map((session) => (
                   <div 
-                    key={session.id}
+                    key={session.id} 
                     className={cn(
-                      "p-3 border rounded-lg cursor-pointer transition-colors",
-                      selectedSession === session.id 
-                        ? "bg-primary/10 border-primary" 
-                        : "hover:bg-muted/50"
+                      "p-2 border rounded cursor-pointer transition-colors",
+                      activeSession === session.id ? "bg-primary/10 border-primary" : "hover:bg-muted"
                     )}
-                    onClick={() => setSelectedSession(session.id)}
+                    onClick={() => setActiveSession(session.id)}
                   >
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-sm">{session.lead?.name}</p>
-                        <p className="text-xs text-muted-foreground">{session.subject}</p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="secondary" className="text-xs">
-                          Ativo
-                        </Badge>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(session.started_at).toLocaleTimeString('pt-BR', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
+                      <span className="font-medium text-sm">{session.lead?.name}</span>
+                      <Badge variant="default" className="text-xs">Ativo</Badge>
                     </div>
                   </div>
                 ))}
+                
                 {activeSessions.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
+                  <div className="text-center py-4 text-muted-foreground text-sm">
                     Nenhum chat ativo
-                  </p>
+                  </div>
                 )}
               </div>
             </ScrollArea>
@@ -281,38 +202,31 @@ const AttendantDashboard = () => {
         </Card>
       </div>
 
-      {/* Chat principal */}
+      {/* Área de Chat */}
       <div className="lg:col-span-2">
-        {selectedSession ? (
+        {activeSession && activeSessionData ? (
           <Card className="h-full flex flex-col">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback>
-                      {selectedSessionData?.lead?.name?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <CardTitle className="text-lg">{selectedSessionData?.lead?.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedSessionData?.lead?.email}
-                    </p>
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    {activeSessionData.lead?.name}
+                  </CardTitle>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Mail className="h-4 w-4" />
+                      {activeSessionData.lead?.email}
+                    </div>
+                    {activeSessionData.lead?.phone && (
+                      <div className="flex items-center gap-1">
+                        <Phone className="h-4 w-4" />
+                        {activeSessionData.lead.phone}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">
-                    {selectedSessionData?.subject || 'Chat'}
-                  </Badge>
-                  <Button
-                    onClick={() => handleEndSession(selectedSession)}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Archive className="h-4 w-4 mr-2" />
-                    Finalizar
-                  </Button>
-                </div>
+                <Badge variant="default">Chat Ativo</Badge>
               </div>
             </CardHeader>
 
@@ -327,19 +241,13 @@ const AttendantDashboard = () => {
                         message.sender_type === 'attendant' ? "justify-end" : "justify-start"
                       )}
                     >
-                      {message.sender_type !== 'attendant' && (
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                            {message.sender_type === 'bot' ? '🤖' : selectedSessionData?.lead?.name?.charAt(0) || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                      
                       <div
                         className={cn(
                           "max-w-[80%] rounded-lg px-3 py-2 text-sm",
                           message.sender_type === 'attendant'
-                            ? "bg-primary text-primary-foreground ml-auto"
+                            ? "bg-primary text-primary-foreground"
+                            : message.sender_type === 'bot'
+                            ? "bg-muted text-foreground border"
                             : "bg-muted text-foreground"
                         )}
                       >
@@ -365,22 +273,19 @@ const AttendantDashboard = () => {
                 </div>
               </ScrollArea>
 
-              <div className="p-4 border-t space-y-3">
-                <Textarea
-                  placeholder="Notas da sessão (opcional)"
-                  value={sessionNotes}
-                  onChange={(e) => setSessionNotes(e.target.value)}
-                  rows={2}
-                  className="resize-none"
-                />
+              <div className="p-4 border-t">
                 <form onSubmit={handleSendMessage} className="flex gap-2">
                   <Input
                     placeholder="Digite sua mensagem..."
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
+                    disabled={sendingMessage}
                     className="flex-1"
                   />
-                  <Button type="submit" disabled={!newMessage.trim()}>
+                  <Button 
+                    type="submit" 
+                    disabled={!newMessage.trim() || sendingMessage}
+                  >
                     <Send className="h-4 w-4" />
                   </Button>
                 </form>
@@ -390,10 +295,10 @@ const AttendantDashboard = () => {
         ) : (
           <Card className="h-full flex items-center justify-center">
             <CardContent className="text-center">
-              <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Selecione um chat</h3>
+              <MessageCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <h3 className="text-lg font-medium mb-2">Nenhum chat selecionado</h3>
               <p className="text-muted-foreground">
-                Escolha um chat da lista para começar o atendimento
+                Aceite um chat em espera ou selecione um chat ativo para começar
               </p>
             </CardContent>
           </Card>
