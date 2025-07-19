@@ -11,6 +11,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useLiveChat } from '@/hooks/useLiveChat';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBusinessHours } from '@/hooks/useBusinessHours';
+import { useTicketsSimple } from '@/hooks/useTicketsSimple';
 import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +21,8 @@ const LiveChat = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { createChatSession, sendMessage, fetchAttendantAvailability } = useLiveChat();
+  const { isBusinessTime, getNextBusinessTime, formatDayOfWeek } = useBusinessHours();
+  const { createTicket } = useTicketsSimple();
   
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<'contact' | 'chat'>('contact');
@@ -33,6 +37,7 @@ const LiveChat = () => {
   const [isAttendantOnline, setIsAttendantOnline] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
+  const [protocolNumber, setProtocolNumber] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
 
@@ -168,10 +173,29 @@ const LiveChat = () => {
       setSessionId(session.id);
       setStep('chat');
       
-      // Adicionar mensagem de boas-vindas
+      // Criar ticket associado
+      const ticket = await createTicket({
+        lead_id: session.lead_id || session.id,
+        subject: formData.subject || 'Atendimento via chat',
+        initial_message: formData.message,
+        priority: 'normal'
+      });
+      
+      setProtocolNumber(ticket.protocol_number);
+      
+      // Adicionar mensagem de boas-vindas com protocolo
+      const statusMessage = isBusinessTime 
+        ? 'Um de nossos atendentes estará com você em breve.'
+        : 'No momento estamos fora do horário comercial, mas responderemos assim que possível.';
+        
+      const nextTime = getNextBusinessTime();
+      const nextTimeMessage = nextTime && !isBusinessTime 
+        ? ` Próximo atendimento: ${formatDayOfWeek(nextTime.day)} às ${nextTime.time}.`
+        : '';
+      
       const welcomeMessage = {
         id: 'welcome-' + Date.now(),
-        message: `Olá ${formData.name}! Obrigado por entrar em contato. ${isAttendantOnline ? 'Um de nossos atendentes estará com você em breve.' : 'No momento nossos atendentes estão offline, mas responderemos assim que possível.'}`,
+        message: `Olá ${formData.name}! Obrigado por entrar em contato. Seu protocolo é: ${ticket.protocol_number}. ${statusMessage}${nextTimeMessage}`,
         sender_type: 'bot' as const,
         timestamp: new Date().toISOString()
       };
@@ -272,16 +296,16 @@ const LiveChat = () => {
               </div>
               <div>
                 <CardTitle className="text-sm font-medium">Chat Atendimento</CardTitle>
-                <div className="flex items-center gap-2 text-xs">
+                  <div className="flex items-center gap-2 text-xs">
                   <div className={cn(
                     "h-2 w-2 rounded-full",
                     connectionStatus === 'connected' ? "bg-green-400" :
                     connectionStatus === 'connecting' ? "bg-yellow-400" :
-                    isAttendantOnline ? "bg-green-400" : "bg-red-400"
+                    isBusinessTime ? "bg-green-400" : "bg-red-400"
                   )} />
                   {connectionStatus === 'connected' ? 'Conectado' :
                    connectionStatus === 'connecting' ? 'Conectando...' :
-                   isAttendantOnline ? 'Online' : 'Offline'}
+                   isBusinessTime ? 'Horário Comercial' : 'Fora do Horário'}
                 </div>
               </div>
             </div>
@@ -376,6 +400,11 @@ const LiveChat = () => {
                     <Badge variant="secondary" className="text-xs">
                       {subjects.find(s => s.value === formData.subject)?.label || 'Chat'}
                     </Badge>
+                    {protocolNumber && (
+                      <Badge variant="outline" className="text-xs">
+                        #{protocolNumber}
+                      </Badge>
+                    )}
                     {isTyping && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <div className="flex gap-1">
