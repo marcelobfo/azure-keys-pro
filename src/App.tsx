@@ -26,7 +26,6 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Toaster } from '@/components/ui/toaster';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ScheduleVisit from '@/pages/ScheduleVisit';
-import ChatSettings from '@/pages/ChatSettings';
 import AdminChatSettings from '@/pages/AdminChatSettings';
 import Index from '@/pages/Index';
 import PropertyDetail from '@/pages/PropertyDetail';
@@ -97,7 +96,7 @@ function App() {
                 <Route path="/visits-management" element={<VisitsManagement />} />
                 <Route path="/schedule-visit" element={<ScheduleVisit />} />
                 <Route path="/schedule-visit/:propertyId" element={<ScheduleVisit />} />
-                <Route path="/chat-settings" element={<ChatSettings />} />
+                
                 <Route path="/atendimento" element={<Atendimento />} />
                 <Route path="/chat-attendant" element={<AttendantChat />} />
 

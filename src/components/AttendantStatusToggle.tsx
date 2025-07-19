@@ -63,9 +63,10 @@ const AttendantStatusToggle = () => {
         (payload) => {
           console.log('Status atualizado:', payload);
           if (payload.new) {
-            setIsOnline(payload.new.is_online);
-            setCurrentChats(payload.new.current_chats || 0);
-            setMaxChats(payload.new.max_concurrent_chats || 3);
+            const newData = payload.new as any;
+            setIsOnline(newData.is_online);
+            setCurrentChats(newData.current_chats || 0);
+            setMaxChats(newData.max_concurrent_chats || 3);
           }
         }
       )

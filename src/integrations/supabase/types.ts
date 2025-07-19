@@ -169,6 +169,36 @@ export type Database = {
           },
         ]
       }
+      business_hours: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_active: boolean
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_active?: boolean
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_configurations: {
         Row: {
           active: boolean | null
@@ -808,6 +838,10 @@ export type Database = {
       increment_property_views: {
         Args: { property_id: string }
         Returns: undefined
+      }
+      is_business_hours: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
     }
     Enums: {
