@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 const LiveChat = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { createChatSession, sendMessage, sessions, fetchAttendantAvailability } = useLiveChat();
+  const { createChatSession, sendMessage, fetchAttendantAvailability } = useLiveChat();
   
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<'contact' | 'chat'>('contact');
@@ -31,12 +32,18 @@ const LiveChat = () => {
   const [newMessage, setNewMessage] = useState('');
   const [isAttendantOnline, setIsAttendantOnline] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
 
   // Conectar ao sistema de real-time para receber mensagens
   useEffect(() => {
-    if (sessionId) {
-      const channel = supabase.channel(`session-${sessionId}`)
+    if (sessionId && !realtimeChannel) {
+      console.log('Conectando ao canal de real-time para sessão:', sessionId);
+      setConnectionStatus('connecting');
+      
+      const channelName = `session-${sessionId}-${Date.now()}`;
+      const channel = supabase.channel(channelName)
         .on(
           'postgres_changes',
           {
@@ -46,6 +53,7 @@ const LiveChat = () => {
             filter: `session_id=eq.${sessionId}`
           },
           (payload) => {
+            console.log('Nova mensagem recebida via real-time:', payload);
             const newMessage = {
               id: payload.new.id,
               message: payload.new.message,
@@ -55,17 +63,39 @@ const LiveChat = () => {
             
             // Só adiciona se não for uma mensagem que o próprio usuário enviou
             if (payload.new.sender_type !== 'lead') {
-              setMessages(prev => [...prev, newMessage]);
+              setMessages(prev => {
+                // Evitar duplicação
+                if (prev.some(msg => msg.id === newMessage.id)) {
+                  return prev;
+                }
+                return [...prev, newMessage];
+              });
+              
+              // Reproduzir som de notificação
+              const audio = new Audio('/notification.mp3');
+              audio.volume = 0.5;
+              audio.play().catch(() => {
+                // Falha silenciosa se áudio não puder ser reproduzido
+              });
             }
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          console.log('Status da conexão real-time:', status);
+          setConnectionStatus(status === 'SUBSCRIBED' ? 'connected' : 'disconnected');
+        });
+
+      setRealtimeChannel(channel);
 
       return () => {
-        supabase.removeChannel(channel);
+        console.log('Desconectando canal de real-time');
+        if (channel) {
+          supabase.removeChannel(channel);
+        }
+        setConnectionStatus('disconnected');
       };
     }
-  }, [sessionId]);
+  }, [sessionId, realtimeChannel]);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -124,6 +154,8 @@ const LiveChat = () => {
     }
 
     try {
+      console.log('Iniciando nova sessão de chat...', formData);
+      
       const session = await createChatSession({
         name: formData.name,
         email: formData.email,
@@ -132,12 +164,13 @@ const LiveChat = () => {
         subject: formData.subject
       });
 
+      console.log('Sessão criada:', session);
       setSessionId(session.id);
       setStep('chat');
       
       // Adicionar mensagem de boas-vindas
       const welcomeMessage = {
-        id: 'welcome',
+        id: 'welcome-' + Date.now(),
         message: `Olá ${formData.name}! Obrigado por entrar em contato. ${isAttendantOnline ? 'Um de nossos atendentes estará com você em breve.' : 'No momento nossos atendentes estão offline, mas responderemos assim que possível.'}`,
         sender_type: 'bot' as const,
         timestamp: new Date().toISOString()
@@ -147,7 +180,7 @@ const LiveChat = () => {
       
       if (formData.message) {
         const userMessage = {
-          id: 'initial',
+          id: 'initial-' + Date.now(),
           message: formData.message,
           sender_type: 'lead' as const,
           timestamp: new Date().toISOString()
@@ -156,6 +189,11 @@ const LiveChat = () => {
       }
     } catch (error) {
       console.error('Erro ao iniciar chat:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível iniciar o chat. Tente novamente.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -164,28 +202,43 @@ const LiveChat = () => {
     
     if (!newMessage.trim() || !sessionId) return;
 
-    const message = {
-      id: Date.now().toString(),
+    const tempMessage = {
+      id: 'temp-' + Date.now(),
       message: newMessage,
       sender_type: 'lead' as const,
       timestamp: new Date().toISOString()
     };
 
-    setMessages(prev => [...prev, message]);
+    // Adicionar mensagem otimisticamente
+    setMessages(prev => [...prev, tempMessage]);
+    const messageToSend = newMessage;
+    setNewMessage('');
     
     try {
-      await sendMessage(sessionId, newMessage, 'lead');
+      console.log('Enviando mensagem:', messageToSend);
+      await sendMessage(sessionId, messageToSend, 'lead');
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
+      // Remover mensagem em caso de erro
+      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
+      setNewMessage(messageToSend); // Restaurar texto
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível enviar a mensagem. Tente novamente.',
+        variant: 'destructive',
+      });
     }
-    
-    setNewMessage('');
   };
 
   const resetChat = () => {
+    if (realtimeChannel) {
+      supabase.removeChannel(realtimeChannel);
+      setRealtimeChannel(null);
+    }
     setStep('contact');
     setSessionId(null);
     setMessages([]);
+    setConnectionStatus('disconnected');
     setFormData({
       name: '',
       email: '',
@@ -222,9 +275,13 @@ const LiveChat = () => {
                 <div className="flex items-center gap-2 text-xs">
                   <div className={cn(
                     "h-2 w-2 rounded-full",
+                    connectionStatus === 'connected' ? "bg-green-400" :
+                    connectionStatus === 'connecting' ? "bg-yellow-400" :
                     isAttendantOnline ? "bg-green-400" : "bg-red-400"
                   )} />
-                  {isAttendantOnline ? 'Online' : 'Offline'}
+                  {connectionStatus === 'connected' ? 'Conectado' :
+                   connectionStatus === 'connecting' ? 'Conectando...' :
+                   isAttendantOnline ? 'Online' : 'Offline'}
                 </div>
               </div>
             </div>
@@ -398,8 +455,13 @@ const LiveChat = () => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     className="flex-1"
+                    disabled={connectionStatus === 'connecting'}
                   />
-                  <Button type="submit" size="sm" disabled={!newMessage.trim()}>
+                  <Button 
+                    type="submit" 
+                    size="sm" 
+                    disabled={!newMessage.trim() || connectionStatus === 'connecting'}
+                  >
                     <Send className="h-4 w-4" />
                   </Button>
                 </form>

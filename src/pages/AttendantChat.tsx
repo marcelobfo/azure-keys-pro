@@ -1,16 +1,20 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useLiveChat } from '@/hooks/useLiveChat';
 import { useAuth } from '@/contexts/AuthContext';
-import { MessageCircle, Send, Clock, User, Phone, Mail, CheckCircle2 } from 'lucide-react';
+import { MessageCircle, Send, Clock, User, Phone, Mail, CheckCircle2, Tag, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Layout from '@/components/Layout';
+import ChatSessionTags from '@/components/ChatSessionTags';
 
 const AttendantChat = () => {
   const { user } = useAuth();
@@ -23,12 +27,16 @@ const AttendantChat = () => {
     sendMessage, 
     fetchMessages, 
     markMessagesAsRead,
-    updateAvailability
+    updateAvailability,
+    endChatSession,
+    addTagsToSession
   } = useLiveChat();
   
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [isOnline, setIsOnline] = useState(true);
+  const [endChatNotes, setEndChatNotes] = useState('');
+  const [isEndChatDialogOpen, setIsEndChatDialogOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -44,6 +52,25 @@ const AttendantChat = () => {
       updateAvailability(isOnline);
     }
   }, [isOnline, user]);
+
+  // Notificação sonora para novas mensagens
+  useEffect(() => {
+    const playNotificationSound = () => {
+      const audio = new Audio('/notification.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(() => {
+        // Falha ao reproduzir áudio - navegador pode bloquear autoplay
+      });
+    };
+
+    // Verificar se há novas mensagens não lidas
+    if (selectedSession && messages[selectedSession]) {
+      const lastMessage = messages[selectedSession][messages[selectedSession].length - 1];
+      if (lastMessage && lastMessage.sender_type === 'lead' && !lastMessage.read_status) {
+        playNotificationSound();
+      }
+    }
+  }, [messages, selectedSession]);
 
   const handleSelectSession = async (sessionId: string) => {
     setSelectedSession(sessionId);
@@ -78,6 +105,31 @@ const AttendantChat = () => {
     }
   };
 
+  const handleEndChat = async () => {
+    if (!selectedSession) return;
+    
+    try {
+      await endChatSession(selectedSession, endChatNotes);
+      setIsEndChatDialogOpen(false);
+      setEndChatNotes('');
+      setSelectedSession(null);
+      toast({
+        title: 'Chat finalizado',
+        description: 'O atendimento foi finalizado com sucesso.',
+      });
+    } catch (error) {
+      console.error('Erro ao finalizar chat:', error);
+    }
+  };
+
+  const handleTagsUpdate = async (sessionId: string, tags: string[]) => {
+    try {
+      await addTagsToSession(sessionId, tags);
+    } catch (error) {
+      console.error('Erro ao atualizar tags:', error);
+    }
+  };
+
   const waitingSessions = sessions.filter(s => s.status === 'waiting');
   const activeSessions = sessions.filter(s => s.status === 'active' && s.attendant_id === user?.id);
   const selectedSessionData = sessions.find(s => s.id === selectedSession);
@@ -98,7 +150,7 @@ const AttendantChat = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Atendimento ao Cliente
+            Central de Atendimento
           </h1>
           <div className="flex items-center gap-4 mt-4">
             <div className="flex items-center gap-2">
@@ -120,14 +172,14 @@ const AttendantChat = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Lista de sessões */}
           <div className="lg:col-span-1">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageCircle className="h-5 w-5" />
-                  Chats
+                  Chats ({waitingSessions.length + activeSessions.length})
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -222,6 +274,20 @@ const AttendantChat = () => {
                             <p className="text-xs text-muted-foreground mb-2">
                               {session.subject || 'Sem assunto'}
                             </p>
+                            {session.tags && session.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mb-2">
+                                {session.tags.slice(0, 2).map((tag) => (
+                                  <Badge key={tag} variant="outline" className="text-xs">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                                {session.tags.length > 2 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{session.tags.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
                             <span className="text-xs text-muted-foreground">
                               {new Date(session.started_at).toLocaleTimeString('pt-BR', {
                                 hour: '2-digit',
@@ -278,9 +344,44 @@ const AttendantChat = () => {
                           </div>
                         </div>
                       </div>
-                      <Badge variant={selectedSessionData.status === 'active' ? 'default' : 'secondary'}>
-                        {selectedSessionData.status === 'active' ? 'Ativo' : 'Aguardando'}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={selectedSessionData.status === 'active' ? 'default' : 'secondary'}>
+                          {selectedSessionData.status === 'active' ? 'Ativo' : 'Aguardando'}
+                        </Badge>
+                        {selectedSessionData.status === 'active' && (
+                          <Dialog open={isEndChatDialogOpen} onOpenChange={setIsEndChatDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                Finalizar
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Finalizar Atendimento</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="text-sm font-medium">Observações finais (opcional)</label>
+                                  <Textarea
+                                    placeholder="Adicione observações sobre o atendimento..."
+                                    value={endChatNotes}
+                                    onChange={(e) => setEndChatNotes(e.target.value)}
+                                    className="mt-2"
+                                  />
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="outline" onClick={() => setIsEndChatDialogOpen(false)}>
+                                    Cancelar
+                                  </Button>
+                                  <Button onClick={handleEndChat}>
+                                    Finalizar Atendimento
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
@@ -362,6 +463,35 @@ const AttendantChat = () => {
                 </CardContent>
               )}
             </Card>
+          </div>
+
+          {/* Painel lateral com tags e informações */}
+          <div className="lg:col-span-1">
+            {selectedSessionData && (
+              <div className="space-y-4">
+                <ChatSessionTags
+                  sessionId={selectedSessionData.id}
+                  currentTags={selectedSessionData.tags}
+                  onTagsUpdate={handleTagsUpdate}
+                />
+                
+                {selectedSessionData.notes && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Observações
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedSessionData.notes}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +12,8 @@ export interface ChatSession {
   subject?: string;
   started_at: string;
   ended_at?: string;
+  tags?: string[];
+  notes?: string;
   lead?: {
     name: string;
     email: string;
@@ -47,6 +50,14 @@ export const useLiveChat = () => {
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
   const [availability, setAvailability] = useState<AttendantAvailability | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeChannels, setActiveChannels] = useState<Set<string>>(new Set());
+
+  // Função para criar canal único baseado em timestamp
+  const createUniqueChannelName = (prefix: string) => {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substr(2, 5);
+    return `${prefix}-${timestamp}-${random}`;
+  };
 
   // Criar nova sessão de chat
   const createChatSession = async (leadData: {
@@ -57,6 +68,8 @@ export const useLiveChat = () => {
     subject?: string;
   }) => {
     try {
+      console.log('Criando nova sessão de chat...', leadData);
+      
       // Primeiro criar o lead
       const { data: lead, error: leadError } = await supabase
         .from('leads')
@@ -70,7 +83,12 @@ export const useLiveChat = () => {
         .select()
         .single();
 
-      if (leadError) throw leadError;
+      if (leadError) {
+        console.error('Erro ao criar lead:', leadError);
+        throw leadError;
+      }
+
+      console.log('Lead criado:', lead);
 
       // Depois criar a sessão de chat
       const { data: session, error: sessionError } = await supabase
@@ -83,7 +101,12 @@ export const useLiveChat = () => {
         .select()
         .single();
 
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        console.error('Erro ao criar sessão:', sessionError);
+        throw sessionError;
+      }
+
+      console.log('Sessão criada:', session);
 
       // Enviar mensagem inicial se houver
       if (leadData.message) {
@@ -123,10 +146,12 @@ export const useLiveChat = () => {
       // Atualizar contagem de chats ativos
       await supabase
         .from('attendant_availability')
-        .update({
-          current_chats: availability ? availability.current_chats + 1 : 1
-        })
-        .eq('user_id', user?.id);
+        .upsert({
+          user_id: user?.id,
+          is_online: true,
+          current_chats: availability ? availability.current_chats + 1 : 1,
+          last_seen: new Date().toISOString()
+        });
 
       toast({
         title: 'Chat aceito!',
@@ -143,13 +168,14 @@ export const useLiveChat = () => {
   };
 
   // Finalizar sessão de chat
-  const endChatSession = async (sessionId: string) => {
+  const endChatSession = async (sessionId: string, notes?: string) => {
     try {
       const { error } = await supabase
         .from('chat_sessions')
         .update({
           status: 'ended',
-          ended_at: new Date().toISOString()
+          ended_at: new Date().toISOString(),
+          notes: notes
         })
         .eq('id', sessionId);
 
@@ -169,6 +195,39 @@ export const useLiveChat = () => {
     }
   };
 
+  // Adicionar tags à sessão
+  const addTagsToSession = async (sessionId: string, tags: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('chat_sessions')
+        .update({ tags })
+        .eq('id', sessionId);
+
+      if (error) throw error;
+
+      // Atualizar estado local
+      setSessions(prev => 
+        prev.map(session => 
+          session.id === sessionId 
+            ? { ...session, tags }
+            : session
+        )
+      );
+
+      toast({
+        title: 'Tags adicionadas',
+        description: 'Tags foram adicionadas à sessão com sucesso.',
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar tags:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível adicionar as tags.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Enviar mensagem
   const sendMessage = async (
     sessionId: string, 
@@ -176,6 +235,8 @@ export const useLiveChat = () => {
     senderType: 'lead' | 'attendant' | 'bot' = 'attendant'
   ) => {
     try {
+      console.log('Enviando mensagem:', { sessionId, message, senderType });
+      
       const { error } = await supabase
         .from('chat_messages')
         .insert({
@@ -186,7 +247,12 @@ export const useLiveChat = () => {
           read_status: false
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao inserir mensagem no banco:', error);
+        throw error;
+      }
+
+      console.log('Mensagem inserida no banco com sucesso');
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
       toast({
@@ -275,13 +341,20 @@ export const useLiveChat = () => {
   // Buscar mensagens de uma sessão
   const fetchMessages = async (sessionId: string) => {
     try {
+      console.log('Buscando mensagens para sessão:', sessionId);
+      
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
         .eq('session_id', sessionId)
         .order('timestamp', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar mensagens:', error);
+        throw error;
+      }
+      
+      console.log('Mensagens encontradas:', data);
       
       const formattedMessages = data?.map(msg => ({
         ...msg,
@@ -297,11 +370,18 @@ export const useLiveChat = () => {
     }
   };
 
-  // Configurar real-time subscriptions
+  // Configurar real-time subscriptions com canais únicos
   useEffect(() => {
-    const channelName = `live-chat-${Math.random().toString(36).substr(2, 9)}`;
-    const channel = supabase
-      .channel(channelName)
+    if (!user) return;
+
+    const sessionChannelName = createUniqueChannelName('chat-sessions');
+    const messagesChannelName = createUniqueChannelName('chat-messages');
+    
+    console.log('Configurando canais de real-time:', { sessionChannelName, messagesChannelName });
+
+    // Canal para sessões
+    const sessionChannel = supabase
+      .channel(sessionChannelName)
       .on(
         'postgres_changes',
         {
@@ -309,7 +389,8 @@ export const useLiveChat = () => {
           schema: 'public',
           table: 'chat_sessions'
         },
-        () => {
+        (payload) => {
+          console.log('Nova sessão criada:', payload);
           fetchChatSessions();
         }
       )
@@ -320,10 +401,16 @@ export const useLiveChat = () => {
           schema: 'public',
           table: 'chat_sessions'
         },
-        () => {
+        (payload) => {
+          console.log('Sessão atualizada:', payload);
           fetchChatSessions();
         }
       )
+      .subscribe();
+
+    // Canal para mensagens
+    const messagesChannel = supabase
+      .channel(messagesChannelName)
       .on(
         'postgres_changes',
         {
@@ -332,10 +419,12 @@ export const useLiveChat = () => {
           table: 'chat_messages'
         },
         (payload) => {
+          console.log('Nova mensagem recebida:', payload);
           const newMessage = {
             ...payload.new,
             sender_type: payload.new.sender_type as 'lead' | 'attendant' | 'bot'
           } as ChatMessage;
+          
           setMessages(prev => ({
             ...prev,
             [newMessage.session_id]: [
@@ -347,10 +436,21 @@ export const useLiveChat = () => {
       )
       .subscribe();
 
+    // Adicionar aos canais ativos
+    setActiveChannels(prev => new Set([...prev, sessionChannelName, messagesChannelName]));
+
     return () => {
-      supabase.removeChannel(channel);
+      console.log('Removendo canais de real-time');
+      supabase.removeChannel(sessionChannel);
+      supabase.removeChannel(messagesChannel);
+      setActiveChannels(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(sessionChannelName);
+        newSet.delete(messagesChannelName);
+        return newSet;
+      });
     };
-  }, []);
+  }, [user]);
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -366,6 +466,7 @@ export const useLiveChat = () => {
     createChatSession,
     acceptChatSession,
     endChatSession,
+    addTagsToSession,
     sendMessage,
     markMessagesAsRead,
     updateAvailability,

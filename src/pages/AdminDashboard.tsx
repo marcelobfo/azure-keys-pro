@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,13 +16,14 @@ const AdminDashboard = () => {
   const [userCounts, setUserCounts] = useState({ total: 0, admin: 0, corretor: 0, user: 0 });
   const [propertyCount, setPropertyCount] = useState(0);
   const [leadsCounts, setLeadsCounts] = useState({ total: 0, new: 0, progressing: 0, converted: 0 });
+  const [chatStats, setChatStats] = useState({ active: 0, waiting: 0, total: 0 });
   const [conversionRate, setConversionRate] = useState(0);
   const [webhookStats, setWebhookStats] = useState({ active: 0, failures: 0 });
   const [corretorActive, setCorretorActive] = useState(0);
   const [salesThisMonth, setSalesThisMonth] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
 
-  // Fetch Dashboard Data (simplified, no deep analytics)
+  // Fetch Dashboard Data
   useEffect(() => {
     // Users
     supabase.from('profiles')
@@ -35,7 +35,7 @@ const AdminDashboard = () => {
         const corretor = data.filter((d: any) => d.role === 'corretor').length;
         const user = data.filter((d: any) => d.role === 'user').length;
         setUserCounts({ total, admin, corretor, user });
-        setCorretorActive(corretor); // use as "ativos"
+        setCorretorActive(corretor);
       });
 
     // Properties
@@ -56,16 +56,25 @@ const AdminDashboard = () => {
         const progressing = data.filter((d: any) => d.status === 'in_progress').length;
         const converted = data.filter((d: any) => d.status === 'converted').length;
         setLeadsCounts({ total, new: newCount, progressing, converted });
-        // Conversion rate = converted / total
         setConversionRate(total ? ((converted / total) * 100) : 0);
       });
 
-    // Webhooks (simulado, só demo, pode conectar a configs reais depois)
-    setWebhookStats({ active: 0, failures: 0 });
+    // Chat Sessions
+    supabase
+      .from('chat_sessions')
+      .select('status')
+      .then(({ data }) => {
+        if (!data) return setChatStats({ active: 0, waiting: 0, total: 0 });
+        const total = data.length;
+        const active = data.filter((d: any) => d.status === 'active').length;
+        const waiting = data.filter((d: any) => d.status === 'waiting').length;
+        setChatStats({ active, waiting, total });
+      });
 
-    // Sales/Revenue (mocks, await real integration!)
-    setSalesThisMonth(0); // Para quando tiver integração
-    setTotalRevenue(0);   // Idem
+    // Webhooks (simulado)
+    setWebhookStats({ active: 0, failures: 0 });
+    setSalesThisMonth(0);
+    setTotalRevenue(0);
   }, []);
 
   if (loading) {
@@ -117,17 +126,17 @@ const AdminDashboard = () => {
               <p className="text-xs text-muted-foreground">+0% em relação ao mês passado</p>
             </CardContent>
           </Card>
-          <Card className="cursor-default">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Leads Gerados</CardTitle>
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Chats Ativos</CardTitle>
+              <MessageCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{leadsCounts.total}</div>
-              <p className="text-xs text-muted-foreground">+0% em relação ao mês passado</p>
+              <div className="text-2xl font-bold">{chatStats.active}</div>
+              <p className="text-xs text-muted-foreground">{chatStats.waiting} aguardando atendimento</p>
             </CardContent>
           </Card>
-          <Card className="cursor-default">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -141,6 +150,37 @@ const AdminDashboard = () => {
 
         {/* Management Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/chat-attendant')}>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Central de Atendimento
+                <MessageCircle className="h-5 w-5" />
+              </CardTitle>
+              <CardDescription>
+                Gerencie chats ao vivo e atenda clientes em tempo real
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm">Chats Ativos</span>
+                  <Badge variant="default">{chatStats.active}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Aguardando Atendimento</span>
+                  <Badge variant="secondary">{chatStats.waiting}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Total de Conversas</span>
+                  <Badge>{chatStats.total}</Badge>
+                </div>
+              </div>
+              <Button className="w-full mt-4">
+                Acessar Central de Atendimento
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/users')}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
