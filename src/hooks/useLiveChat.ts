@@ -1,8 +1,8 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useChatSounds } from '@/hooks/useChatSounds';
 
 export interface ChatSession {
   id: string;
@@ -44,17 +44,67 @@ export interface AttendantAvailability {
   current_chats: number;
 }
 
+const SESSION_STORAGE_KEY = 'current_chat_session';
+
 export const useLiveChat = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { playNotificationSound, playMessageSound } = useChatSounds();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
   const [availability, setAvailability] = useState<AttendantAvailability | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeChannels, setActiveChannels] = useState<Set<string>>(new Set());
+  const channelsRef = useRef<Map<string, any>>(new Map());
+  const isInitialized = useRef(false);
 
-  // Função para criar canal único baseado em timestamp
-  const createUniqueChannelName = (prefix: string) => {
+  // Salvar sessão no localStorage
+  const saveSessionToStorage = (sessionId: string, sessionData: any) => {
+    try {
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+        sessionId,
+        sessionData,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      console.error('Erro ao salvar sessão:', error);
+    }
+  };
+
+  // Recuperar sessão do localStorage
+  const getSavedSession = () => {
+    try {
+      const saved = localStorage.getItem(SESSION_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Verificar se a sessão foi salva nas últimas 24 horas
+        if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+          return parsed;
+        }
+        // Remover sessão expirada
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error('Erro ao recuperar sessão:', error);
+    }
+    return null;
+  };
+
+  // Limpar sessão salva
+  const clearSavedSession = () => {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+  };
+
+  // Cleanup de canais
+  const cleanupChannels = () => {
+    channelsRef.current.forEach((channel, channelName) => {
+      console.log('Removendo canal:', channelName);
+      supabase.removeChannel(channel);
+    });
+    channelsRef.current.clear();
+  };
+
+  // Criar canal único
+  const createUniqueChannel = (prefix: string) => {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substr(2, 5);
     return `${prefix}-${timestamp}-${random}`;
@@ -136,6 +186,9 @@ export const useLiveChat = () => {
             onConflict: 'user_id'
           }
         );
+
+      // Tocar som de notificação
+      playNotificationSound();
 
       toast({
         title: 'Chat aceito!',
@@ -249,6 +302,9 @@ export const useLiveChat = () => {
       if (!data.success) {
         throw new Error('Falha ao enviar mensagem');
       }
+
+      // Tocar som de mensagem enviada
+      playMessageSound();
 
       console.log('Mensagem enviada via Edge Function com sucesso');
     } catch (error) {
@@ -376,16 +432,18 @@ export const useLiveChat = () => {
     }
   };
 
-  // Configurar real-time subscriptions com canais únicos
+  // Configurar real-time subscriptions
   useEffect(() => {
-    if (!user) return;
+    if (!user || isInitialized.current) return;
 
-    const sessionChannelName = createUniqueChannelName('chat-sessions');
-    const messagesChannelName = createUniqueChannelName('chat-messages');
-    
-    console.log('Configurando canais de real-time:', { sessionChannelName, messagesChannelName });
+    console.log('Configurando sistema de real-time para usuário:', user.id);
+    isInitialized.current = true;
 
-    // Canal para sessões
+    // Cleanup de canais existentes
+    cleanupChannels();
+
+    // Canal para sessões de chat
+    const sessionChannelName = createUniqueChannel('chat-sessions');
     const sessionChannel = supabase
       .channel(sessionChannelName)
       .on(
@@ -397,6 +455,7 @@ export const useLiveChat = () => {
         },
         (payload) => {
           console.log('Nova sessão criada:', payload);
+          playNotificationSound();
           fetchChatSessions();
         }
       )
@@ -412,9 +471,12 @@ export const useLiveChat = () => {
           fetchChatSessions();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Status do canal de sessões:', status);
+      });
 
     // Canal para mensagens
+    const messagesChannelName = createUniqueChannel('chat-messages');
     const messagesChannel = supabase
       .channel(messagesChannelName)
       .on(
@@ -431,6 +493,11 @@ export const useLiveChat = () => {
             sender_type: payload.new.sender_type as 'lead' | 'attendant' | 'bot'
           } as ChatMessage;
           
+          // Tocar som apenas se não for mensagem própria
+          if (payload.new.sender_id !== user?.id) {
+            playMessageSound();
+          }
+          
           setMessages(prev => ({
             ...prev,
             [newMessage.session_id]: [
@@ -440,29 +507,28 @@ export const useLiveChat = () => {
           }));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Status do canal de mensagens:', status);
+      });
 
-    // Adicionar aos canais ativos
-    setActiveChannels(prev => new Set([...prev, sessionChannelName, messagesChannelName]));
+    // Armazenar referências dos canais
+    channelsRef.current.set(sessionChannelName, sessionChannel);
+    channelsRef.current.set(messagesChannelName, messagesChannel);
 
     return () => {
-      console.log('Removendo canais de real-time');
-      supabase.removeChannel(sessionChannel);
-      supabase.removeChannel(messagesChannel);
-      setActiveChannels(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(sessionChannelName);
-        newSet.delete(messagesChannelName);
-        return newSet;
-      });
+      console.log('Limpando canais de real-time');
+      isInitialized.current = false;
+      cleanupChannels();
     };
-  }, [user]);
+  }, [user?.id]);
 
   // Carregar dados iniciais
   useEffect(() => {
-    fetchChatSessions();
-    setLoading(false);
-  }, []);
+    if (user) {
+      fetchChatSessions();
+      setLoading(false);
+    }
+  }, [user]);
 
   return {
     sessions,
@@ -478,6 +544,9 @@ export const useLiveChat = () => {
     updateAvailability,
     fetchMessages,
     fetchChatSessions,
-    fetchAttendantAvailability
+    fetchAttendantAvailability,
+    saveSessionToStorage,
+    getSavedSession,
+    clearSavedSession
   };
 };

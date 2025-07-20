@@ -5,10 +5,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useLiveChat } from '@/hooks/useLiveChat';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTypingIndicator } from '@/hooks/useTypingIndicator';
+import { useChatSounds } from '@/hooks/useChatSounds';
+import TypingIndicator from '@/components/TypingIndicator';
+import AttendantStatusToggle from '@/components/AttendantStatusToggle';
 import { 
   MessageCircle, 
   Clock, 
@@ -18,14 +21,16 @@ import {
   Mail,
   CheckCircle2,
   AlertCircle,
-  Users
+  Users,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import AttendantStatusToggle from '@/components/AttendantStatusToggle';
 
 const AttendantDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { playNotificationSound } = useChatSounds();
   const {
     sessions,
     messages,
@@ -39,6 +44,12 @@ const AttendantDashboard = () => {
   const [activeSession, setActiveSession] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  const { typingUsers, startTyping, stopTyping } = useTypingIndicator(
+    activeSession, 
+    user?.id || null
+  );
 
   useEffect(() => {
     if (user) {
@@ -56,6 +67,11 @@ const AttendantDashboard = () => {
     try {
       await acceptChatSession(sessionId);
       setActiveSession(sessionId);
+      
+      if (soundEnabled) {
+        playNotificationSound();
+      }
+      
       toast({
         title: "Chat aceito",
         description: "Você está agora atendendo este cliente",
@@ -65,12 +81,19 @@ const AttendantDashboard = () => {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    startTyping();
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newMessage.trim() || !activeSession || sendingMessage) return;
 
+    stopTyping();
     setSendingMessage(true);
+    
     try {
       await sendMessage(activeSession, newMessage, 'attendant');
       setNewMessage('');
@@ -99,6 +122,31 @@ const AttendantDashboard = () => {
       {/* Status e Controles */}
       <div className="lg:col-span-1 space-y-4">
         <AttendantStatusToggle />
+        
+        {/* Controle de Som */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center justify-between">
+              Configurações
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className="h-8 w-8 p-0"
+              >
+                {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Notificações sonoras</span>
+              <Badge variant={soundEnabled ? "default" : "secondary"} className="text-xs">
+                {soundEnabled ? 'Ativado' : 'Desativado'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
         
         {/* Chats em Espera */}
         <Card>
@@ -270,6 +318,12 @@ const AttendantDashboard = () => {
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Indicador de digitação */}
+                  <TypingIndicator 
+                    isVisible={typingUsers.length > 0} 
+                    userName="Cliente"
+                  />
                 </div>
               </ScrollArea>
 
@@ -278,7 +332,7 @@ const AttendantDashboard = () => {
                   <Input
                     placeholder="Digite sua mensagem..."
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={handleInputChange}
                     disabled={sendingMessage}
                     className="flex-1"
                   />

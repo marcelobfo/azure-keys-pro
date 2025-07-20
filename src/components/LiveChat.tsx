@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,15 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useTicketsSimple } from '@/hooks/useTicketsSimple';
-import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2 } from 'lucide-react';
+import { useTypingIndicator } from '@/hooks/useTypingIndicator';
+import { useChatSounds } from '@/hooks/useChatSounds';
+import TypingIndicator from '@/components/TypingIndicator';
+import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
 const LiveChat = () => {
   const { toast } = useToast();
   const { createTicket } = useTicketsSimple();
+  const { playNotificationSound } = useChatSounds();
   
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<'contact' | 'chat'>('contact');
@@ -31,8 +35,12 @@ const LiveChat = () => {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
   const [protocolNumber, setProtocolNumber] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { typingUsers, startTyping, stopTyping } = useTypingIndicator(sessionId, 'user-lead');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -52,6 +60,63 @@ const LiveChat = () => {
     { value: 'outros', label: 'Outros assuntos' }
   ];
 
+  // Verificar se há sessão salva ao abrir
+  useEffect(() => {
+    if (isOpen && step === 'contact') {
+      const savedSession = getSavedSession();
+      if (savedSession) {
+        toast({
+          title: 'Sessão anterior encontrada',
+          description: 'Deseja continuar a conversa anterior?',
+          action: (
+            <Button size="sm" onClick={restoreSession}>
+              Continuar
+            </Button>
+          ),
+        });
+      }
+    }
+  }, [isOpen]);
+
+  const getSavedSession = () => {
+    try {
+      const saved = localStorage.getItem('current_chat_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+          return parsed;
+        }
+        localStorage.removeItem('current_chat_session');
+      }
+    } catch (error) {
+      console.error('Erro ao recuperar sessão:', error);
+    }
+    return null;
+  };
+
+  const restoreSession = async () => {
+    const savedSession = getSavedSession();
+    if (savedSession) {
+      setSessionId(savedSession.sessionId);
+      setProtocolNumber(savedSession.sessionData.ticket_protocol);
+      setStep('chat');
+      await fetchMessages(savedSession.sessionId);
+      setupRealtime(savedSession.sessionId);
+    }
+  };
+
+  const saveSession = (sessionId: string, sessionData: any) => {
+    try {
+      localStorage.setItem('current_chat_session', JSON.stringify({
+        sessionId,
+        sessionData,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      console.error('Erro ao salvar sessão:', error);
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -64,59 +129,56 @@ const LiveChat = () => {
     checkBusinessHours();
   }, []);
 
-  // Conectar ao sistema de real-time para receber mensagens
-  useEffect(() => {
-    if (sessionId && !realtimeChannel) {
-      console.log('Conectando ao canal de real-time para sessão:', sessionId);
-      setConnectionStatus('connecting');
-      
-      const channelName = `session-${sessionId}-${Date.now()}`;
-      const channel = supabase.channel(channelName)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'chat_messages',
-            filter: `session_id=eq.${sessionId}`
-          },
-          (payload) => {
-            console.log('Nova mensagem recebida via real-time:', payload);
-            const newMessage = {
-              id: payload.new.id,
-              message: payload.new.message,
-              sender_type: payload.new.sender_type,
-              timestamp: payload.new.timestamp
-            };
-            
-            // Só adiciona se não for uma mensagem que o próprio usuário enviou
-            if (payload.new.sender_type !== 'lead') {
-              setMessages(prev => {
-                // Evitar duplicação
-                if (prev.some(msg => msg.id === newMessage.id)) {
-                  return prev;
-                }
-                return [...prev, newMessage];
-              });
+  const setupRealtime = (sessionId: string) => {
+    if (realtimeChannel) {
+      supabase.removeChannel(realtimeChannel);
+    }
+
+    console.log('Configurando real-time para sessão:', sessionId);
+    setConnectionStatus('connecting');
+    
+    const channelName = `session-${sessionId}-${Date.now()}`;
+    const channel = supabase.channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `session_id=eq.${sessionId}`
+        },
+        (payload) => {
+          console.log('Nova mensagem recebida via real-time:', payload);
+          const newMessage = {
+            id: payload.new.id,
+            message: payload.new.message,
+            sender_type: payload.new.sender_type,
+            timestamp: payload.new.timestamp
+          };
+          
+          // Só adiciona se não for uma mensagem que o próprio usuário enviou
+          if (payload.new.sender_type !== 'lead') {
+            setMessages(prev => {
+              if (prev.some(msg => msg.id === newMessage.id)) {
+                return prev;
+              }
+              return [...prev, newMessage];
+            });
+
+            // Tocar som se habilitado
+            if (soundEnabled) {
+              playNotificationSound();
             }
           }
-        )
-        .subscribe((status) => {
-          console.log('Status da conexão real-time:', status);
-          setConnectionStatus(status === 'SUBSCRIBED' ? 'connected' : 'disconnected');
-        });
-
-      setRealtimeChannel(channel);
-
-      return () => {
-        console.log('Desconectando canal de real-time');
-        if (channel) {
-          supabase.removeChannel(channel);
         }
-        setConnectionStatus('disconnected');
-      };
-    }
-  }, [sessionId, realtimeChannel]);
+      )
+      .subscribe((status) => {
+        console.log('Status da conexão real-time:', status);
+        setConnectionStatus(status === 'SUBSCRIBED' ? 'connected' : 'disconnected');
+      });
+
+    setRealtimeChannel(channel);
+  };
 
   const checkBusinessHours = async () => {
     try {
@@ -152,7 +214,6 @@ const LiveChat = () => {
     try {
       console.log('Iniciando nova sessão de chat...', formData);
       
-      // Usar a edge function para criar a sessão
       const { data, error } = await supabase.functions.invoke('chat-processor', {
         body: {
           action: 'create_chat_session',
@@ -175,8 +236,14 @@ const LiveChat = () => {
       setProtocolNumber(data.session.ticket_protocol);
       setStep('chat');
       
+      // Salvar sessão
+      saveSession(data.session.id, data.session);
+      
       // Buscar mensagens iniciais
       await fetchMessages(data.session.id);
+      
+      // Configurar real-time
+      setupRealtime(data.session.id);
 
       toast({
         title: 'Chat iniciado!',
@@ -221,10 +288,32 @@ const LiveChat = () => {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    
+    // Iniciar indicador de digitação
+    startTyping();
+    
+    // Reset timeout para parar digitação
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      stopTyping();
+    }, 1000);
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newMessage.trim() || !sessionId) return;
+
+    // Parar indicador de digitação
+    stopTyping();
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
 
     const tempMessage = {
       id: 'temp-' + Date.now(),
@@ -233,7 +322,6 @@ const LiveChat = () => {
       timestamp: new Date().toISOString()
     };
 
-    // Adicionar mensagem otimisticamente
     setMessages(prev => [...prev, tempMessage]);
     const messageToSend = newMessage;
     setNewMessage('');
@@ -254,7 +342,6 @@ const LiveChat = () => {
         throw error;
       }
 
-      // Atualizar mensagem temp com dados reais
       setMessages(prev => 
         prev.map(msg => 
           msg.id === tempMessage.id 
@@ -265,9 +352,8 @@ const LiveChat = () => {
 
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
-      // Remover mensagem em caso de erro
       setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
-      setNewMessage(messageToSend); // Restaurar texto
+      setNewMessage(messageToSend);
       toast({
         title: 'Erro',
         description: 'Não foi possível enviar a mensagem. Tente novamente.',
@@ -286,6 +372,7 @@ const LiveChat = () => {
     setMessages([]);
     setProtocolNumber('');
     setConnectionStatus('disconnected');
+    localStorage.removeItem('current_chat_session');
     setFormData({
       name: '',
       email: '',
@@ -300,9 +387,13 @@ const LiveChat = () => {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsOpen(true)}
-          className="h-14 w-14 rounded-full bg-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+          className="h-14 w-14 rounded-full bg-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 relative"
         >
           <MessageCircle className="h-6 w-6" />
+          {/* Indicador de status online */}
+          {isBusinessTime && (
+            <div className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-background" />
+          )}
         </Button>
       </div>
     );
@@ -332,14 +423,26 @@ const LiveChat = () => {
                 </div>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsOpen(false)}
-              className="h-6 w-6 p-0 text-primary-foreground hover:bg-primary-foreground/20"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {step === 'chat' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  className="h-6 w-6 p-0 text-primary-foreground hover:bg-primary-foreground/20"
+                >
+                  {soundEnabled ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsOpen(false)}
+                className="h-6 w-6 p-0 text-primary-foreground hover:bg-primary-foreground/20"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
 
@@ -491,6 +594,12 @@ const LiveChat = () => {
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Indicador de digitação */}
+                  <TypingIndicator 
+                    isVisible={typingUsers.length > 0} 
+                    userName="Atendente"
+                  />
                 </div>
                 <div ref={messagesEndRef} />
               </ScrollArea>
@@ -500,7 +609,7 @@ const LiveChat = () => {
                   <Input
                     placeholder="Digite sua mensagem..."
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={handleInputChange}
                     className="flex-1"
                     disabled={connectionStatus === 'connecting'}
                   />
