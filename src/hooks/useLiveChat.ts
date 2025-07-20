@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,7 +55,8 @@ export const useLiveChat = () => {
   const [messages, setMessages] = useState<Record<string, ChatMessage[]>>({});
   const [availability, setAvailability] = useState<AttendantAvailability | null>(null);
   const [loading, setLoading] = useState(true);
-  const channelsRef = useRef<Map<string, any>>(new Map());
+  const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
+  const [messagesChannel, setMessagesChannel] = useState<any>(null);
   const isInitialized = useRef(false);
 
   // Salvar sessão no localStorage
@@ -65,6 +67,7 @@ export const useLiveChat = () => {
         sessionData,
         timestamp: Date.now()
       }));
+      console.log('Sessão salva no localStorage:', sessionId);
     } catch (error) {
       console.error('Erro ao salvar sessão:', error);
     }
@@ -78,6 +81,7 @@ export const useLiveChat = () => {
         const parsed = JSON.parse(saved);
         // Verificar se a sessão foi salva nas últimas 24 horas
         if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+          console.log('Sessão recuperada:', parsed.sessionId);
           return parsed;
         }
         // Remover sessão expirada
@@ -92,15 +96,21 @@ export const useLiveChat = () => {
   // Limpar sessão salva
   const clearSavedSession = () => {
     localStorage.removeItem(SESSION_STORAGE_KEY);
+    console.log('Sessão limpa do localStorage');
   };
 
   // Cleanup de canais
   const cleanupChannels = () => {
-    channelsRef.current.forEach((channel, channelName) => {
-      console.log('Removendo canal:', channelName);
-      supabase.removeChannel(channel);
-    });
-    channelsRef.current.clear();
+    if (realtimeChannel) {
+      console.log('Removendo canal de sessões');
+      supabase.removeChannel(realtimeChannel);
+      setRealtimeChannel(null);
+    }
+    if (messagesChannel) {
+      console.log('Removendo canal de mensagens');
+      supabase.removeChannel(messagesChannel);
+      setMessagesChannel(null);
+    }
   };
 
   // Criar canal único
@@ -161,6 +171,8 @@ export const useLiveChat = () => {
   // Aceitar sessão de chat (atendente)
   const acceptChatSession = async (sessionId: string) => {
     try {
+      console.log('Aceitando sessão de chat:', sessionId);
+      
       const { error } = await supabase
         .from('chat_sessions')
         .update({
@@ -194,6 +206,8 @@ export const useLiveChat = () => {
         title: 'Chat aceito!',
         description: 'Você agora está atendendo este cliente.',
       });
+
+      console.log('Chat aceito com sucesso:', sessionId);
     } catch (error) {
       console.error('Erro ao aceitar chat:', error);
       toast({
@@ -204,13 +218,15 @@ export const useLiveChat = () => {
     }
   };
 
-  // Finalizar sessão de chat
-  const endChatSession = async (sessionId: string, notes?: string) => {
+  // Finalizar sessão de chat com status
+  const endChatSession = async (sessionId: string, notes?: string, status: 'ended' | 'abandoned' = 'ended') => {
     try {
+      console.log('Finalizando sessão de chat:', sessionId, 'Status:', status);
+      
       const { error } = await supabase
         .from('chat_sessions')
         .update({
-          status: 'ended',
+          status: status,
           ended_at: new Date().toISOString(),
           notes: notes
         })
@@ -235,8 +251,20 @@ export const useLiveChat = () => {
             }
           );
       }
+
+      toast({
+        title: status === 'ended' ? 'Chat finalizado com sucesso' : 'Chat abandonado',
+        description: status === 'ended' ? 'O atendimento foi concluído.' : 'O chat foi marcado como abandonado.',
+      });
+
+      console.log('Chat finalizado com sucesso:', sessionId);
     } catch (error) {
       console.error('Erro ao finalizar chat:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível finalizar o chat.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -280,7 +308,7 @@ export const useLiveChat = () => {
     senderType: 'lead' | 'attendant' | 'bot' = 'attendant'
   ) => {
     try {
-      console.log('Enviando mensagem via Edge Function:', { sessionId, message, senderType });
+      console.log('Enviando mensagem via Edge Function:', { sessionId, message, senderType, userId: user?.id });
       
       const { data, error } = await supabase.functions.invoke('chat-processor', {
         body: {
@@ -289,7 +317,7 @@ export const useLiveChat = () => {
             sessionId: sessionId,
             message: message,
             senderType: senderType,
-            senderId: senderType === 'attendant' ? user?.id : null
+            senderId: senderType === 'attendant' ? user?.id : senderType === 'lead' ? 'lead-user' : null
           }
         }
       });
@@ -334,6 +362,8 @@ export const useLiveChat = () => {
   // Atualizar disponibilidade do atendente
   const updateAvailability = async (isOnline: boolean) => {
     try {
+      console.log('Atualizando disponibilidade:', isOnline);
+      
       const { error } = await supabase
         .from('attendant_availability')
         .upsert(
@@ -350,6 +380,7 @@ export const useLiveChat = () => {
         );
 
       if (error) throw error;
+      console.log('Disponibilidade atualizada com sucesso');
     } catch (error) {
       console.error('Erro ao atualizar disponibilidade:', error);
     }
@@ -377,6 +408,7 @@ export const useLiveChat = () => {
       })) || [];
       
       setSessions(formattedSessions);
+      console.log('Sessões carregadas:', formattedSessions.length);
     } catch (error) {
       console.error('Erro ao buscar sessões:', error);
     }
@@ -416,7 +448,7 @@ export const useLiveChat = () => {
         throw error;
       }
       
-      console.log('Mensagens encontradas:', data);
+      console.log('Mensagens encontradas:', data?.length);
       
       const formattedMessages = data?.map(msg => ({
         ...msg,
@@ -432,7 +464,7 @@ export const useLiveChat = () => {
     }
   };
 
-  // Configurar real-time subscriptions
+  // Configurar real-time subscriptions melhorado
   useEffect(() => {
     if (!user || isInitialized.current) return;
 
@@ -442,7 +474,7 @@ export const useLiveChat = () => {
     // Cleanup de canais existentes
     cleanupChannels();
 
-    // Canal para sessões de chat
+    // Canal para sessões de chat com nome único
     const sessionChannelName = createUniqueChannel('chat-sessions');
     const sessionChannel = supabase
       .channel(sessionChannelName)
@@ -454,7 +486,7 @@ export const useLiveChat = () => {
           table: 'chat_sessions'
         },
         (payload) => {
-          console.log('Nova sessão criada:', payload);
+          console.log('Nova sessão criada (real-time):', payload);
           playNotificationSound();
           fetchChatSessions();
         }
@@ -467,7 +499,7 @@ export const useLiveChat = () => {
           table: 'chat_sessions'
         },
         (payload) => {
-          console.log('Sessão atualizada:', payload);
+          console.log('Sessão atualizada (real-time):', payload);
           fetchChatSessions();
         }
       )
@@ -475,9 +507,11 @@ export const useLiveChat = () => {
         console.log('Status do canal de sessões:', status);
       });
 
-    // Canal para mensagens
-    const messagesChannelName = createUniqueChannel('chat-messages');
-    const messagesChannel = supabase
+    setRealtimeChannel(sessionChannel);
+
+    // Canal para mensagens com nome único e melhor filtro
+    const messagesChannelName = createUniqueChannel('chat-messages-all');
+    const msgChannel = supabase
       .channel(messagesChannelName)
       .on(
         'postgres_changes',
@@ -487,33 +521,44 @@ export const useLiveChat = () => {
           table: 'chat_messages'
         },
         (payload) => {
-          console.log('Nova mensagem recebida:', payload);
+          console.log('Nova mensagem recebida (real-time):', payload);
           const newMessage = {
             ...payload.new,
             sender_type: payload.new.sender_type as 'lead' | 'attendant' | 'bot'
           } as ChatMessage;
           
           // Tocar som apenas se não for mensagem própria
-          if (payload.new.sender_id !== user?.id) {
+          const isOwnMessage = 
+            (newMessage.sender_type === 'attendant' && newMessage.sender_id === user?.id) ||
+            (newMessage.sender_type === 'lead' && newMessage.sender_id === 'lead-user');
+          
+          if (!isOwnMessage) {
+            console.log('Tocando som para nova mensagem');
             playMessageSound();
           }
           
-          setMessages(prev => ({
-            ...prev,
-            [newMessage.session_id]: [
-              ...(prev[newMessage.session_id] || []),
-              newMessage
-            ]
-          }));
+          // Atualizar mensagens no estado
+          setMessages(prev => {
+            const currentMessages = prev[newMessage.session_id] || [];
+            // Evitar duplicatas
+            if (currentMessages.some(msg => msg.id === newMessage.id)) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [newMessage.session_id]: [
+                ...currentMessages,
+                newMessage
+              ]
+            };
+          });
         }
       )
       .subscribe((status) => {
         console.log('Status do canal de mensagens:', status);
       });
 
-    // Armazenar referências dos canais
-    channelsRef.current.set(sessionChannelName, sessionChannel);
-    channelsRef.current.set(messagesChannelName, messagesChannel);
+    setMessagesChannel(msgChannel);
 
     return () => {
       console.log('Limpando canais de real-time');
@@ -521,6 +566,31 @@ export const useLiveChat = () => {
       cleanupChannels();
     };
   }, [user?.id]);
+
+  // Buscar disponibilidade do atendente atual
+  useEffect(() => {
+    if (user) {
+      const fetchMyAvailability = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('attendant_availability')
+            .select('*')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (error && error.code !== 'PGRST116') {
+            throw error;
+          }
+
+          setAvailability(data);
+        } catch (error) {
+          console.error('Erro ao buscar minha disponibilidade:', error);
+        }
+      };
+
+      fetchMyAvailability();
+    }
+  }, [user]);
 
   // Carregar dados iniciais
   useEffect(() => {

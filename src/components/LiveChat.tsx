@@ -6,13 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useTicketsSimple } from '@/hooks/useTicketsSimple';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useChatSounds } from '@/hooks/useChatSounds';
+import { useLiveChat } from '@/hooks/useLiveChat';
 import TypingIndicator from '@/components/TypingIndicator';
-import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2, Volume2, VolumeX } from 'lucide-react';
+import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2, Volume2, VolumeX, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -20,6 +20,14 @@ const LiveChat = () => {
   const { toast } = useToast();
   const { createTicket } = useTicketsSimple();
   const { playNotificationSound } = useChatSounds();
+  const { 
+    createChatSession, 
+    sendMessage, 
+    fetchMessages,
+    getSavedSession,
+    clearSavedSession,
+    saveSessionToStorage
+  } = useLiveChat();
   
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<'contact' | 'chat'>('contact');
@@ -36,11 +44,12 @@ const LiveChat = () => {
   const [protocolNumber, setProtocolNumber] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showRecoveryOption, setShowRecoveryOption] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { typingUsers, startTyping, stopTyping } = useTypingIndicator(sessionId, 'user-lead');
+  const { typingUsers, startTyping, stopTyping } = useTypingIndicator(sessionId, 'lead-user');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -65,55 +74,26 @@ const LiveChat = () => {
     if (isOpen && step === 'contact') {
       const savedSession = getSavedSession();
       if (savedSession) {
-        toast({
-          title: 'Sessão anterior encontrada',
-          description: 'Deseja continuar a conversa anterior?',
-          action: (
-            <Button size="sm" onClick={restoreSession}>
-              Continuar
-            </Button>
-          ),
-        });
+        setShowRecoveryOption(true);
       }
     }
   }, [isOpen]);
 
-  const getSavedSession = () => {
-    try {
-      const saved = localStorage.getItem('current_chat_session');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
-          return parsed;
-        }
-        localStorage.removeItem('current_chat_session');
-      }
-    } catch (error) {
-      console.error('Erro ao recuperar sessão:', error);
-    }
-    return null;
-  };
-
   const restoreSession = async () => {
     const savedSession = getSavedSession();
     if (savedSession) {
+      console.log('Restaurando sessão:', savedSession.sessionId);
       setSessionId(savedSession.sessionId);
-      setProtocolNumber(savedSession.sessionData.ticket_protocol);
+      setProtocolNumber(savedSession.sessionData.ticket_protocol || 'N/A');
       setStep('chat');
-      await fetchMessages(savedSession.sessionId);
+      setShowRecoveryOption(false);
+      await loadMessages(savedSession.sessionId);
       setupRealtime(savedSession.sessionId);
-    }
-  };
-
-  const saveSession = (sessionId: string, sessionData: any) => {
-    try {
-      localStorage.setItem('current_chat_session', JSON.stringify({
-        sessionId,
-        sessionData,
-        timestamp: Date.now()
-      }));
-    } catch (error) {
-      console.error('Erro ao salvar sessão:', error);
+      
+      toast({
+        title: 'Chat restaurado!',
+        description: 'Você pode continuar sua conversa anterior.',
+      });
     }
   };
 
@@ -134,10 +114,10 @@ const LiveChat = () => {
       supabase.removeChannel(realtimeChannel);
     }
 
-    console.log('Configurando real-time para sessão:', sessionId);
+    console.log('Configurando real-time para sessão (LiveChat):', sessionId);
     setConnectionStatus('connecting');
     
-    const channelName = `session-${sessionId}-${Date.now()}`;
+    const channelName = `session-messages-${sessionId}-${Date.now()}`;
     const channel = supabase.channel(channelName)
       .on(
         'postgres_changes',
@@ -148,21 +128,21 @@ const LiveChat = () => {
           filter: `session_id=eq.${sessionId}`
         },
         (payload) => {
-          console.log('Nova mensagem recebida via real-time:', payload);
-          const newMessage = {
+          console.log('Nova mensagem recebida via real-time (LiveChat):', payload);
+          const newMsg = {
             id: payload.new.id,
             message: payload.new.message,
             sender_type: payload.new.sender_type,
             timestamp: payload.new.timestamp
           };
           
-          // Só adiciona se não for uma mensagem que o próprio usuário enviou
-          if (payload.new.sender_type !== 'lead') {
+          // Só adiciona se não for uma mensagem do próprio usuário
+          if (payload.new.sender_type !== 'lead' || payload.new.sender_id !== 'lead-user') {
             setMessages(prev => {
-              if (prev.some(msg => msg.id === newMessage.id)) {
+              if (prev.some(msg => msg.id === newMsg.id)) {
                 return prev;
               }
-              return [...prev, newMessage];
+              return [...prev, newMsg];
             });
 
             // Tocar som se habilitado
@@ -173,7 +153,7 @@ const LiveChat = () => {
         }
       )
       .subscribe((status) => {
-        console.log('Status da conexão real-time:', status);
+        console.log('Status da conexão real-time (LiveChat):', status);
         setConnectionStatus(status === 'SUBSCRIBED' ? 'connected' : 'disconnected');
       });
 
@@ -214,56 +194,35 @@ const LiveChat = () => {
     try {
       console.log('Iniciando nova sessão de chat...', formData);
       
-      const { data, error } = await supabase.functions.invoke('chat-processor', {
-        body: {
-          action: 'create_chat_session',
-          data: {
-            leadData: formData
-          }
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (!data.success) {
-        throw new Error('Falha ao criar sessão de chat');
-      }
-
-      console.log('Sessão criada com sucesso:', data.session);
-      setSessionId(data.session.id);
-      setProtocolNumber(data.session.ticket_protocol);
+      const session = await createChatSession(formData);
+      
+      console.log('Sessão criada com sucesso:', session);
+      setSessionId(session.id);
+      setProtocolNumber(session.ticket_protocol);
       setStep('chat');
       
       // Salvar sessão
-      saveSession(data.session.id, data.session);
+      saveSessionToStorage(session.id, session);
       
       // Buscar mensagens iniciais
-      await fetchMessages(data.session.id);
+      await loadMessages(session.id);
       
       // Configurar real-time
-      setupRealtime(data.session.id);
-
-      toast({
-        title: 'Chat iniciado!',
-        description: `Seu protocolo é: ${data.session.ticket_protocol}`,
-      });
+      setupRealtime(session.id);
+      setShowRecoveryOption(false);
 
     } catch (error) {
       console.error('Erro ao iniciar chat:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível iniciar o chat. Tente novamente.',
-        variant: 'destructive',
-      });
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchMessages = async (sessionId: string) => {
+  const loadMessages = async (sessionId: string) => {
     try {
+      await fetchMessages(sessionId);
+      
+      // Buscar mensagens do estado global ou diretamente do banco
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -283,8 +242,9 @@ const LiveChat = () => {
       })) || [];
 
       setMessages(formattedMessages);
+      console.log('Mensagens carregadas:', formattedMessages.length);
     } catch (error) {
-      console.error('Erro ao buscar mensagens:', error);
+      console.error('Erro ao carregar mensagens:', error);
     }
   };
 
@@ -327,25 +287,13 @@ const LiveChat = () => {
     setNewMessage('');
     
     try {
-      const { data, error } = await supabase.functions.invoke('chat-processor', {
-        body: {
-          action: 'send_message',
-          data: {
-            sessionId: sessionId,
-            message: messageToSend,
-            senderType: 'lead'
-          }
-        }
-      });
+      await sendMessage(sessionId, messageToSend, 'lead');
 
-      if (error) {
-        throw error;
-      }
-
+      // Atualizar mensagem temporária com dados reais (será substituída pelo real-time)
       setMessages(prev => 
         prev.map(msg => 
           msg.id === tempMessage.id 
-            ? { ...msg, id: data.message.id }
+            ? { ...msg, id: `real-${Date.now()}` }
             : msg
         )
       );
@@ -354,11 +302,6 @@ const LiveChat = () => {
       console.error('Erro ao enviar mensagem:', error);
       setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
       setNewMessage(messageToSend);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível enviar a mensagem. Tente novamente.',
-        variant: 'destructive',
-      });
     }
   };
 
@@ -372,7 +315,8 @@ const LiveChat = () => {
     setMessages([]);
     setProtocolNumber('');
     setConnectionStatus('disconnected');
-    localStorage.removeItem('current_chat_session');
+    setShowRecoveryOption(false);
+    clearSavedSession();
     setFormData({
       name: '',
       email: '',
@@ -455,6 +399,24 @@ const LiveChat = () => {
                   Preencha seus dados para iniciar o atendimento
                 </p>
               </div>
+
+              {/* Opção de recuperar chat anterior */}
+              {showRecoveryOption && (
+                <div className="p-3 bg-muted/50 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <RotateCcw className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">Chat anterior encontrado</span>
+                    </div>
+                    <Button size="sm" onClick={restoreSession}>
+                      Continuar
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Você pode continuar sua conversa anterior
+                  </p>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="space-y-2">

@@ -4,7 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useLiveChat } from '@/hooks/useLiveChat';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +25,11 @@ import {
   AlertCircle,
   Users,
   Volume2,
-  VolumeX
+  VolumeX,
+  CheckCircle,
+  XCircle,
+  FileText,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +43,7 @@ const AttendantDashboard = () => {
     loading,
     acceptChatSession,
     sendMessage,
+    endChatSession,
     fetchMessages,
     fetchChatSessions
   } = useLiveChat();
@@ -45,6 +52,9 @@ const AttendantDashboard = () => {
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isEndDialogOpen, setIsEndDialogOpen] = useState(false);
+  const [endNotes, setEndNotes] = useState('');
+  const [sessionToEnd, setSessionToEnd] = useState<string | null>(null);
 
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(
     activeSession, 
@@ -104,10 +114,53 @@ const AttendantDashboard = () => {
     }
   };
 
+  const handleEndSession = (sessionId: string) => {
+    setSessionToEnd(sessionId);
+    setIsEndDialogOpen(true);
+  };
+
+  const confirmEndSession = async (status: 'ended' | 'abandoned' = 'ended') => {
+    if (!sessionToEnd) return;
+
+    try {
+      await endChatSession(sessionToEnd, endNotes, status);
+      
+      if (activeSession === sessionToEnd) {
+        setActiveSession(null);
+      }
+      
+      setIsEndDialogOpen(false);
+      setEndNotes('');
+      setSessionToEnd(null);
+      
+      toast({
+        title: status === 'ended' ? 'Chat finalizado' : 'Chat abandonado',
+        description: status === 'ended' ? 'O atendimento foi concluído com sucesso.' : 'O chat foi marcado como abandonado.',
+      });
+    } catch (error) {
+      console.error('Erro ao finalizar chat:', error);
+    }
+  };
+
   const waitingSessions = sessions.filter(s => s.status === 'waiting');
   const activeSessions = sessions.filter(s => s.status === 'active' && s.attendant_id === user?.id);
   const activeSessionData = sessions.find(s => s.id === activeSession);
   const sessionMessages = activeSession ? messages[activeSession] || [] : [];
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'waiting':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Aguardando</Badge>;
+      case 'active':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800">Ativo</Badge>;
+      case 'ended':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Concluído</Badge>;
+      case 'abandoned':
+        return <Badge variant="secondary" className="bg-red-100 text-red-800">Abandonado</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
 
   if (loading) {
     return (
@@ -234,7 +287,10 @@ const AttendantDashboard = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-sm">{session.lead?.name}</span>
-                      <Badge variant="default" className="text-xs">Ativo</Badge>
+                      {getStatusBadge(session.status)}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {session.subject && <span>Assunto: {session.subject}</span>}
                     </div>
                   </div>
                 ))}
@@ -274,7 +330,17 @@ const AttendantDashboard = () => {
                     )}
                   </div>
                 </div>
-                <Badge variant="default">Chat Ativo</Badge>
+                <div className="flex items-center gap-2">
+                  {getStatusBadge(activeSessionData.status)}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleEndSession(activeSessionData.id)}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-1" />
+                    Finalizar
+                  </Button>
+                </div>
               </div>
             </CardHeader>
 
@@ -358,6 +424,49 @@ const AttendantDashboard = () => {
           </Card>
         )}
       </div>
+
+      {/* Dialog para finalizar chat */}
+      <Dialog open={isEndDialogOpen} onOpenChange={setIsEndDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Como deseja finalizar este atendimento?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Notas do atendimento (opcional)</label>
+              <Textarea
+                placeholder="Adicione observações sobre o atendimento..."
+                value={endNotes}
+                onChange={(e) => setEndNotes(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setIsEndDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => confirmEndSession('abandoned')}
+                className="flex items-center gap-1"
+              >
+                <XCircle className="h-4 w-4" />
+                Abandonar Chat
+              </Button>
+              <Button 
+                onClick={() => confirmEndSession('ended')}
+                className="flex items-center gap-1"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Concluir Atendimento
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
