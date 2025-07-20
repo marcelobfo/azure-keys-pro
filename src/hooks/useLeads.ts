@@ -122,12 +122,15 @@ export const useLeads = () => {
 
   const deleteLead = async (leadId: string) => {
     try {
+      console.log('Tentando excluir lead:', leadId);
+      
       const { error } = await supabase
         .from('leads')
         .delete()
         .eq('id', leadId);
 
       if (error) {
+        console.error('Erro do Supabase:', error);
         throw error;
       }
 
@@ -141,7 +144,7 @@ export const useLeads = () => {
       console.error('Erro ao excluir lead:', error);
       toast({
         title: "Erro",
-        description: "Erro ao excluir lead",
+        description: error.message || "Erro ao excluir lead",
         variant: "destructive",
       });
     }

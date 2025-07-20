@@ -344,9 +344,9 @@ const AttendantDashboard = () => {
               </div>
             </CardHeader>
 
-            <CardContent className="flex-1 flex flex-col p-0">
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
+            <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+              <ScrollArea className="flex-1 p-4 max-h-96">
+                <div className="space-y-4 min-h-full">
                   {sessionMessages.map((message) => (
                     <div
                       key={message.id}
