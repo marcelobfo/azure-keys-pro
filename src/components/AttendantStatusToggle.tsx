@@ -85,15 +85,23 @@ const AttendantStatusToggle = () => {
       
       const { error } = await supabase
         .from('attendant_availability')
-        .upsert({
-          user_id: user.id,
-          is_online: newStatus,
-          last_seen: new Date().toISOString(),
-          max_concurrent_chats: maxChats,
-          current_chats: newStatus ? currentChats : 0
-        });
+        .upsert(
+          {
+            user_id: user.id,
+            is_online: newStatus,
+            last_seen: new Date().toISOString(),
+            max_concurrent_chats: maxChats,
+            current_chats: newStatus ? currentChats : 0
+          },
+          {
+            onConflict: 'user_id'
+          }
+        );
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro detalhado ao alterar status:', error);
+        throw error;
+      }
 
       setIsOnline(newStatus);
       if (!newStatus) {
@@ -104,6 +112,8 @@ const AttendantStatusToggle = () => {
         title: newStatus ? "Status: Online" : "Status: Offline",
         description: newStatus ? "Você está disponível para atendimento" : "Você está indisponível",
       });
+      
+      console.log('Status alterado com sucesso:', { newStatus, userId: user.id });
     } catch (error) {
       console.error('Erro ao alterar status:', error);
       toast({

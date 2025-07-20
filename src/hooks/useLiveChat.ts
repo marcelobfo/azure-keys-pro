@@ -124,12 +124,18 @@ export const useLiveChat = () => {
       // Atualizar contagem de chats ativos
       await supabase
         .from('attendant_availability')
-        .upsert({
-          user_id: user?.id,
-          is_online: true,
-          current_chats: availability ? availability.current_chats + 1 : 1,
-          last_seen: new Date().toISOString()
-        });
+        .upsert(
+          {
+            user_id: user?.id,
+            is_online: true,
+            current_chats: availability ? availability.current_chats + 1 : 1,
+            last_seen: new Date().toISOString(),
+            max_concurrent_chats: availability?.max_concurrent_chats || 3
+          },
+          {
+            onConflict: 'user_id'
+          }
+        );
 
       toast({
         title: 'Chat aceito!',
@@ -163,10 +169,18 @@ export const useLiveChat = () => {
       if (availability && availability.current_chats > 0) {
         await supabase
           .from('attendant_availability')
-          .update({
-            current_chats: availability.current_chats - 1
-          })
-          .eq('user_id', user?.id);
+          .upsert(
+            {
+              user_id: user?.id,
+              current_chats: availability.current_chats - 1,
+              last_seen: new Date().toISOString(),
+              is_online: availability.is_online,
+              max_concurrent_chats: availability.max_concurrent_chats
+            },
+            {
+              onConflict: 'user_id'
+            }
+          );
       }
     } catch (error) {
       console.error('Erro ao finalizar chat:', error);
@@ -266,11 +280,18 @@ export const useLiveChat = () => {
     try {
       const { error } = await supabase
         .from('attendant_availability')
-        .upsert({
-          user_id: user?.id,
-          is_online: isOnline,
-          last_seen: new Date().toISOString()
-        });
+        .upsert(
+          {
+            user_id: user?.id,
+            is_online: isOnline,
+            last_seen: new Date().toISOString(),
+            max_concurrent_chats: availability?.max_concurrent_chats || 3,
+            current_chats: isOnline ? (availability?.current_chats || 0) : 0
+          },
+          {
+            onConflict: 'user_id'
+          }
+        );
 
       if (error) throw error;
     } catch (error) {

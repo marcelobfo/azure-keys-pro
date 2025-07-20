@@ -125,9 +125,9 @@ async function createChatSession(supabase: any, data: any) {
       .insert({
         lead_id: lead.id,
         subject: leadData.subject || 'Atendimento via chat',
-        initial_message: leadData.message || 'Cliente iniciou chat',
-        status: isBusinessHours ? 'pending' : 'pending',
-        priority: 'normal'
+        description: leadData.message || 'Cliente iniciou chat',
+        status: isBusinessHours ? 'open' : 'open',
+        priority: 'medium'
       })
       .select()
       .single();
@@ -143,7 +143,6 @@ async function createChatSession(supabase: any, data: any) {
       .from('chat_sessions')
       .insert({
         lead_id: lead.id,
-        ticket_id: ticket.id,
         subject: leadData.subject || 'Atendimento via chat',
         status: isBusinessHours ? 'waiting' : 'waiting'
       })
@@ -327,9 +326,9 @@ async function createSupportTicket(supabase: any, data: any) {
       .insert({
         lead_id: leadId,
         subject: subject,
-        initial_message: message,
-        priority: priority || 'normal',
-        status: 'pending'
+        description: message,
+        priority: priority || 'medium',
+        status: 'open'
       })
       .select()
       .single();

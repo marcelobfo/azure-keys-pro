@@ -700,6 +700,63 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          description: string | null
+          id: string
+          lead_id: string | null
+          priority: string
+          protocol_number: string | null
+          resolved_at: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_id?: string | null
+          priority?: string
+          protocol_number?: string | null
+          resolved_at?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          lead_id?: string | null
+          priority?: string
+          protocol_number?: string | null
+          resolved_at?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visits: {
         Row: {
           client_email: string
@@ -833,6 +890,10 @@ export type Database = {
           title_input: string
           property_code_input?: string
         }
+        Returns: string
+      }
+      generate_protocol_number: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       increment_property_views: {
