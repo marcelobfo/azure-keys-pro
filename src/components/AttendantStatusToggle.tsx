@@ -21,7 +21,8 @@ const AttendantStatusToggle = () => {
   useEffect(() => {
     if (user) {
       fetchAvailabilityStatus();
-      setupRealtimeSubscription();
+      const cleanup = setupRealtimeSubscription();
+      return cleanup;
     }
   }, [user]);
 
