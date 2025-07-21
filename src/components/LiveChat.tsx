@@ -119,19 +119,22 @@ const LiveChat = () => {
 
   const checkChatSystemStatus = async () => {
     try {
-      console.log('Verificando status do sistema de chat...');
+      console.log('🔍 Verificando status do sistema de chat...');
       const { data, error } = await supabase
         .from('chat_configurations')
         .select('active')
         .maybeSingle();
       
       if (error) {
-        console.error('Erro ao verificar status do chat:', error);
+        console.error('❌ Erro ao verificar status do chat:', error);
         return;
       }
 
+      console.log('📊 Dados brutos do banco:', data);
+      
       const isActive = data?.active ?? true;
-      console.log('Status do sistema de chat:', isActive ? 'ATIVO' : 'INATIVO');
+      console.log('🎯 Status do sistema de chat:', isActive ? '✅ ATIVO' : '🚫 INATIVO');
+      console.log('🔄 Atualizando estado chatSystemEnabled de', chatSystemEnabled, 'para', isActive);
       setChatSystemEnabled(isActive);
 
       // Se o chat foi desativado e estava aberto, fechar
@@ -416,13 +419,16 @@ const LiveChat = () => {
     });
   };
 
+  // Debug detalhado do estado do chat
+  console.log('LiveChat render - chatSystemEnabled:', chatSystemEnabled);
+  
   // Se o sistema de chat estiver desativado, não renderizar o componente
   if (!chatSystemEnabled) {
-    console.log('Sistema de chat desativado, não renderizando LiveChat');
+    console.log('🚫 Sistema de chat DESATIVADO, não renderizando LiveChat');
     return null;
   }
 
-  console.log('Sistema de chat ativo, renderizando LiveChat');
+  console.log('✅ Sistema de chat ATIVO, renderizando LiveChat');
 
   if (!isOpen) {
     return (
