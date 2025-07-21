@@ -1,83 +1,60 @@
 
-import { useRef } from 'react';
+import { useCallback } from 'react';
 
 export const useChatSounds = () => {
-  const audioContextRef = useRef<AudioContext | null>(null);
-
-  const initAudioContext = async () => {
-    if (!audioContextRef.current) {
-      try {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        
-        // Verificar se o contexto está suspenso e tentar reativá-lo
-        if (audioContextRef.current.state === 'suspended') {
-          await audioContextRef.current.resume();
-        }
-      } catch (error) {
-        console.error('Erro ao inicializar contexto de áudio:', error);
-        return null;
-      }
-    }
-    return audioContextRef.current;
-  };
-
-  const playNotificationSound = async () => {
+  const playNotificationSound = useCallback(() => {
     try {
-      const audioContext = await initAudioContext();
-      if (!audioContext) return;
-      
-      // Create a notification sound (higher pitch, longer duration)
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = 800; // Higher frequency for notifications
-      oscillator.type = 'sine';
-      
-      // Envelope for more pleasant sound
-      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.05);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.8);
-      
+      console.log('Tentando tocar som de notificação');
+      const audio = new Audio('/notification.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(error => {
+        console.log('Não foi possível tocar o som de notificação:', error);
+        // Fallback para um beep do sistema
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+          const utterance = new SpeechSynthesisUtterance('');
+          utterance.volume = 0;
+          window.speechSynthesis.speak(utterance);
+        }
+      });
       console.log('Som de notificação tocado');
     } catch (error) {
       console.error('Erro ao tocar som de notificação:', error);
     }
-  };
+  }, []);
 
-  const playMessageSound = async () => {
+  const playMessageSound = useCallback(() => {
     try {
-      const audioContext = await initAudioContext();
-      if (!audioContext) return;
-      
-      // Create a subtle message sound (lower pitch, shorter duration)
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = 600; // Lower frequency for messages
-      oscillator.type = 'sine';
-      
-      // Quick, subtle envelope
-      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.2, audioContext.currentTime + 0.02);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
-      
+      console.log('Tentando tocar som de mensagem');
+      const audio = new Audio('/message.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(error => {
+        console.log('Não foi possível tocar o som de mensagem:', error);
+        // Fallback mais simples
+        if (typeof window !== 'undefined') {
+          try {
+            const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const oscillator = context.createOscillator();
+            const gainNode = context.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(context.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.value = 0.1;
+            
+            oscillator.start();
+            oscillator.stop(context.currentTime + 0.1);
+          } catch (audioError) {
+            console.log('Fallback de áudio também falhou:', audioError);
+          }
+        }
+      });
       console.log('Som de mensagem tocado');
     } catch (error) {
       console.error('Erro ao tocar som de mensagem:', error);
     }
-  };
+  }, []);
 
   return {
     playNotificationSound,

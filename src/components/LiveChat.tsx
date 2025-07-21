@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,18 +8,16 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { useTicketsSimple } from '@/hooks/useTicketsSimple';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useChatSounds } from '@/hooks/useChatSounds';
 import { useLiveChat } from '@/hooks/useLiveChat';
 import TypingIndicator from '@/components/TypingIndicator';
-import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2, Volume2, VolumeX, RotateCcw } from 'lucide-react';
+import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2, Volume2, VolumeX, RotateCcw, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 
 const LiveChat = () => {
   const { toast } = useToast();
-  const { createTicket } = useTicketsSimple();
   const { playNotificationSound } = useChatSounds();
   const { 
     createChatSession, 
@@ -83,6 +82,27 @@ const LiveChat = () => {
     const savedSession = getSavedSession();
     if (savedSession) {
       console.log('Restaurando sessão:', savedSession.sessionId);
+      
+      // Verificar se a sessão ainda está ativa
+      const { data: sessionData, error } = await supabase
+        .from('chat_sessions')
+        .select('*')
+        .eq('id', savedSession.sessionId)
+        .eq('status', 'active')
+        .single();
+
+      if (error || !sessionData) {
+        console.log('Sessão não encontrada ou inativa, limpando localStorage');
+        clearSavedSession();
+        setShowRecoveryOption(false);
+        toast({
+          title: 'Sessão expirada',
+          description: 'A sessão anterior não está mais disponível.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       setSessionId(savedSession.sessionId);
       setProtocolNumber(savedSession.sessionData.ticket_protocol || 'N/A');
       setStep('chat');
@@ -117,7 +137,7 @@ const LiveChat = () => {
     console.log('Configurando real-time para sessão (LiveChat):', sessionId);
     setConnectionStatus('connecting');
     
-    const channelName = `session-messages-${sessionId}-${Date.now()}`;
+    const channelName = `visitor-session-${sessionId}`;
     const channel = supabase.channel(channelName)
       .on(
         'postgres_changes',
@@ -136,8 +156,8 @@ const LiveChat = () => {
             timestamp: payload.new.timestamp
           };
           
-          // Só adiciona se não for uma mensagem do próprio usuário
-          if (payload.new.sender_type !== 'lead' || payload.new.sender_id !== 'lead-user') {
+          // Só adiciona se não for uma mensagem do próprio visitante
+          if (payload.new.sender_type !== 'lead' || payload.new.sender_id !== null) {
             setMessages(prev => {
               if (prev.some(msg => msg.id === newMsg.id)) {
                 return prev;
@@ -145,8 +165,8 @@ const LiveChat = () => {
               return [...prev, newMsg];
             });
 
-            // Tocar som se habilitado
-            if (soundEnabled) {
+            // Tocar som se habilitado e for mensagem de atendente
+            if (soundEnabled && payload.new.sender_type === 'attendant') {
               playNotificationSound();
             }
           }
@@ -222,7 +242,7 @@ const LiveChat = () => {
     try {
       await fetchMessages(sessionId);
       
-      // Buscar mensagens do estado global ou diretamente do banco
+      // Buscar mensagens do banco
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -288,20 +308,23 @@ const LiveChat = () => {
     
     try {
       await sendMessage(sessionId, messageToSend, 'lead');
+      console.log('Mensagem de visitante enviada com sucesso');
 
-      // Atualizar mensagem temporária com dados reais (será substituída pelo real-time)
+      // Remover mensagem temporária (será substituída pelo real-time)
       setMessages(prev => 
-        prev.map(msg => 
-          msg.id === tempMessage.id 
-            ? { ...msg, id: `real-${Date.now()}` }
-            : msg
-        )
+        prev.filter(msg => msg.id !== tempMessage.id)
       );
 
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
       setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
       setNewMessage(messageToSend);
+      
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível enviar a mensagem. Tente novamente.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -361,9 +384,24 @@ const LiveChat = () => {
                     connectionStatus === 'connecting' ? "bg-yellow-400" :
                     isBusinessTime ? "bg-green-400" : "bg-red-400"
                   )} />
-                  {connectionStatus === 'connected' ? 'Conectado' :
-                   connectionStatus === 'connecting' ? 'Conectando...' :
-                   isBusinessTime ? 'Horário Comercial' : 'Fora do Horário'}
+                  <span className="flex items-center gap-1">
+                    {connectionStatus === 'connected' ? (
+                      <>
+                        <Wifi className="h-3 w-3" />
+                        Conectado
+                      </>
+                    ) : connectionStatus === 'connecting' ? (
+                      <>
+                        <Wifi className="h-3 w-3" />
+                        Conectando...
+                      </>
+                    ) : (
+                      <>
+                        <WifiOff className="h-3 w-3" />
+                        {isBusinessTime ? 'Horário Comercial' : 'Fora do Horário'}
+                      </>
+                    )}
+                  </span>
                 </div>
               </div>
             </div>

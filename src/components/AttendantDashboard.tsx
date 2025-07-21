@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useLiveChat } from '@/hooks/useLiveChat';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,7 +30,9 @@ import {
   CheckCircle,
   XCircle,
   FileText,
-  MessageSquare
+  MessageSquare,
+  Power,
+  PowerOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -41,11 +44,13 @@ const AttendantDashboard = () => {
     sessions,
     messages,
     loading,
+    chatEnabled,
     acceptChatSession,
     sendMessage,
     endChatSession,
     fetchMessages,
-    fetchChatSessions
+    fetchChatSessions,
+    toggleChatSystem
   } = useLiveChat();
 
   const [activeSession, setActiveSession] = useState<string | null>(null);
@@ -72,6 +77,10 @@ const AttendantDashboard = () => {
       fetchMessages(activeSession);
     }
   }, [activeSession]);
+
+  const handleToggleChatSystem = () => {
+    toggleChatSystem(!chatEnabled);
+  };
 
   const handleAcceptSession = async (sessionId: string) => {
     try {
@@ -174,6 +183,42 @@ const AttendantDashboard = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-8rem)]">
       {/* Status e Controles */}
       <div className="lg:col-span-1 space-y-4">
+        {/* Toggle do Sistema de Chat */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center justify-between">
+              Sistema de Chat
+              <div className="flex items-center gap-2">
+                {chatEnabled ? (
+                  <Power className="h-4 w-4 text-green-500" />
+                ) : (
+                  <PowerOff className="h-4 w-4 text-red-500" />
+                )}
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Receber novos chats</span>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={chatEnabled}
+                  onCheckedChange={handleToggleChatSystem}
+                />
+                <Badge variant={chatEnabled ? "default" : "secondary"} className="text-xs">
+                  {chatEnabled ? 'Ativo' : 'Inativo'}
+                </Badge>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {chatEnabled 
+                ? 'O sistema de chat está funcionando normalmente' 
+                : 'O sistema de chat está desativado. Novos chats não serão recebidos.'
+              }
+            </p>
+          </CardContent>
+        </Card>
+
         <AttendantStatusToggle />
         
         {/* Controle de Som */}
@@ -202,113 +247,131 @@ const AttendantDashboard = () => {
         </Card>
         
         {/* Chats em Espera */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-              Chats em Espera ({waitingSessions.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-64">
-              <div className="space-y-3">
-                {waitingSessions.map((session) => (
-                  <div key={session.id} className="p-3 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        <span className="font-medium">{session.lead?.name}</span>
+        {chatEnabled && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-yellow-500" />
+                Chats em Espera ({waitingSessions.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-64">
+                <div className="space-y-3">
+                  {waitingSessions.map((session) => (
+                    <div key={session.id} className="p-3 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          <span className="font-medium">{session.lead?.name}</span>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {new Date(session.started_at).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </Badge>
                       </div>
-                      <Badge variant="outline" className="text-xs">
-                        {new Date(session.started_at).toLocaleTimeString('pt-BR', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </Badge>
-                    </div>
-                    
-                    {session.subject && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Assunto: {session.subject}
-                      </p>
-                    )}
-                    
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                      <Mail className="h-3 w-3" />
-                      <span>{session.lead?.email}</span>
-                      {session.lead?.phone && (
-                        <>
-                          <Phone className="h-3 w-3 ml-2" />
-                          <span>{session.lead.phone}</span>
-                        </>
+                      
+                      {session.subject && (
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Assunto: {session.subject}
+                        </p>
                       )}
+                      
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                        <Mail className="h-3 w-3" />
+                        <span>{session.lead?.email}</span>
+                        {session.lead?.phone && (
+                          <>
+                            <Phone className="h-3 w-3 ml-2" />
+                            <span>{session.lead.phone}</span>
+                          </>
+                        )}
+                      </div>
+                      
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleAcceptSession(session.id)}
+                        className="w-full"
+                      >
+                        Aceitar Chat
+                      </Button>
                     </div>
-                    
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleAcceptSession(session.id)}
-                      className="w-full"
-                    >
-                      Aceitar Chat
-                    </Button>
-                  </div>
-                ))}
-                
-                {waitingSessions.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>Nenhum chat em espera</p>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                  ))}
+                  
+                  {waitingSessions.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>Nenhum chat em espera</p>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Chats Ativos */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-green-500" />
-              Meus Chats Ativos ({activeSessions.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-32">
-              <div className="space-y-2">
-                {activeSessions.map((session) => (
-                  <div 
-                    key={session.id} 
-                    className={cn(
-                      "p-2 border rounded cursor-pointer transition-colors",
-                      activeSession === session.id ? "bg-primary/10 border-primary" : "hover:bg-muted"
-                    )}
-                    onClick={() => setActiveSession(session.id)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{session.lead?.name}</span>
-                      {getStatusBadge(session.status)}
+        {/* Meus Chats Ativos */}
+        {chatEnabled && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-green-500" />
+                Meus Chats Ativos ({activeSessions.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-32">
+                <div className="space-y-2">
+                  {activeSessions.map((session) => (
+                    <div 
+                      key={session.id} 
+                      className={cn(
+                        "p-2 border rounded cursor-pointer transition-colors",
+                        activeSession === session.id ? "bg-primary/10 border-primary" : "hover:bg-muted"
+                      )}
+                      onClick={() => setActiveSession(session.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{session.lead?.name}</span>
+                        {getStatusBadge(session.status)}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {session.subject && <span>Assunto: {session.subject}</span>}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {session.subject && <span>Assunto: {session.subject}</span>}
+                  ))}
+                  
+                  {activeSessions.length === 0 && (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      Nenhum chat ativo
                     </div>
-                  </div>
-                ))}
-                
-                {activeSessions.length === 0 && (
-                  <div className="text-center py-4 text-muted-foreground text-sm">
-                    Nenhum chat ativo
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                  )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Área de Chat */}
       <div className="lg:col-span-2">
-        {activeSession && activeSessionData ? (
+        {!chatEnabled ? (
+          <Card className="h-full flex items-center justify-center">
+            <CardContent className="text-center">
+              <PowerOff className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <h3 className="text-lg font-medium mb-2">Sistema de Chat Desativado</h3>
+              <p className="text-muted-foreground mb-4">
+                Ative o sistema de chat para começar a receber atendimentos
+              </p>
+              <Button onClick={handleToggleChatSystem}>
+                <Power className="h-4 w-4 mr-2" />
+                Ativar Sistema de Chat
+              </Button>
+            </CardContent>
+          </Card>
+        ) : activeSession && activeSessionData ? (
           <Card className="h-full flex flex-col">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">

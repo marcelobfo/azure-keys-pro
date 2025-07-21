@@ -46,6 +46,7 @@ export interface AttendantAvailability {
 }
 
 const SESSION_STORAGE_KEY = 'current_chat_session';
+const CHAT_ENABLED_KEY = 'chat_system_enabled';
 
 export const useLiveChat = () => {
   const { user } = useAuth();
@@ -57,7 +58,35 @@ export const useLiveChat = () => {
   const [loading, setLoading] = useState(true);
   const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
   const [messagesChannel, setMessagesChannel] = useState<any>(null);
+  const [chatEnabled, setChatEnabled] = useState(false);
   const isInitialized = useRef(false);
+
+  // Verificar se o chat está habilitado
+  useEffect(() => {
+    const enabled = localStorage.getItem(CHAT_ENABLED_KEY) === 'true';
+    setChatEnabled(enabled);
+    console.log('Status do chat carregado:', enabled);
+  }, []);
+
+  // Toggle do sistema de chat
+  const toggleChatSystem = (enabled: boolean) => {
+    setChatEnabled(enabled);
+    localStorage.setItem(CHAT_ENABLED_KEY, enabled.toString());
+    console.log('Sistema de chat:', enabled ? 'ativado' : 'desativado');
+    
+    if (!enabled) {
+      cleanupChannels();
+    } else if (user) {
+      setupRealtimeChannels();
+    }
+    
+    toast({
+      title: enabled ? 'Chat ativado' : 'Chat desativado',
+      description: enabled 
+        ? 'Sistema de chat está agora disponível' 
+        : 'Sistema de chat foi desativado',
+    });
+  };
 
   // Salvar sessão no localStorage
   const saveSessionToStorage = (sessionId: string, sessionData: any) => {
@@ -113,11 +142,96 @@ export const useLiveChat = () => {
     }
   };
 
-  // Criar canal único
-  const createUniqueChannel = (prefix: string) => {
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substr(2, 5);
-    return `${prefix}-${timestamp}-${random}`;
+  // Configurar canais de real-time
+  const setupRealtimeChannels = () => {
+    if (!user || !chatEnabled) return;
+
+    console.log('Configurando canais real-time para usuário:', user.id);
+    cleanupChannels();
+
+    // Canal para sessões de chat
+    const sessionChannel = supabase
+      .channel('global-chat-sessions')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_sessions'
+        },
+        (payload) => {
+          console.log('Nova sessão criada (real-time):', payload);
+          playNotificationSound();
+          fetchChatSessions();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_sessions'
+        },
+        (payload) => {
+          console.log('Sessão atualizada (real-time):', payload);
+          fetchChatSessions();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Status do canal de sessões:', status);
+      });
+
+    setRealtimeChannel(sessionChannel);
+
+    // Canal para mensagens
+    const msgChannel = supabase
+      .channel('global-chat-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages'
+        },
+        (payload) => {
+          console.log('Nova mensagem recebida (real-time):', payload);
+          const newMessage = {
+            ...payload.new,
+            sender_type: payload.new.sender_type as 'lead' | 'attendant' | 'bot'
+          } as ChatMessage;
+          
+          // Verificar se é mensagem própria para evitar duplicação
+          const isOwnMessage = 
+            (newMessage.sender_type === 'attendant' && newMessage.sender_id === user?.id) ||
+            (newMessage.sender_type === 'lead' && !newMessage.sender_id);
+          
+          if (!isOwnMessage) {
+            console.log('Tocando som para nova mensagem de outro usuário');
+            playMessageSound();
+          }
+          
+          // Atualizar mensagens no estado
+          setMessages(prev => {
+            const currentMessages = prev[newMessage.session_id] || [];
+            // Evitar duplicatas
+            if (currentMessages.some(msg => msg.id === newMessage.id)) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [newMessage.session_id]: [
+                ...currentMessages,
+                newMessage
+              ]
+            };
+          });
+        }
+      )
+      .subscribe((status) => {
+        console.log('Status do canal de mensagens:', status);
+      });
+
+    setMessagesChannel(msgChannel);
   };
 
   // Criar nova sessão de chat usando Edge Function
@@ -199,7 +313,6 @@ export const useLiveChat = () => {
           }
         );
 
-      // Tocar som de notificação
       playNotificationSound();
 
       toast({
@@ -268,39 +381,6 @@ export const useLiveChat = () => {
     }
   };
 
-  // Adicionar tags à sessão
-  const addTagsToSession = async (sessionId: string, tags: string[]) => {
-    try {
-      const { error } = await supabase
-        .from('chat_sessions')
-        .update({ tags })
-        .eq('id', sessionId);
-
-      if (error) throw error;
-
-      // Atualizar estado local
-      setSessions(prev => 
-        prev.map(session => 
-          session.id === sessionId 
-            ? { ...session, tags }
-            : session
-        )
-      );
-
-      toast({
-        title: 'Tags adicionadas',
-        description: 'Tags foram adicionadas à sessão com sucesso.',
-      });
-    } catch (error) {
-      console.error('Erro ao adicionar tags:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível adicionar as tags.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   // Enviar mensagem usando Edge Function
   const sendMessage = async (
     sessionId: string, 
@@ -317,7 +397,7 @@ export const useLiveChat = () => {
             sessionId: sessionId,
             message: message,
             senderType: senderType,
-            senderId: senderType === 'attendant' ? user?.id : senderType === 'lead' ? 'lead-user' : null
+            senderId: senderType === 'attendant' ? user?.id : null
           }
         }
       });
@@ -331,9 +411,7 @@ export const useLiveChat = () => {
         throw new Error('Falha ao enviar mensagem');
       }
 
-      // Tocar som de mensagem enviada
       playMessageSound();
-
       console.log('Mensagem enviada via Edge Function com sucesso');
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
@@ -464,108 +542,23 @@ export const useLiveChat = () => {
     }
   };
 
-  // Configurar real-time subscriptions melhorado
+  // Configurar real-time quando usuário e chat estão disponíveis
   useEffect(() => {
     if (!user || isInitialized.current) return;
 
     console.log('Configurando sistema de real-time para usuário:', user.id);
     isInitialized.current = true;
 
-    // Cleanup de canais existentes
-    cleanupChannels();
-
-    // Canal para sessões de chat com nome único
-    const sessionChannelName = createUniqueChannel('chat-sessions');
-    const sessionChannel = supabase
-      .channel(sessionChannelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_sessions'
-        },
-        (payload) => {
-          console.log('Nova sessão criada (real-time):', payload);
-          playNotificationSound();
-          fetchChatSessions();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'chat_sessions'
-        },
-        (payload) => {
-          console.log('Sessão atualizada (real-time):', payload);
-          fetchChatSessions();
-        }
-      )
-      .subscribe((status) => {
-        console.log('Status do canal de sessões:', status);
-      });
-
-    setRealtimeChannel(sessionChannel);
-
-    // Canal para mensagens com nome único e melhor filtro
-    const messagesChannelName = createUniqueChannel('chat-messages-all');
-    const msgChannel = supabase
-      .channel(messagesChannelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages'
-        },
-        (payload) => {
-          console.log('Nova mensagem recebida (real-time):', payload);
-          const newMessage = {
-            ...payload.new,
-            sender_type: payload.new.sender_type as 'lead' | 'attendant' | 'bot'
-          } as ChatMessage;
-          
-          // Tocar som apenas se não for mensagem própria
-          const isOwnMessage = 
-            (newMessage.sender_type === 'attendant' && newMessage.sender_id === user?.id) ||
-            (newMessage.sender_type === 'lead' && newMessage.sender_id === 'lead-user');
-          
-          if (!isOwnMessage) {
-            console.log('Tocando som para nova mensagem');
-            playMessageSound();
-          }
-          
-          // Atualizar mensagens no estado
-          setMessages(prev => {
-            const currentMessages = prev[newMessage.session_id] || [];
-            // Evitar duplicatas
-            if (currentMessages.some(msg => msg.id === newMessage.id)) {
-              return prev;
-            }
-            return {
-              ...prev,
-              [newMessage.session_id]: [
-                ...currentMessages,
-                newMessage
-              ]
-            };
-          });
-        }
-      )
-      .subscribe((status) => {
-        console.log('Status do canal de mensagens:', status);
-      });
-
-    setMessagesChannel(msgChannel);
+    if (chatEnabled) {
+      setupRealtimeChannels();
+    }
 
     return () => {
       console.log('Limpando canais de real-time');
       isInitialized.current = false;
       cleanupChannels();
     };
-  }, [user?.id]);
+  }, [user?.id, chatEnabled]);
 
   // Buscar disponibilidade do atendente atual
   useEffect(() => {
@@ -605,10 +598,10 @@ export const useLiveChat = () => {
     messages,
     availability,
     loading,
+    chatEnabled,
     createChatSession,
     acceptChatSession,
     endChatSession,
-    addTagsToSession,
     sendMessage,
     markMessagesAsRead,
     updateAvailability,
@@ -617,6 +610,7 @@ export const useLiveChat = () => {
     fetchAttendantAvailability,
     saveSessionToStorage,
     getSavedSession,
-    clearSavedSession
+    clearSavedSession,
+    toggleChatSystem
   };
 };

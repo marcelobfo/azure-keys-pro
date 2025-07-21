@@ -1,22 +1,21 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
 serve(async (req) => {
   console.log('Chat processor - Request received:', req.method);
-
-  // Handle CORS preflight requests
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
@@ -25,328 +24,170 @@ serve(async (req) => {
     console.log('Chat processor - Action:', action, 'Data:', data);
 
     switch (action) {
-      case 'create_chat_session':
-        return await createChatSession(supabaseClient, data);
-      
-      case 'send_message':
-        return await sendMessage(supabaseClient, data);
-      
-      case 'check_business_hours':
-        return await checkBusinessHours(supabaseClient);
-      
-      case 'create_support_ticket':
-        return await createSupportTicket(supabaseClient, data);
-      
+      case 'create_chat_session': {
+        const { leadData } = data;
+        console.log('Criando nova sessão de chat...', leadData);
+
+        // Inserir ou atualizar lead
+        const { data: leadResult, error: leadError } = await supabase
+          .from('leads')
+          .upsert({
+            name: leadData.name,
+            email: leadData.email,
+            phone: leadData.phone,
+            message: leadData.message,
+            status: 'new'
+          }, {
+            onConflict: 'email'
+          })
+          .select()
+          .single();
+
+        if (leadError) {
+          console.error('Erro ao criar/atualizar lead:', leadError);
+          throw leadError;
+        }
+
+        // Criar ticket de suporte
+        const { data: ticketResult, error: ticketError } = await supabase
+          .from('support_tickets')
+          .insert({
+            lead_id: leadResult.id,
+            subject: leadData.subject || 'Chat iniciado',
+            description: leadData.message || 'Sessão de chat iniciada',
+            status: 'open',
+            priority: 'medium'
+          })
+          .select()
+          .single();
+
+        if (ticketError) {
+          console.error('Erro ao criar ticket:', ticketError);
+          throw ticketError;
+        }
+
+        // Criar sessão de chat
+        const { data: sessionResult, error: sessionError } = await supabase
+          .from('chat_sessions')
+          .insert({
+            lead_id: leadResult.id,
+            status: 'waiting',
+            subject: leadData.subject,
+            ticket_id: ticketResult.id
+          })
+          .select()
+          .single();
+
+        if (sessionError) {
+          console.error('Erro ao criar sessão:', sessionError);
+          throw sessionError;
+        }
+
+        // Enviar mensagem inicial se fornecida
+        if (leadData.message) {
+          console.log('Enviando mensagem inicial:', leadData.message);
+          
+          const { error: messageError } = await supabase
+            .from('chat_messages')
+            .insert({
+              session_id: sessionResult.id,
+              sender_type: 'lead',
+              sender_id: null, // Para leads, usar null
+              message: leadData.message
+            });
+
+          if (messageError) {
+            console.error('Erro ao enviar mensagem inicial:', messageError);
+          }
+        }
+
+        const response = {
+          ...sessionResult,
+          ticket_protocol: ticketResult.protocol_number
+        };
+
+        console.log('Sessão criada com sucesso:', response);
+
+        return new Response(
+          JSON.stringify({ success: true, session: response }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'send_message': {
+        const { sessionId, message, senderType, senderId } = data;
+        
+        console.log('Enviando mensagem:', {
+          sessionId,
+          senderType,
+          messageLength: message.length
+        });
+
+        // Para leads, sempre usar null como senderId
+        const finalSenderId = senderType === 'lead' ? null : senderId;
+
+        const { error } = await supabase
+          .from('chat_messages')
+          .insert({
+            session_id: sessionId,
+            sender_type: senderType,
+            sender_id: finalSenderId,
+            message: message
+          });
+
+        if (error) {
+          console.error('Erro ao inserir mensagem:', error);
+          throw error;
+        }
+
+        console.log('Mensagem enviada com sucesso');
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'check_business_hours': {
+        const { data: businessHours, error } = await supabase
+          .from('business_hours')
+          .select('*')
+          .eq('is_active', true);
+
+        if (error) {
+          console.error('Erro ao verificar horário comercial:', error);
+          throw error;
+        }
+
+        const now = new Date();
+        const currentDay = now.getDay();
+        const currentTime = now.toTimeString().slice(0, 5);
+
+        const isBusinessHours = businessHours?.some(bh => 
+          bh.day_of_week === currentDay &&
+          currentTime >= bh.start_time &&
+          currentTime <= bh.end_time
+        ) || false;
+
+        return new Response(
+          JSON.stringify({ isBusinessHours }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       default:
-        throw new Error(`Ação não reconhecida: ${action}`);
+        console.error('Ação não reconhecida:', action);
+        return new Response(
+          JSON.stringify({ error: 'Ação não reconhecida' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
     }
+
   } catch (error) {
     console.error('Erro no chat processor:', error);
-    
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error.stack 
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
-
-async function createChatSession(supabase: any, data: any) {
-  const { leadData } = data;
-  console.log('Criando sessão de chat para:', leadData);
-
-  try {
-    // Verificar se é horário comercial
-    const { data: isBusinessHours } = await supabase.rpc('is_business_hours');
-    console.log('É horário comercial:', isBusinessHours);
-
-    // Primeiro, criar ou buscar o lead
-    let lead;
-    const { data: existingLead, error: leadSelectError } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('email', leadData.email)
-      .maybeSingle();
-
-    if (leadSelectError) {
-      console.error('Erro ao buscar lead existente:', leadSelectError);
-    }
-
-    if (existingLead) {
-      // Atualizar lead existente
-      const { data: updatedLead, error: updateError } = await supabase
-        .from('leads')
-        .update({
-          name: leadData.name,
-          phone: leadData.phone || existingLead.phone,
-          message: leadData.message,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingLead.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('Erro ao atualizar lead:', updateError);
-        throw updateError;
-      }
-      lead = updatedLead;
-      console.log('Lead atualizado:', lead);
-    } else {
-      // Criar novo lead
-      const { data: newLead, error: leadError } = await supabase
-        .from('leads')
-        .insert({
-          name: leadData.name,
-          email: leadData.email,
-          phone: leadData.phone,
-          message: leadData.message,
-          status: 'new'
-        })
-        .select()
-        .single();
-
-      if (leadError) {
-        console.error('Erro ao criar lead:', leadError);
-        throw leadError;
-      }
-      lead = newLead;
-      console.log('Novo lead criado:', lead);
-    }
-
-    // Criar ticket de suporte
-    const { data: ticket, error: ticketError } = await supabase
-      .from('support_tickets')
-      .insert({
-        lead_id: lead.id,
-        subject: leadData.subject || 'Atendimento via chat',
-        description: leadData.message || 'Cliente iniciou chat',
-        status: isBusinessHours ? 'open' : 'open',
-        priority: 'medium'
-      })
-      .select()
-      .single();
-
-    if (ticketError) {
-      console.error('Erro ao criar ticket:', ticketError);
-      throw ticketError;
-    }
-    console.log('Ticket criado:', ticket);
-
-    // Criar sessão de chat
-    const { data: session, error: sessionError } = await supabase
-      .from('chat_sessions')
-      .insert({
-        lead_id: lead.id,
-        subject: leadData.subject || 'Atendimento via chat',
-        status: isBusinessHours ? 'waiting' : 'waiting'
-      })
-      .select(`
-        *,
-        leads!chat_sessions_lead_id_fkey(name, email, phone)
-      `)
-      .single();
-
-    if (sessionError) {
-      console.error('Erro ao criar sessão:', sessionError);
-      throw sessionError;
-    }
-    console.log('Sessão criada:', session);
-
-    // Enviar mensagem inicial se fornecida
-    if (leadData.message) {
-      const { error: messageError } = await supabase
-        .from('chat_messages')
-        .insert({
-          session_id: session.id,
-          sender_type: 'lead',
-          message: leadData.message
-        });
-      
-      if (messageError) {
-        console.error('Erro ao criar mensagem inicial:', messageError);
-      }
-    }
-
-    // Buscar configurações de boas-vindas
-    const { data: config } = await supabase
-      .from('chat_configurations')
-      .select('welcome_message, custom_responses')
-      .limit(1)
-      .maybeSingle();
-
-    const welcomeMessage = config?.welcome_message || 
-      `Olá ${leadData.name}! Obrigado por entrar em contato. Seu protocolo é: ${ticket.protocol_number}`;
-
-    const statusMessage = isBusinessHours 
-      ? ' Um de nossos atendentes estará com você em breve.' 
-      : ' No momento estamos fora do horário comercial, mas responderemos assim que possível.';
-
-    const finalWelcomeMessage = welcomeMessage + statusMessage;
-
-    // Enviar mensagem de boas-vindas
-    const { error: welcomeError } = await supabase
-      .from('chat_messages')
-      .insert({
-        session_id: session.id,
-        sender_type: 'bot',
-        message: finalWelcomeMessage
-      });
-
-    if (welcomeError) {
-      console.error('Erro ao enviar mensagem de boas-vindas:', welcomeError);
-    }
-
-    console.log('Sessão criada com sucesso');
-
-    return new Response(
-      JSON.stringify({ 
-        session: {
-          ...session,
-          ticket_protocol: ticket.protocol_number
-        },
-        isBusinessHours,
-        success: true
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-
-  } catch (error) {
-    console.error('Erro detalhado ao criar sessão:', error);
-    throw error;
-  }
-}
-
-async function sendMessage(supabase: any, data: any) {
-  const { sessionId, message, senderType, senderId } = data;
-  console.log('Enviando mensagem:', { sessionId, senderType, messageLength: message?.length });
-
-  try {
-    // Inserir mensagem
-    const { data: newMessage, error } = await supabase
-      .from('chat_messages')
-      .insert({
-        session_id: sessionId,
-        sender_type: senderType,
-        sender_id: senderId,
-        message: message
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Erro ao inserir mensagem:', error);
-      throw error;
-    }
-
-    // Atualizar sessão como ativa se necessário
-    if (senderType === 'attendant') {
-      const { error: updateError } = await supabase
-        .from('chat_sessions')
-        .update({ 
-          status: 'active',
-          attendant_id: senderId 
-        })
-        .eq('id', sessionId);
-
-      if (updateError) {
-        console.error('Erro ao atualizar sessão:', updateError);
-      }
-    }
-
-    console.log('Mensagem enviada com sucesso');
-
-    return new Response(
-      JSON.stringify({ 
-        message: newMessage,
-        success: true 
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-
-  } catch (error) {
-    console.error('Erro ao enviar mensagem:', error);
-    throw error;
-  }
-}
-
-async function checkBusinessHours(supabase: any) {
-  try {
-    const { data: isBusinessHours } = await supabase.rpc('is_business_hours');
-    
-    // Buscar próximo horário disponível
-    const { data: nextBusinessTime } = await supabase
-      .from('business_hours')
-      .select('*')
-      .eq('is_active', true)
-      .order('day_of_week');
-
-    return new Response(
-      JSON.stringify({ 
-        isBusinessHours: isBusinessHours || false,
-        nextBusinessTime: nextBusinessTime || []
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    console.error('Erro ao verificar horários:', error);
-    return new Response(
-      JSON.stringify({ 
-        isBusinessHours: false,
-        nextBusinessTime: []
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  }
-}
-
-async function createSupportTicket(supabase: any, data: any) {
-  const { leadId, subject, message, priority } = data;
-
-  try {
-    const { data: ticket, error } = await supabase
-      .from('support_tickets')
-      .insert({
-        lead_id: leadId,
-        subject: subject,
-        description: message,
-        priority: priority || 'medium',
-        status: 'open'
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return new Response(
-      JSON.stringify({ 
-        ticket,
-        success: true 
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    console.error('Erro ao criar ticket:', error);
-    throw error;
-  }
-}
