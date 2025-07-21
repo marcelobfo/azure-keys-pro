@@ -7,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 const WhatsAppButton = () => {
   const [isEnabled, setIsEnabled] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState('');
-  const [chatSystemEnabled, setChatSystemEnabled] = useState(true);
 
   useEffect(() => {
     fetchWhatsAppConfig();
@@ -15,15 +14,24 @@ const WhatsAppButton = () => {
 
   const fetchWhatsAppConfig = async () => {
     try {
+      console.log('Buscando configuração do WhatsApp...');
       const { data, error } = await supabase
         .from('chat_configurations')
-        .select('whatsapp_enabled, whatsapp_number, active')
+        .select('whatsapp_enabled, whatsapp_number')
         .maybeSingle();
 
+      if (error) {
+        console.error('Erro ao buscar configuração do WhatsApp:', error);
+        return;
+      }
+
       if (data) {
+        console.log('Configuração WhatsApp carregada:', { 
+          enabled: data.whatsapp_enabled, 
+          hasNumber: !!data.whatsapp_number 
+        });
         setIsEnabled(data.whatsapp_enabled || false);
         setWhatsappNumber(data.whatsapp_number || '');
-        setChatSystemEnabled(data.active ?? true);
       }
     } catch (error) {
       console.error('Erro ao buscar configuração do WhatsApp:', error);
@@ -38,9 +46,13 @@ const WhatsAppButton = () => {
     }
   };
 
-  if (!chatSystemEnabled || !isEnabled || !whatsappNumber) {
+  // Só renderizar se o WhatsApp estiver habilitado e tiver número configurado
+  if (!isEnabled || !whatsappNumber) {
+    console.log('WhatsApp não será exibido:', { enabled: isEnabled, hasNumber: !!whatsappNumber });
     return null;
   }
+
+  console.log('WhatsApp será exibido');
 
   return (
     <div className="fixed bottom-6 left-6 z-50">

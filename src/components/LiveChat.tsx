@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,9 +43,10 @@ const LiveChat = () => {
   const [loading, setLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showRecoveryOption, setShowRecoveryOption] = useState(false);
-  const [chatSystemEnabled, setChatSystemEnabled] = useState(true);
+  const [chatSystemEnabled, setChatSystemEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
+  const [configChannel, setConfigChannel] = useState<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(sessionId, 'lead-user');
@@ -69,9 +69,21 @@ const LiveChat = () => {
     { value: 'outros', label: 'Outros assuntos' }
   ];
 
-  // Verificar se há sessão salva ao abrir
+  // Verificar status do sistema de chat e configurar real-time
   useEffect(() => {
     checkChatSystemStatus();
+    setupConfigRealtime();
+
+    return () => {
+      if (configChannel) {
+        console.log('Removendo canal de configurações');
+        supabase.removeChannel(configChannel);
+      }
+    };
+  }, []);
+
+  // Verificar se há sessão salva ao abrir
+  useEffect(() => {
     if (isOpen && step === 'contact') {
       const savedSession = getSavedSession();
       if (savedSession) {
@@ -80,14 +92,53 @@ const LiveChat = () => {
     }
   }, [isOpen]);
 
+  const setupConfigRealtime = () => {
+    console.log('Configurando canal real-time para configurações do chat');
+    
+    const channel = supabase
+      .channel('chat-config-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chat_configurations'
+        },
+        (payload) => {
+          console.log('Configuração do chat alterada:', payload);
+          checkChatSystemStatus();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Status do canal de configurações:', status);
+      });
+
+    setConfigChannel(channel);
+  };
+
   const checkChatSystemStatus = async () => {
     try {
-      const { data } = await supabase
+      console.log('Verificando status do sistema de chat...');
+      const { data, error } = await supabase
         .from('chat_configurations')
         .select('active')
         .maybeSingle();
       
-      setChatSystemEnabled(data?.active ?? true);
+      if (error) {
+        console.error('Erro ao verificar status do chat:', error);
+        return;
+      }
+
+      const isActive = data?.active ?? true;
+      console.log('Status do sistema de chat:', isActive ? 'ATIVO' : 'INATIVO');
+      setChatSystemEnabled(isActive);
+
+      // Se o chat foi desativado e estava aberto, fechar
+      if (!isActive && isOpen) {
+        console.log('Chat desativado, fechando interface');
+        setIsOpen(false);
+        resetChat();
+      }
     } catch (error) {
       console.error('Erro ao verificar status do sistema de chat:', error);
     }
@@ -364,10 +415,13 @@ const LiveChat = () => {
     });
   };
 
-  // Não renderizar se o sistema de chat estiver desativado
+  // Se o sistema de chat estiver desativado, não renderizar o componente
   if (!chatSystemEnabled) {
+    console.log('Sistema de chat desativado, não renderizando LiveChat');
     return null;
   }
+
+  console.log('Sistema de chat ativo, renderizando LiveChat');
 
   if (!isOpen) {
     return (
