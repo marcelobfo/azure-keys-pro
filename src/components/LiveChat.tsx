@@ -46,7 +46,7 @@ const LiveChat = () => {
   const [chatSystemEnabled, setChatSystemEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
-  const [configChannel, setConfigChannel] = useState<any>(null);
+  const configChannelRef = useRef<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(sessionId, 'lead-user');
@@ -75,9 +75,10 @@ const LiveChat = () => {
     setupConfigRealtime();
 
     return () => {
-      if (configChannel) {
+      if (configChannelRef.current) {
         console.log('Removendo canal de configurações');
-        supabase.removeChannel(configChannel);
+        supabase.removeChannel(configChannelRef.current);
+        configChannelRef.current = null;
       }
     };
   }, []);
@@ -113,7 +114,7 @@ const LiveChat = () => {
         console.log('Status do canal de configurações:', status);
       });
 
-    setConfigChannel(channel);
+    configChannelRef.current = channel;
   };
 
   const checkChatSystemStatus = async () => {
