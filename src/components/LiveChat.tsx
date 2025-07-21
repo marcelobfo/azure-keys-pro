@@ -44,6 +44,7 @@ const LiveChat = () => {
   const [loading, setLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showRecoveryOption, setShowRecoveryOption] = useState(false);
+  const [chatSystemEnabled, setChatSystemEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -70,6 +71,7 @@ const LiveChat = () => {
 
   // Verificar se há sessão salva ao abrir
   useEffect(() => {
+    checkChatSystemStatus();
     if (isOpen && step === 'contact') {
       const savedSession = getSavedSession();
       if (savedSession) {
@@ -77,6 +79,19 @@ const LiveChat = () => {
       }
     }
   }, [isOpen]);
+
+  const checkChatSystemStatus = async () => {
+    try {
+      const { data } = await supabase
+        .from('chat_configurations')
+        .select('active')
+        .maybeSingle();
+      
+      setChatSystemEnabled(data?.active ?? true);
+    } catch (error) {
+      console.error('Erro ao verificar status do sistema de chat:', error);
+    }
+  };
 
   const restoreSession = async () => {
     const savedSession = getSavedSession();
@@ -348,6 +363,11 @@ const LiveChat = () => {
       message: ''
     });
   };
+
+  // Não renderizar se o sistema de chat estiver desativado
+  if (!chatSystemEnabled) {
+    return null;
+  }
 
   if (!isOpen) {
     return (

@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 const WhatsAppButton = () => {
   const [isEnabled, setIsEnabled] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [chatSystemEnabled, setChatSystemEnabled] = useState(true);
 
   useEffect(() => {
     fetchWhatsAppConfig();
@@ -16,12 +17,13 @@ const WhatsAppButton = () => {
     try {
       const { data, error } = await supabase
         .from('chat_configurations')
-        .select('whatsapp_enabled, whatsapp_number')
+        .select('whatsapp_enabled, whatsapp_number, active')
         .maybeSingle();
 
       if (data) {
         setIsEnabled(data.whatsapp_enabled || false);
         setWhatsappNumber(data.whatsapp_number || '');
+        setChatSystemEnabled(data.active ?? true);
       }
     } catch (error) {
       console.error('Erro ao buscar configuração do WhatsApp:', error);
@@ -36,7 +38,7 @@ const WhatsAppButton = () => {
     }
   };
 
-  if (!isEnabled || !whatsappNumber) {
+  if (!chatSystemEnabled || !isEnabled || !whatsappNumber) {
     return null;
   }
 

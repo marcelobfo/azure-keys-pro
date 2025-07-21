@@ -260,18 +260,21 @@ const AttendantDashboard = () => {
                 <div className="space-y-3">
                   {waitingSessions.map((session) => (
                     <div key={session.id} className="p-3 border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          <span className="font-medium">{session.lead?.name}</span>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {new Date(session.started_at).toLocaleTimeString('pt-BR', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </Badge>
-                      </div>
+                       <div className="flex items-center justify-between mb-2">
+                         <div className="flex items-center gap-2">
+                           <User className="h-4 w-4" />
+                           <span className="font-medium">{session.lead?.name}</span>
+                            <Badge variant="secondary" className="text-xs">
+                              #{(session as any).protocol_number || session.id.slice(0, 8)}
+                            </Badge>
+                         </div>
+                         <Badge variant="outline" className="text-xs">
+                           {new Date(session.started_at).toLocaleTimeString('pt-BR', {
+                             hour: '2-digit',
+                             minute: '2-digit'
+                           })}
+                         </Badge>
+                       </div>
                       
                       {session.subject && (
                         <p className="text-sm text-muted-foreground mb-2">
@@ -375,11 +378,14 @@ const AttendantDashboard = () => {
           <Card className="h-full flex flex-col">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    {activeSessionData.lead?.name}
-                  </CardTitle>
+                 <div>
+                   <CardTitle className="flex items-center gap-2">
+                     <User className="h-5 w-5" />
+                     {activeSessionData.lead?.name}
+                      <Badge variant="secondary" className="ml-2">
+                        Protocolo #{(activeSessionData as any).protocol_number || activeSessionData.id.slice(0, 8)}
+                      </Badge>
+                   </CardTitle>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Mail className="h-4 w-4" />
