@@ -28,25 +28,54 @@ serve(async (req) => {
         const { leadData } = data;
         console.log('Criando nova sessão de chat...', leadData);
 
-        // Inserir ou atualizar lead
-        const { data: leadResult, error: leadError } = await supabase
+        // Inserir ou atualizar lead - sem usar onConflict
+        const { data: existingLead } = await supabase
           .from('leads')
-          .upsert({
-            name: leadData.name,
-            email: leadData.email,
-            phone: leadData.phone,
-            message: leadData.message,
-            status: 'new'
-          }, {
-            onConflict: 'email'
-          })
-          .select()
+          .select('*')
+          .eq('email', leadData.email)
           .single();
 
-        if (leadError) {
-          console.error('Erro ao criar/atualizar lead:', leadError);
-          throw leadError;
+        let leadResult;
+        if (existingLead) {
+          // Atualizar lead existente
+          const { data, error: updateError } = await supabase
+            .from('leads')
+            .update({
+              name: leadData.name,
+              phone: leadData.phone,
+              message: leadData.message,
+              status: 'new'
+            })
+            .eq('id', existingLead.id)
+            .select()
+            .single();
+          
+          if (updateError) {
+            console.error('Erro ao atualizar lead:', updateError);
+            throw updateError;
+          }
+          leadResult = data;
+        } else {
+          // Criar novo lead
+          const { data, error: insertError } = await supabase
+            .from('leads')
+            .insert({
+              name: leadData.name,
+              email: leadData.email,
+              phone: leadData.phone,
+              message: leadData.message,
+              status: 'new'
+            })
+            .select()
+            .single();
+          
+          if (insertError) {
+            console.error('Erro ao criar lead:', insertError);
+            throw insertError;
+          }
+          leadResult = data;
         }
+
 
         // Criar ticket de suporte
         const { data: ticketResult, error: ticketError } = await supabase
