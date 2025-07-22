@@ -76,7 +76,7 @@ const LiveChat = () => {
 
     return () => {
       if (configChannelRef.current) {
-        console.log('Removendo canal de configurações');
+        console.log('🧹 LiveChat: Removendo canal de configurações');
         supabase.removeChannel(configChannelRef.current);
         configChannelRef.current = null;
       }
@@ -94,7 +94,7 @@ const LiveChat = () => {
   }, [isOpen]);
 
   const setupConfigRealtime = () => {
-    console.log('Configurando canal real-time para configurações do chat');
+    console.log('🔄 LiveChat: Configurando canal real-time para configurações do chat');
     
     const channel = supabase
       .channel('chat-config-changes')
@@ -106,12 +106,12 @@ const LiveChat = () => {
           table: 'chat_configurations'
         },
         (payload) => {
-          console.log('Configuração do chat alterada:', payload);
+          console.log('🔄 LiveChat: Configuração do chat alterada:', payload);
           checkChatSystemStatus();
         }
       )
       .subscribe((status) => {
-        console.log('Status do canal de configurações:', status);
+        console.log('📡 LiveChat: Status do canal de configurações:', status);
       });
 
     configChannelRef.current = channel;
@@ -119,41 +119,42 @@ const LiveChat = () => {
 
   const checkChatSystemStatus = async () => {
     try {
-      console.log('🔍 Verificando status do sistema de chat...');
+      console.log('🔍 LiveChat: Verificando status do sistema de chat...');
       const { data, error } = await supabase
         .from('chat_configurations')
         .select('active')
         .maybeSingle();
       
       if (error) {
-        console.error('❌ Erro ao verificar status do chat:', error);
+        console.error('❌ LiveChat: Erro ao verificar status do chat:', error);
         return;
       }
 
-      console.log('📊 Dados brutos do banco:', data);
+      console.log('📊 LiveChat: Dados brutos do banco:', data);
       
-      const isActive = data?.active ?? true;
-      console.log('🎯 Status do sistema de chat:', isActive ? '✅ ATIVO' : '🚫 INATIVO');
-      console.log('🔄 Atualizando estado chatSystemEnabled de', chatSystemEnabled, 'para', isActive);
-      setChatSystemEnabled(isActive);
-
-      // Se o chat foi desativado e estava aberto, fechar
-      if (!isActive && isOpen) {
-        console.log('Chat desativado, fechando interface');
-        setIsOpen(false);
-        resetChat();
+      const isActive = data?.active ?? false;
+      console.log('🎯 LiveChat: Status do sistema de chat:', isActive ? '✅ ATIVO' : '🚫 INATIVO');
+      console.log('🔄 LiveChat: Atualizando estado chatSystemEnabled de', chatSystemEnabled, 'para', isActive);
+      
+      if (chatSystemEnabled !== isActive) {
+        setChatSystemEnabled(isActive);
+        
+        if (!isActive && isOpen) {
+          console.log('🚫 LiveChat: Chat desativado, fechando interface');
+          setIsOpen(false);
+          resetChat();
+        }
       }
     } catch (error) {
-      console.error('Erro ao verificar status do sistema de chat:', error);
+      console.error('❌ LiveChat: Erro ao verificar status do sistema de chat:', error);
     }
   };
 
   const restoreSession = async () => {
     const savedSession = getSavedSession();
     if (savedSession) {
-      console.log('Restaurando sessão:', savedSession.sessionId);
+      console.log('♻️ LiveChat: Restaurando sessão:', savedSession.sessionId);
       
-      // Verificar se a sessão ainda está ativa
       const { data: sessionData, error } = await supabase
         .from('chat_sessions')
         .select('*')
@@ -162,7 +163,7 @@ const LiveChat = () => {
         .single();
 
       if (error || !sessionData) {
-        console.log('Sessão não encontrada ou inativa, limpando localStorage');
+        console.log('⚠️ LiveChat: Sessão não encontrada ou inativa, limpando localStorage');
         clearSavedSession();
         setShowRecoveryOption(false);
         toast({
@@ -204,7 +205,7 @@ const LiveChat = () => {
       supabase.removeChannel(realtimeChannel);
     }
 
-    console.log('Configurando real-time para sessão (LiveChat):', sessionId);
+    console.log('📡 LiveChat: Configurando real-time para sessão:', sessionId);
     setConnectionStatus('connecting');
     
     const channelName = `visitor-session-${sessionId}`;
@@ -218,7 +219,7 @@ const LiveChat = () => {
           filter: `session_id=eq.${sessionId}`
         },
         (payload) => {
-          console.log('Nova mensagem recebida via real-time (LiveChat):', payload);
+          console.log('💬 LiveChat: Nova mensagem recebida via real-time:', payload);
           const newMsg = {
             id: payload.new.id,
             message: payload.new.message,
@@ -226,7 +227,6 @@ const LiveChat = () => {
             timestamp: payload.new.timestamp
           };
           
-          // Só adiciona se não for uma mensagem do próprio visitante
           if (payload.new.sender_type !== 'lead' || payload.new.sender_id !== null) {
             setMessages(prev => {
               if (prev.some(msg => msg.id === newMsg.id)) {
@@ -235,7 +235,6 @@ const LiveChat = () => {
               return [...prev, newMsg];
             });
 
-            // Tocar som se habilitado e for mensagem de atendente
             if (soundEnabled && payload.new.sender_type === 'attendant') {
               playNotificationSound();
             }
@@ -243,7 +242,7 @@ const LiveChat = () => {
         }
       )
       .subscribe((status) => {
-        console.log('Status da conexão real-time (LiveChat):', status);
+        console.log('📡 LiveChat: Status da conexão real-time:', status);
         setConnectionStatus(status === 'SUBSCRIBED' ? 'connected' : 'disconnected');
       });
 
@@ -257,13 +256,13 @@ const LiveChat = () => {
       });
 
       if (error) {
-        console.error('Erro ao verificar horário comercial:', error);
+        console.error('❌ LiveChat: Erro ao verificar horário comercial:', error);
         return;
       }
 
       setIsBusinessTime(data?.isBusinessHours || false);
     } catch (error) {
-      console.error('Erro ao verificar horário comercial:', error);
+      console.error('❌ LiveChat: Erro ao verificar horário comercial:', error);
     }
   };
 
@@ -282,27 +281,24 @@ const LiveChat = () => {
     setLoading(true);
 
     try {
-      console.log('Iniciando nova sessão de chat...', formData);
+      console.log('🚀 LiveChat: Iniciando nova sessão de chat...', formData);
       
       const session = await createChatSession(formData);
       
-      console.log('Sessão criada com sucesso:', session);
+      console.log('✅ LiveChat: Sessão criada com sucesso:', session);
       setSessionId(session.id);
       setProtocolNumber(session.ticket_protocol);
       setStep('chat');
       
-      // Salvar sessão
       saveSessionToStorage(session.id, session);
       
-      // Buscar mensagens iniciais
       await loadMessages(session.id);
       
-      // Configurar real-time
       setupRealtime(session.id);
       setShowRecoveryOption(false);
 
     } catch (error) {
-      console.error('Erro ao iniciar chat:', error);
+      console.error('❌ LiveChat: Erro ao iniciar chat:', error);
     } finally {
       setLoading(false);
     }
@@ -312,7 +308,6 @@ const LiveChat = () => {
     try {
       await fetchMessages(sessionId);
       
-      // Buscar mensagens do banco
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -320,7 +315,7 @@ const LiveChat = () => {
         .order('timestamp', { ascending: true });
 
       if (error) {
-        console.error('Erro ao buscar mensagens:', error);
+        console.error('❌ LiveChat: Erro ao buscar mensagens:', error);
         return;
       }
 
@@ -332,19 +327,17 @@ const LiveChat = () => {
       })) || [];
 
       setMessages(formattedMessages);
-      console.log('Mensagens carregadas:', formattedMessages.length);
+      console.log('✅ LiveChat: Mensagens carregadas:', formattedMessages.length);
     } catch (error) {
-      console.error('Erro ao carregar mensagens:', error);
+      console.error('❌ LiveChat: Erro ao carregar mensagens:', error);
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
     
-    // Iniciar indicador de digitação
     startTyping();
     
-    // Reset timeout para parar digitação
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -359,7 +352,6 @@ const LiveChat = () => {
     
     if (!newMessage.trim() || !sessionId) return;
 
-    // Parar indicador de digitação
     stopTyping();
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
@@ -378,15 +370,14 @@ const LiveChat = () => {
     
     try {
       await sendMessage(sessionId, messageToSend, 'lead');
-      console.log('Mensagem de visitante enviada com sucesso');
+      console.log('✅ LiveChat: Mensagem de visitante enviada com sucesso');
 
-      // Remover mensagem temporária (será substituída pelo real-time)
       setMessages(prev => 
         prev.filter(msg => msg.id !== tempMessage.id)
       );
 
     } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
+      console.error('❌ LiveChat: Erro ao enviar mensagem:', error);
       setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
       setNewMessage(messageToSend);
       
@@ -419,16 +410,14 @@ const LiveChat = () => {
     });
   };
 
-  // Debug detalhado do estado do chat
-  console.log('LiveChat render - chatSystemEnabled:', chatSystemEnabled);
+  console.log('🔍 LiveChat render - chatSystemEnabled:', chatSystemEnabled);
   
-  // Se o sistema de chat estiver desativado, não renderizar o componente
   if (!chatSystemEnabled) {
-    console.log('🚫 Sistema de chat DESATIVADO, não renderizando LiveChat');
+    console.log('🚫 LiveChat: Sistema de chat DESATIVADO, não renderizando componente');
     return null;
   }
 
-  console.log('✅ Sistema de chat ATIVO, renderizando LiveChat');
+  console.log('✅ LiveChat: Sistema de chat ATIVO, renderizando LiveChat');
 
   if (!isOpen) {
     return (
@@ -438,7 +427,6 @@ const LiveChat = () => {
           className="h-14 w-14 rounded-full bg-primary shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 relative"
         >
           <MessageCircle className="h-6 w-6" />
-          {/* Indicador de status online */}
           {isBusinessTime && (
             <div className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-background" />
           )}
@@ -519,7 +507,6 @@ const LiveChat = () => {
                 </p>
               </div>
 
-              {/* Opção de recuperar chat anterior */}
               {showRecoveryOption && (
                 <div className="p-3 bg-muted/50 rounded-lg border">
                   <div className="flex items-center justify-between">
@@ -676,7 +663,6 @@ const LiveChat = () => {
                     </div>
                   ))}
                   
-                  {/* Indicador de digitação */}
                   <TypingIndicator 
                     isVisible={typingUsers.length > 0} 
                     userName="Atendente"

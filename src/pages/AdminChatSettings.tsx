@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +24,7 @@ interface ChatConfig {
   whatsapp_number?: string;
   system_instruction?: string;
   custom_responses: any;
+  active: boolean;
 }
 
 const AdminChatSettings = () => {
@@ -87,6 +87,7 @@ SEMPRE TERMINE SUAS RESPOSTAS COM:
 - Disponibilidade para mais informações
 
 Responda sempre em português brasileiro, de forma natural e útil.`,
+    active: true,
     custom_responses: {
       greeting: 'Olá! Bem-vindo à nossa imobiliária!',
       contact_info: 'Para entrar em contato, ligue para (11) 99999-9999 ou envie um email para contato@imobiliaria.com',
@@ -100,6 +101,7 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
 
   const fetchChatConfig = async () => {
     try {
+      console.log('🔍 Admin: Buscando configurações do chat...');
       const { data, error } = await supabase
         .from('chat_configurations')
         .select('*')
@@ -109,6 +111,8 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
+
+      console.log('📊 Admin: Dados do banco:', data);
 
       if (data) {
         setConfig(data);
@@ -121,13 +125,17 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
           welcome_message: data.welcome_message || 'Olá! Como posso ajudá-lo hoje?',
           whatsapp_number: data.whatsapp_number || '',
           system_instruction: data.system_instruction || formData.system_instruction,
+          active: data.active ?? true,
           custom_responses: typeof data.custom_responses === 'object' && data.custom_responses 
             ? data.custom_responses as any
             : formData.custom_responses
         });
+        console.log('✅ Admin: Configurações carregadas, active:', data.active);
+      } else {
+        console.log('⚠️ Admin: Nenhuma configuração encontrada, usando padrões');
       }
     } catch (error: any) {
-      console.error('Erro ao buscar configurações:', error);
+      console.error('❌ Admin: Erro ao buscar configurações:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar configurações do chat",
@@ -141,6 +149,8 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
   const saveChatConfig = async () => {
     setSaving(true);
     try {
+      console.log('💾 Admin: Salvando configurações...', { active: formData.active });
+      
       const configData = {
         company: formData.company,
         ai_chat_enabled: formData.ai_chat_enabled,
@@ -150,9 +160,11 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
         whatsapp_number: formData.whatsapp_number,
         system_instruction: formData.system_instruction,
         custom_responses: formData.custom_responses,
+        active: formData.active,
         ...(formData.api_key && { api_key_encrypted: formData.api_key }),
-        active: true,
       };
+
+      console.log('📝 Admin: Dados a serem salvos:', configData);
 
       if (config) {
         // Atualizar configuração existente
@@ -162,6 +174,7 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
           .eq('id', config.id);
 
         if (error) throw error;
+        console.log('✅ Admin: Configuração atualizada com sucesso');
       } else {
         // Criar nova configuração
         const { error } = await supabase
@@ -169,16 +182,18 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
           .insert(configData);
 
         if (error) throw error;
+        console.log('✅ Admin: Nova configuração criada com sucesso');
       }
 
       toast({
         title: "Sucesso",
-        description: "Configurações do chat salvas com sucesso",
+        description: `Sistema de chat ${formData.active ? 'ativado' : 'desativado'} com sucesso`,
       });
 
-      fetchChatConfig();
+      // Recarregar configurações para confirmar que foram salvas
+      await fetchChatConfig();
     } catch (error: any) {
-      console.error('Erro ao salvar:', error);
+      console.error('❌ Admin: Erro ao salvar:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar configurações",
@@ -216,6 +231,40 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
           <h2 className="text-2xl font-bold">Configurações do Chat IA</h2>
           <p className="text-muted-foreground">Configure o chat com IA, integração WhatsApp e horários comerciais</p>
         </div>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Sistema de Chat</CardTitle>
+            <CardDescription>
+              Ativar ou desativar todo o sistema de chat do site
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-4">
+              <Switch
+                id="chat-system-active"
+                checked={formData.active}
+                onCheckedChange={(checked) => {
+                  console.log('🔄 Admin: Mudando status do sistema para:', checked);
+                  setFormData({...formData, active: checked});
+                }}
+              />
+              <Label htmlFor="chat-system-active" className="text-lg font-medium">
+                {formData.active ? '✅ Sistema de Chat Ativo' : '🚫 Sistema de Chat Desativado'}
+              </Label>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              {formData.active 
+                ? 'O chat está disponível para os visitantes do site' 
+                : 'O chat não será exibido no site'}
+            </p>
+            <div className="mt-4">
+              <Button onClick={saveChatConfig} disabled={saving}>
+                {saving ? 'Salvando...' : 'Salvar Status do Sistema'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="space-y-6">
           <Tabs defaultValue="basic" className="w-full">
