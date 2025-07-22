@@ -94,10 +94,19 @@ const LiveChat = () => {
   }, [isOpen]);
 
   const setupConfigRealtime = () => {
+    // Limpar canal existente antes de criar novo
+    if (configChannelRef.current) {
+      console.log('🧹 LiveChat: Removendo canal de configurações existente');
+      supabase.removeChannel(configChannelRef.current);
+      configChannelRef.current = null;
+    }
+
     console.log('🔄 LiveChat: Configurando canal real-time para configurações do chat');
     
+    // Usar nome único para evitar conflitos
+    const channelName = `chat-config-changes-${Date.now()}-${Math.random()}`;
     const channel = supabase
-      .channel('chat-config-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -202,13 +211,16 @@ const LiveChat = () => {
 
   const setupRealtime = (sessionId: string) => {
     if (realtimeChannel) {
+      console.log('🧹 LiveChat: Removendo canal de mensagens existente');
       supabase.removeChannel(realtimeChannel);
+      setRealtimeChannel(null);
     }
 
     console.log('📡 LiveChat: Configurando real-time para sessão:', sessionId);
     setConnectionStatus('connecting');
     
-    const channelName = `visitor-session-${sessionId}`;
+    // Usar nome único para evitar conflitos
+    const channelName = `visitor-session-${sessionId}-${Date.now()}`;
     const channel = supabase.channel(channelName)
       .on(
         'postgres_changes',

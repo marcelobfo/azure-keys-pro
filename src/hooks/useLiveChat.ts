@@ -130,14 +130,23 @@ export const useLiveChat = () => {
 
   // Cleanup de canais
   const cleanupChannels = () => {
+    console.log('Limpando canais de real-time');
     if (realtimeChannel) {
       console.log('Removendo canal de sessões');
-      supabase.removeChannel(realtimeChannel);
+      try {
+        supabase.removeChannel(realtimeChannel);
+      } catch (error) {
+        console.error('Erro ao remover canal de sessões:', error);
+      }
       setRealtimeChannel(null);
     }
     if (messagesChannel) {
       console.log('Removendo canal de mensagens');
-      supabase.removeChannel(messagesChannel);
+      try {
+        supabase.removeChannel(messagesChannel);
+      } catch (error) {
+        console.error('Erro ao remover canal de mensagens:', error);
+      }
       setMessagesChannel(null);
     }
   };
@@ -149,9 +158,10 @@ export const useLiveChat = () => {
     console.log('Configurando canais real-time para usuário:', user.id);
     cleanupChannels();
 
-    // Canal para sessões de chat
+    // Canal para sessões de chat - usar nome único
+    const sessionChannelName = `global-chat-sessions-${user.id}-${Date.now()}`;
     const sessionChannel = supabase
-      .channel('global-chat-sessions')
+      .channel(sessionChannelName)
       .on(
         'postgres_changes',
         {
@@ -183,9 +193,10 @@ export const useLiveChat = () => {
 
     setRealtimeChannel(sessionChannel);
 
-    // Canal para mensagens
+    // Canal para mensagens - usar nome único
+    const msgChannelName = `global-chat-messages-${user.id}-${Date.now()}`;
     const msgChannel = supabase
-      .channel('global-chat-messages')
+      .channel(msgChannelName)
       .on(
         'postgres_changes',
         {
