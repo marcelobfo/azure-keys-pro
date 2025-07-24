@@ -11,6 +11,7 @@ interface FeaturedProperty {
   is_beachfront?: boolean;
   is_near_beach?: boolean;
   is_development?: boolean;
+  accepts_exchange?: boolean;
   tags?: string[];
 }
 
@@ -29,6 +30,7 @@ export const usePropertyTags = (property: FeaturedProperty): TagData[] => {
   if (property.is_beachfront) specialTags.push({ text: 'Frente Mar', color: 'bg-blue-500' });
   if (property.is_near_beach) specialTags.push({ text: 'Quadra Mar', color: 'bg-cyan-500' });
   if (property.is_development) specialTags.push({ text: 'Empreendimento', color: 'bg-purple-500' });
+  if (property.accepts_exchange) specialTags.push({ text: 'Aceita Permuta', color: 'bg-green-500' });
 
   // Combinar tags normais com tags especiais
   const allTags = [

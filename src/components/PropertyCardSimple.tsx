@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Heart, MapPin, Bed, Bath, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFavorites } from '@/hooks/useFavorites';
+import PropertyCardTags from './PropertyCardTags';
 
 interface Property {
   id: string;
@@ -23,6 +24,7 @@ interface Property {
   is_near_beach?: boolean;
   is_development?: boolean;
   is_featured?: boolean;
+  accepts_exchange?: boolean;
   property_code?: string;
 }
 
@@ -68,8 +70,11 @@ const PropertyCardSimple: React.FC<PropertyCardSimpleProps> = ({ property }) => 
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         />
         
+        {/* Tags */}
+        <PropertyCardTags property={property} maxVisibleTags={2} />
+        
         {/* Preço */}
-        <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+        <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold z-10">
           {getPriceDisplay()}
         </div>
         
@@ -81,7 +86,7 @@ const PropertyCardSimple: React.FC<PropertyCardSimpleProps> = ({ property }) => 
         {/* Botão de favorito */}
         <Button
           onClick={handleFavoriteClick}
-          className={`absolute top-4 right-4 p-2 rounded-full transition-colors z-10 ${
+          className={`absolute bottom-4 right-4 p-2 rounded-full transition-colors z-10 ${
             isFavorite(property.id)
               ? 'bg-red-500 hover:bg-red-600 text-white'
               : 'bg-white hover:bg-gray-100 text-gray-600'

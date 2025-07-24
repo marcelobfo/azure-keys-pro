@@ -17,6 +17,7 @@ interface PropertyFilters {
   isNearBeach: boolean;
   isDevelopment: boolean;
   isFeatured: boolean;
+  acceptsExchange: boolean;
 }
 
 interface Property {
@@ -36,6 +37,7 @@ interface Property {
   is_near_beach?: boolean;
   is_development?: boolean;
   is_featured?: boolean;
+  accepts_exchange?: boolean;
   property_code?: string;
 }
 
@@ -55,7 +57,8 @@ export const usePropertyFilters = (properties: Property[]) => {
     isBeachfront: false,
     isNearBeach: false,
     isDevelopment: false,
-    isFeatured: false
+    isFeatured: false,
+    acceptsExchange: false
   });
 
   const filteredProperties = useMemo(() => {
@@ -144,6 +147,7 @@ export const usePropertyFilters = (properties: Property[]) => {
         if (property.is_beachfront) specialCategories.push('frente mar', 'beachfront');
         if (property.is_near_beach) specialCategories.push('quadra mar', 'near beach');
         if (property.is_development) specialCategories.push('empreendimento', 'development');
+        if (property.accepts_exchange) specialCategories.push('aceita permuta', 'exchange');
         
         const allSearchableTags = [...propertyTags, ...specialCategories];
         
@@ -175,6 +179,10 @@ export const usePropertyFilters = (properties: Property[]) => {
         return false;
       }
 
+      if (filters.acceptsExchange && !property.accepts_exchange) {
+        return false;
+      }
+
       return true;
     });
   }, [properties, filters]);
@@ -195,7 +203,8 @@ export const usePropertyFilters = (properties: Property[]) => {
       isBeachfront: false,
       isNearBeach: false,
       isDevelopment: false,
-      isFeatured: false
+      isFeatured: false,
+      acceptsExchange: false
     });
   };
 

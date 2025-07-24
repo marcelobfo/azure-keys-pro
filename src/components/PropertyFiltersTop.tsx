@@ -23,6 +23,7 @@ interface PropertyFilters {
   isNearBeach: boolean;
   isDevelopment: boolean;
   isFeatured: boolean;
+  acceptsExchange: boolean;
 }
 
 interface PropertyFiltersTopProps {
@@ -68,7 +69,7 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
     if (filters.bedrooms) count++;
     if (filters.bathrooms) count++;
     if (filters.tags.length > 0) count++;
-    if (filters.isBeachfront || filters.isNearBeach || filters.isDevelopment || filters.isFeatured) count++;
+    if (filters.isBeachfront || filters.isNearBeach || filters.isDevelopment || filters.isFeatured || filters.acceptsExchange) count++;
     return count;
   };
 
@@ -277,6 +278,13 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
                 onClick={() => updateFilter('isFeatured', !filters.isFeatured)}
               >
                 Destaque
+              </Button>
+              <Button
+                variant={filters.acceptsExchange ? "default" : "outline"}
+                size="sm"
+                onClick={() => updateFilter('acceptsExchange', !filters.acceptsExchange)}
+              >
+                Aceita Permuta
               </Button>
             </div>
           </div>

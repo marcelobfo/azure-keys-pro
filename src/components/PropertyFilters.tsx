@@ -158,6 +158,17 @@ const PropertyFilters: React.FC<PropertyFiltersProps> = ({
                 🏗️ Empreendimento
               </label>
             </div>
+            
+            <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20">
+              <Checkbox
+                id="acceptsExchange"
+                checked={filters.acceptsExchange}
+                onCheckedChange={(checked) => updateFilter('acceptsExchange', checked)}
+              />
+              <label htmlFor="acceptsExchange" className="text-sm font-medium cursor-pointer">
+                🔄 Aceita Permuta
+              </label>
+            </div>
           </div>
         </div>
 
