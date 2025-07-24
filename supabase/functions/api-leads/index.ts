@@ -32,18 +32,41 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Verificar se o token é válido
-    const tokenHash = btoa(token)
-    const { data: tokenData, error: tokenError } = await supabase
+    // Validate token securely using database function
+    const { data: tokens, error: tokenError } = await supabase
       .from('api_tokens')
       .select('*')
-      .eq('token_hash', tokenHash)
       .eq('active', true)
-      .single()
 
-    if (tokenError || !tokenData) {
+    if (tokenError) {
+      console.error('Token lookup error:', tokenError)
       return new Response(
-        JSON.stringify({ error: 'Token inválido' }),
+        JSON.stringify({ error: 'Erro de autenticação' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Verify token against all active tokens using secure verification
+    let validToken = null
+    for (const tokenRecord of tokens || []) {
+      const { data: isValid, error: verifyError } = await supabase
+        .rpc('verify_token', { 
+          token: token, 
+          hash: tokenRecord.token_hash 
+        })
+      
+      if (!verifyError && isValid) {
+        validToken = tokenRecord
+        break
+      }
+    }
+
+    if (!validToken) {
+      return new Response(
+        JSON.stringify({ error: 'Token inválido ou expirado' }),
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -51,11 +74,22 @@ serve(async (req) => {
       )
     }
 
-    // Atualizar último uso do token
+    // Check token expiration
+    if (validToken.expires_at && new Date(validToken.expires_at) < new Date()) {
+      return new Response(
+        JSON.stringify({ error: 'Token expirado' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Update token last used timestamp
     await supabase
       .from('api_tokens')
       .update({ last_used_at: new Date().toISOString() })
-      .eq('id', tokenData.id)
+      .eq('id', validToken.id)
 
     if (req.method === 'GET') {
       // GET /api/leads - Listar leads
@@ -81,6 +115,7 @@ serve(async (req) => {
       
       const { name, email, phone, message, property_id } = body
 
+      // Input validation and sanitization
       if (!name || !email) {
         return new Response(
           JSON.stringify({ error: 'Nome e email são obrigatórios' }),
@@ -91,13 +126,31 @@ serve(async (req) => {
         )
       }
 
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        return new Response(
+          JSON.stringify({ error: 'Formato de email inválido' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+
+      // Sanitize inputs
+      const sanitizedName = name.trim().substring(0, 255)
+      const sanitizedEmail = email.trim().toLowerCase().substring(0, 255)
+      const sanitizedPhone = phone ? phone.trim().substring(0, 20) : null
+      const sanitizedMessage = message ? message.trim().substring(0, 1000) : null
+
       const { data: lead, error } = await supabase
         .from('leads')
         .insert({
-          name,
-          email,
-          phone,
-          message,
+          name: sanitizedName,
+          email: sanitizedEmail,
+          phone: sanitizedPhone,
+          message: sanitizedMessage,
           property_id,
           status: 'new'
         })

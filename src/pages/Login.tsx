@@ -186,18 +186,13 @@ const LoginPage = () => {
               </p>
             </div>
 
-            {/* Demo Accounts */}
+            {/* Demo Notice - Security: Hardcoded credentials removed */}
             <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
               <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">
-                Contas de demonstração:
+                Para acessar o sistema, utilize suas credenciais de usuário.
               </p>
-              <div className="space-y-2 text-xs">
-                <div className="bg-gray-50 dark:bg-slate-700 p-2 rounded">
-                  <strong>Admin:</strong> admin@realestatepro.com / admin123
-                </div>
-                <div className="bg-gray-50 dark:bg-slate-700 p-2 rounded">
-                  <strong>Corretor:</strong> corretor@realestatepro.com / corretor123
-                </div>
+              <div className="bg-gray-50 dark:bg-slate-700 p-2 rounded text-xs text-center">
+                <strong>Primeira vez?</strong> Cadastre-se usando o botão abaixo.
               </div>
             </div>
           </CardContent>

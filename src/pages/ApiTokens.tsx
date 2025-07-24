@@ -54,10 +54,6 @@ const ApiTokens = () => {
     }
   };
 
-  const generateToken = () => {
-    return 'reit_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  };
-
   const createToken = async () => {
     if (!newTokenName.trim()) {
       toast({
@@ -69,15 +65,31 @@ const ApiTokens = () => {
     }
 
     try {
-      const token = generateToken();
-      const tokenHash = btoa(token); // Simples hash para demonstração
+      // Generate cryptographically secure token using database function
+      const { data: tokenData, error: tokenError } = await supabase
+        .rpc('generate_secure_token');
+
+      if (tokenError) throw tokenError;
+      
+      const token = tokenData;
+      
+      // Hash token securely using database function
+      const { data: hashedToken, error: hashError } = await supabase
+        .rpc('hash_token', { token });
+
+      if (hashError) throw hashError;
+
+      // Set expiration to 1 year from now
+      const expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
       const { error } = await supabase
         .from('api_tokens')
         .insert({
           token_name: newTokenName,
-          token_hash: tokenHash,
-          active: true
+          token_hash: hashedToken,
+          active: true,
+          expires_at: expiresAt.toISOString()
         });
 
       if (error) throw error;
@@ -88,9 +100,10 @@ const ApiTokens = () => {
       
       toast({
         title: "Sucesso",
-        description: "Token criado com sucesso",
+        description: "Token criado com sucesso. Copie-o agora, ele não será mostrado novamente.",
       });
     } catch (error: any) {
+      console.error('Token creation error:', error);
       toast({
         title: "Erro",
         description: "Erro ao criar token",
