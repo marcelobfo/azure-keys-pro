@@ -9,12 +9,14 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout';
+import PropertiesBulkActions from '@/components/PropertiesBulkActions';
 
 interface Property {
   id: string;
   title: string;
   price: number;
   location: string;
+  city: string;
   area: number | null;
   bedrooms: number | null;
   bathrooms: number | null;
@@ -26,6 +28,7 @@ interface Property {
   is_beachfront: boolean;
   is_near_beach: boolean;
   is_development: boolean;
+  accepts_exchange: boolean;
 }
 
 const ManageProperties = () => {
@@ -61,7 +64,8 @@ const ManageProperties = () => {
         is_featured: Boolean(item.is_featured),
         is_beachfront: Boolean(item.is_beachfront),
         is_near_beach: Boolean(item.is_near_beach),
-        is_development: Boolean(item.is_development)
+        is_development: Boolean(item.is_development),
+        accepts_exchange: Boolean(item.accepts_exchange)
       })));
     } catch (error: any) {
       console.error('Erro ao buscar propriedades:', error);
@@ -125,6 +129,7 @@ const ManageProperties = () => {
     if (property.is_beachfront) badges.push(<Badge key="beachfront" className="bg-blue-500">Frente Mar</Badge>);
     if (property.is_near_beach) badges.push(<Badge key="near-beach" className="bg-cyan-500">Quadra Mar</Badge>);
     if (property.is_development) badges.push(<Badge key="development" className="bg-purple-500">Empreendimento</Badge>);
+    if (property.accepts_exchange) badges.push(<Badge key="exchange" className="bg-green-500">Aceita Permuta</Badge>);
     return badges;
   };
 
@@ -155,8 +160,13 @@ const ManageProperties = () => {
           </Button>
         </div>
 
+        <PropertiesBulkActions
+          properties={properties}
+          onImportComplete={fetchProperties}
+        />
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{properties.length}</div>
@@ -179,6 +189,12 @@ const ManageProperties = () => {
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{properties.filter(p => p.is_beachfront || p.is_near_beach).length}</div>
               <p className="text-sm text-muted-foreground">Frente/Quadra Mar</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold">{properties.filter(p => p.accepts_exchange).length}</div>
+              <p className="text-sm text-muted-foreground">Aceita Permuta</p>
             </CardContent>
           </Card>
         </div>

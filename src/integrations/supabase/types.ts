@@ -504,6 +504,7 @@ export type Database = {
       }
       properties: {
         Row: {
+          accepts_exchange: boolean | null
           area: number | null
           bathrooms: number | null
           bedrooms: number | null
@@ -547,6 +548,7 @@ export type Database = {
           virtual_tour_url: string | null
         }
         Insert: {
+          accepts_exchange?: boolean | null
           area?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
@@ -590,6 +592,7 @@ export type Database = {
           virtual_tour_url?: string | null
         }
         Update: {
+          accepts_exchange?: boolean | null
           area?: number | null
           bathrooms?: number | null
           bedrooms?: number | null

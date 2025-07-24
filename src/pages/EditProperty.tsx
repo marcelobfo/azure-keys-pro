@@ -71,6 +71,7 @@ const EditProperty = () => {
     has_furnished: false,
     has_air_conditioning: false,
     has_solar_energy: false,
+    accepts_exchange: false,
   });
 
   useEffect(() => {
@@ -134,6 +135,7 @@ const EditProperty = () => {
           has_furnished: features.includes('Mobiliado'),
           has_air_conditioning: features.includes('Ar Condicionado'),
           has_solar_energy: features.includes('Energia Solar'),
+          accepts_exchange: Boolean(data.accepts_exchange),
         });
       } catch (error) {
         toast({
@@ -253,6 +255,7 @@ const EditProperty = () => {
           is_beachfront: formData.is_beachfront,
           is_near_beach: formData.is_near_beach,
           is_development: formData.is_development,
+          accepts_exchange: formData.accepts_exchange,
         })
         .eq('id', id);
 
@@ -792,6 +795,15 @@ const EditProperty = () => {
                     onCheckedChange={(checked) => setFormData({...formData, is_development: !!checked})}
                   />
                   <Label htmlFor="is_development">Empreendimento</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="accepts_exchange"
+                    checked={formData.accepts_exchange}
+                    onCheckedChange={(checked) => setFormData({...formData, accepts_exchange: !!checked})}
+                  />
+                  <Label htmlFor="accepts_exchange">Aceita Permuta</Label>
                 </div>
               </div>
             </CardContent>

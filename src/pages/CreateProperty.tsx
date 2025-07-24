@@ -56,6 +56,7 @@ const CreateProperty = () => {
     is_beachfront: false,
     is_near_beach: false,
     is_development: false,
+    accepts_exchange: false,
     // Facilidades/Comodidades
     has_pool: false,
     has_gym: false,
@@ -183,6 +184,7 @@ const CreateProperty = () => {
           is_beachfront: formData.is_beachfront,
           is_near_beach: formData.is_near_beach,
           is_development: formData.is_development,
+          accepts_exchange: formData.accepts_exchange,
           user_id: user.id,
           status: 'active',
         });
@@ -713,6 +715,15 @@ const CreateProperty = () => {
                     onCheckedChange={(checked) => setFormData({...formData, is_development: !!checked})}
                   />
                   <Label htmlFor="is_development">Empreendimento</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="accepts_exchange"
+                    checked={formData.accepts_exchange}
+                    onCheckedChange={(checked) => setFormData({...formData, accepts_exchange: !!checked})}
+                  />
+                  <Label htmlFor="accepts_exchange">Aceita Permuta</Label>
                 </div>
               </div>
             </CardContent>

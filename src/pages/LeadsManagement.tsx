@@ -3,24 +3,65 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Phone, Mail, Calendar, MessageSquare, Search, Filter, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLeads } from '@/hooks/useLeads';
+import { useLeads, Lead } from '@/hooks/useLeads';
 import Layout from '@/components/Layout';
 import EditLeadDialog from '@/components/EditLeadDialog';
+import LeadsBulkActions from '@/components/LeadsBulkActions';
 
 const LeadsManagement = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { leads, loading, updateLeadStatus, updateLead, deleteLead } = useLeads();
+  const { leads, loading, updateLeadStatus, updateLead, deleteLead, fetchLeads } = useLeads();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
 
   const handleDeleteLead = async (leadId: string) => {
     if (window.confirm('Tem certeza que deseja excluir este lead?')) {
       await deleteLead(leadId);
+    }
+  };
+
+  const handleSelectLead = (leadId: string) => {
+    setSelectedLeads(prev => 
+      prev.includes(leadId) 
+        ? prev.filter(id => id !== leadId)
+        : [...prev, leadId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedLeads.length === filteredLeads.length) {
+      setSelectedLeads([]);
+    } else {
+      setSelectedLeads(filteredLeads.map(lead => lead.id));
+    }
+  };
+
+  const handleBulkUpdate = async (leadIds: string[], updates: Partial<Lead>) => {
+    try {
+      for (const leadId of leadIds) {
+        await updateLead(leadId, updates);
+      }
+    } catch (error) {
+      console.error('Erro na atualização em massa:', error);
+      throw error;
+    }
+  };
+
+  const handleBulkDelete = async (leadIds: string[]) => {
+    try {
+      for (const leadId of leadIds) {
+        await deleteLead(leadId);
+      }
+    } catch (error) {
+      console.error('Erro na exclusão em massa:', error);
+      throw error;
     }
   };
 
@@ -100,6 +141,15 @@ const LeadsManagement = () => {
           </p>
         </div>
 
+        <LeadsBulkActions
+          selectedLeads={selectedLeads}
+          onClearSelection={() => setSelectedLeads([])}
+          onBulkUpdate={handleBulkUpdate}
+          onBulkDelete={handleBulkDelete}
+          onImportComplete={fetchLeads}
+          allLeads={leads}
+        />
+
         {/* Filters */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
@@ -173,11 +223,16 @@ const LeadsManagement = () => {
               <Card key={lead.id}>
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-semibold">{lead.name}</h3>
-                        {getStatusBadge(lead.status)}
-                      </div>
+                    <div className="flex items-center space-x-4 flex-1">
+                      <Checkbox
+                        checked={selectedLeads.includes(lead.id)}
+                        onCheckedChange={() => handleSelectLead(lead.id)}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-lg font-semibold">{lead.name}</h3>
+                          {getStatusBadge(lead.status)}
+                        </div>
                       
                       <div className="space-y-1 mb-4">
                         <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center">
@@ -203,6 +258,7 @@ const LeadsManagement = () => {
                         <p className="text-xs text-gray-500">
                           {new Date(lead.created_at).toLocaleDateString('pt-BR')} às {new Date(lead.created_at).toLocaleTimeString('pt-BR')}
                         </p>
+                        </div>
                       </div>
                     </div>
 
