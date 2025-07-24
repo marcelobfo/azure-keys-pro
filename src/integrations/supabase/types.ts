@@ -682,6 +682,45 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          resource_id: string | null
+          resource_type: string | null
+          success: boolean | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string | null
+          success?: boolean | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string | null
+          success?: boolean | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           id: number
@@ -878,6 +917,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_tokens: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       generate_clean_slug: {
         Args: { input_text: string }
         Returns: string
@@ -899,12 +942,24 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_secure_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      hash_token: {
+        Args: { token: string }
+        Returns: string
+      }
       increment_property_views: {
         Args: { property_id: string }
         Returns: undefined
       }
       is_business_hours: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      verify_token: {
+        Args: { token: string; hash: string }
         Returns: boolean
       }
     }
