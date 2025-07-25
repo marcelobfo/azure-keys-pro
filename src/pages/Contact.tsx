@@ -21,6 +21,36 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação frontend
+    if (!formData.name.trim() || formData.name.trim().length < 2) {
+      toast({
+        title: "Erro de validação",
+        description: "Nome deve ter pelo menos 2 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim() || !emailRegex.test(formData.email.trim())) {
+      toast({
+        title: "Erro de validação",
+        description: "Por favor, insira um email válido.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.message.trim()) {
+      toast({
+        title: "Erro de validação",
+        description: "A mensagem é obrigatória.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -28,10 +58,10 @@ const Contact = () => {
         .from('leads')
         .insert([
           {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            message: formData.message,
+            name: formData.name.trim(),
+            email: formData.email.trim().toLowerCase(),
+            phone: formData.phone.trim() || null,
+            message: formData.message.trim(),
             status: 'new'
           }
         ])
@@ -55,9 +85,17 @@ const Contact = () => {
 
     } catch (error: any) {
       console.error('Erro ao enviar mensagem:', error);
+      
+      let errorMessage = "Erro interno do servidor. Tente novamente.";
+      if (error.message.includes('Email inválido')) {
+        errorMessage = "Por favor, verifique o formato do seu email.";
+      } else if (error.message.includes('Nome deve ter pelo menos')) {
+        errorMessage = "Nome deve ter pelo menos 2 caracteres.";
+      }
+      
       toast({
-        title: "Erro",
-        description: `Erro ao enviar mensagem: ${error.message}`,
+        title: "Erro ao enviar mensagem",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

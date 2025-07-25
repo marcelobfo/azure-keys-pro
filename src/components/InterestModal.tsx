@@ -30,10 +30,21 @@ const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.email.trim()) {
+    // Validação frontend
+    if (!formData.name.trim() || formData.name.trim().length < 2) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Nome e email são obrigatórios.",
+        title: "Erro de validação",
+        description: "Nome deve ter pelo menos 2 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim() || !emailRegex.test(formData.email.trim())) {
+      toast({
+        title: "Erro de validação",
+        description: "Por favor, insira um email válido.",
         variant: "destructive",
       });
       return;
@@ -44,7 +55,7 @@ const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle
     try {
       const leadData = {
         name: formData.name.trim(),
-        email: formData.email.trim(),
+        email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim() || null,
         message: formData.message.trim() || null,
         property_id: propertyId,
@@ -82,9 +93,17 @@ const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle
 
     } catch (error: any) {
       console.error('Erro ao enviar interesse:', error);
+      
+      let errorMessage = "Erro interno do servidor. Tente novamente.";
+      if (error.message.includes('Email inválido')) {
+        errorMessage = "Por favor, verifique o formato do seu email.";
+      } else if (error.message.includes('Nome deve ter pelo menos')) {
+        errorMessage = "Nome deve ter pelo menos 2 caracteres.";
+      }
+      
       toast({
-        title: "Erro",
-        description: `Erro ao enviar interesse: ${error.message}`,
+        title: "Erro ao enviar interesse",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
