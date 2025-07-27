@@ -2,6 +2,7 @@
 import React from 'react';
 import { MapPin } from 'lucide-react';
 import PropertyCardSpecs from './PropertyCardSpecs';
+import { formatCurrency } from '../utils/priceUtils';
 
 interface FeaturedProperty {
   title: string;
@@ -11,6 +12,9 @@ interface FeaturedProperty {
   bathrooms: number;
   suites?: number;
   features?: string[];
+  price: number;
+  rental_price?: number;
+  purpose?: string;
 }
 
 interface PropertyCardContentProps {
@@ -22,9 +26,34 @@ const PropertyCardContent: React.FC<PropertyCardContentProps> = ({ property }) =
 
   return (
     <div className="p-6">
-      <h3 className="text-xl font-semibold mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
+      <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
         {property.title}
       </h3>
+      
+      {/* Preços abaixo do título */}
+      <div className="mb-3">
+        {property.purpose === 'rent' && property.rental_price ? (
+          <div className="text-lg font-bold text-green-600">
+            {formatCurrency(property.rental_price)}/mês
+          </div>
+        ) : property.purpose === 'both' ? (
+          <div className="flex flex-col gap-1">
+            <div className="text-sm font-semibold text-blue-600">
+              Venda: {formatCurrency(property.price)}
+            </div>
+            {property.rental_price && (
+              <div className="text-sm font-semibold text-green-600">
+                Aluguel: {formatCurrency(property.rental_price)}/mês
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-lg font-bold text-blue-600">
+            {formatCurrency(property.price)}
+          </div>
+        )}
+      </div>
+      
       <p className="text-gray-600 dark:text-gray-300 mb-4 flex items-center">
         <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
         <span className="truncate">{property.location}</span>

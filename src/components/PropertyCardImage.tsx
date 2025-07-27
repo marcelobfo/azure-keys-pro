@@ -67,44 +67,17 @@ const PropertyCardImage: React.FC<PropertyCardImageProps> = ({
         className="w-full h-60 object-cover group-hover:scale-105 transition-transform duration-300"
       />
       
-      {/* Tags no canto superior esquerdo */}
-      <PropertyCardTags property={property} />
+      {/* Tags no canto superior esquerdo com mais espaço */}
+      <PropertyCardTags property={property} maxVisibleTags={3} />
 
-      {/* Preços no canto inferior direito */}
-      <div className="absolute bottom-4 right-4 flex flex-col gap-1">
-        {property.purpose === 'rent' && property.rental_price ? (
-          <div className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-            {formatCurrency(property.rental_price)}/mês
-          </div>
-        ) : property.purpose === 'both' ? (
-          <>
-            <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-              Venda: {formatCurrency(property.price)}
-            </div>
-            {property.rental_price && (
-              <div className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                Aluguel: {formatCurrency(property.rental_price)}/mês
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-            {formatCurrency(property.price)}
-          </div>
-        )}
-      </div>
-
-      {/* Tipo da propriedade e código no canto inferior esquerdo */}
-      <div className="absolute bottom-4 left-4 flex flex-col gap-1">
-        <div className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm font-medium">
-          {property.property_type}
-        </div>
-        {property.property_code && (
-          <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs font-medium">
+      {/* Apenas código da propriedade no canto inferior esquerdo */}
+      {property.property_code && (
+        <div className="absolute bottom-4 left-4">
+          <div className="bg-white/90 dark:bg-slate-800/90 text-gray-900 dark:text-white px-2 py-1 rounded text-xs font-medium">
             {property.property_code}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Botão de favorito */}
       <Button

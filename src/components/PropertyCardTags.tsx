@@ -47,7 +47,7 @@ const PropertyCardTags: React.FC<PropertyCardTagsProps> = ({ property, maxVisibl
   if (allTags.length === 0) return null;
 
   return (
-    <div className="absolute top-4 left-4 flex flex-wrap gap-1">
+    <div className="absolute top-4 left-4 flex flex-col gap-1 max-w-[50%]">
       {allTags.slice(0, maxVisibleTags).map((tag, index) => (
         <span
           key={index}
