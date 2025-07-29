@@ -62,10 +62,10 @@ const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle
         status: 'new'
       };
 
-      const { data, error } = await supabase
-        .from('leads')
-        .insert([leadData])
-        .select();
+      // Usar edge function para bypasser RLS
+      const { data, error } = await supabase.functions.invoke('insert-lead', {
+        body: leadData
+      });
 
       if (error) {
         throw error;
@@ -75,7 +75,7 @@ const InterestModal: React.FC<InterestModalProps> = ({ propertyId, propertyTitle
       trackEvent('lead_created', {
         property_id: propertyId,
         property_title: propertyTitle,
-        lead_id: data[0]?.id
+        lead_id: data?.data?.id
       });
 
       toast({
