@@ -54,18 +54,16 @@ const Contact = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from('leads')
-        .insert([
-          {
-            name: formData.name.trim(),
-            email: formData.email.trim().toLowerCase(),
-            phone: formData.phone.trim() || null,
-            message: formData.message.trim(),
-            status: 'new'
-          }
-        ])
-        .select();
+      // Usar edge function para bypasser RLS
+      const { data, error } = await supabase.functions.invoke('insert-lead', {
+        body: {
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone: formData.phone.trim() || null,
+          message: formData.message.trim(),
+          status: 'new'
+        }
+      });
 
       if (error) {
         throw error;

@@ -48,10 +48,10 @@ const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({
     try {
       const visitData = createVisitData(formData, propertyId);
 
-      const { data, error } = await supabase
-        .from('visits')
-        .insert([visitData])
-        .select();
+      // Usar edge function para bypasser RLS
+      const { data, error } = await supabase.functions.invoke('insert-visit', {
+        body: visitData
+      });
 
       if (error) {
         throw error;
