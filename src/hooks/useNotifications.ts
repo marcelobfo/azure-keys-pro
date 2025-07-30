@@ -21,15 +21,13 @@ export const useNotifications = () => {
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef(false);
 
   // Cleanup function
   const cleanupSubscription = () => {
-    if (channelRef.current && isSubscribedRef.current) {
+    if (channelRef.current) {
       console.log('Cleaning up notification subscription');
-      channelRef.current.unsubscribe();
+      supabase.removeChannel(channelRef.current);
       channelRef.current = null;
-      isSubscribedRef.current = false;
     }
   };
 
@@ -77,16 +75,16 @@ export const useNotifications = () => {
   };
 
   const setupRealtimeSubscription = () => {
-    if (!user?.id || isSubscribedRef.current) {
-      console.log('Skipping subscription setup - no user or already subscribed');
+    if (!user?.id) {
+      console.log('Skipping subscription setup - no user');
       return;
     }
 
+    // Cleanup any existing subscription first
+    cleanupSubscription();
+
     try {
       console.log('Creating new notification channel for user:', user.id);
-      
-      // Cleanup any existing subscription first
-      cleanupSubscription();
       
       // Create new channel with unique name
       const channelName = `notifications-${user.id}-${Date.now()}`;
@@ -119,11 +117,6 @@ export const useNotifications = () => {
         )
         .subscribe((status) => {
           console.log('Subscription status:', status);
-          if (status === 'SUBSCRIBED') {
-            isSubscribedRef.current = true;
-          } else if (status === 'CLOSED') {
-            isSubscribedRef.current = false;
-          }
         });
 
       channelRef.current = channel;
