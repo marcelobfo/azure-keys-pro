@@ -209,7 +209,12 @@ export type Database = {
           created_at: string | null
           custom_responses: Json | null
           id: string
+          knowledge_base_enabled: boolean | null
+          max_tokens: number | null
+          provider_model: string | null
           system_instruction: string | null
+          temperature: number | null
+          top_p: number | null
           updated_at: string | null
           welcome_message: string | null
           whatsapp_enabled: boolean | null
@@ -224,7 +229,12 @@ export type Database = {
           created_at?: string | null
           custom_responses?: Json | null
           id?: string
+          knowledge_base_enabled?: boolean | null
+          max_tokens?: number | null
+          provider_model?: string | null
           system_instruction?: string | null
+          temperature?: number | null
+          top_p?: number | null
           updated_at?: string | null
           welcome_message?: string | null
           whatsapp_enabled?: boolean | null
@@ -239,7 +249,12 @@ export type Database = {
           created_at?: string | null
           custom_responses?: Json | null
           id?: string
+          knowledge_base_enabled?: boolean | null
+          max_tokens?: number | null
+          provider_model?: string | null
           system_instruction?: string | null
+          temperature?: number | null
+          top_p?: number | null
           updated_at?: string | null
           welcome_message?: string | null
           whatsapp_enabled?: boolean | null
@@ -383,6 +398,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      knowledge_base_articles: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          published: boolean | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          published?: boolean | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          published?: boolean | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       leads: {
         Row: {

@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -21,6 +22,34 @@ serve(async (req) => {
 
     const { action, data } = await req.json();
     console.log('Chat processor - Action:', action, 'Data:', data);
+
+    // Get active chat configuration for AI settings
+    const getChatConfig = async () => {
+      const { data: chatConfig } = await supabase
+        .from('chat_configurations')
+        .select('*')
+        .eq('active', true)
+        .single();
+      return chatConfig;
+    };
+
+    // Search knowledge base for relevant content
+    const searchKnowledgeBase = async (query: string) => {
+      const { data: articles } = await supabase
+        .from('knowledge_base_articles')
+        .select('title, content')
+        .eq('published', true)
+        .textSearch('title,content', query, {
+          type: 'websearch',
+          config: 'portuguese'
+        })
+        .limit(3);
+      
+      if (articles && articles.length > 0) {
+        return articles.map(article => `**${article.title}**\n${article.content}`).join('\n\n');
+      }
+      return null;
+    };
 
     switch (action) {
       case 'create_chat_session': {
@@ -128,26 +157,66 @@ serve(async (req) => {
           }
 
           // Verificar se há configuração de AI ativa
-          const { data: chatConfig } = await supabase
-            .from('chat_configurations')
-            .select('*')
-            .eq('active', true)
-            .single();
+          const chatConfig = await getChatConfig();
 
           if (chatConfig?.ai_chat_enabled) {
             console.log('AI Chat habilitado, enviando resposta automática...');
+            console.log('Usando configurações:', {
+              provider: chatConfig.api_provider,
+              model: chatConfig.provider_model,
+              temperature: chatConfig.temperature,
+              topP: chatConfig.top_p,
+              maxTokens: chatConfig.max_tokens,
+              knowledgeBase: chatConfig.knowledge_base_enabled
+            });
             
             try {
-              // Chamar a função AI para gerar resposta
-              const { data: aiResponse, error: aiError } = await supabase.functions.invoke('gemini-chat', {
-                body: {
-                  message: leadData.message,
-                  context: `Cliente ${leadData.name} iniciou um chat sobre: ${leadData.subject}. Seja prestativo e profissional.`,
-                  sessionId: sessionResult.id
+              // Buscar na base de conhecimento se habilitada
+              let knowledgeContext = '';
+              if (chatConfig.knowledge_base_enabled) {
+                console.log('Buscando na base de conhecimento...');
+                const kbContent = await searchKnowledgeBase(leadData.message);
+                if (kbContent) {
+                  knowledgeContext = `\n\nContexto da Base de Conhecimento:\n${kbContent}`;
+                  console.log('Conhecimento encontrado:', kbContent.substring(0, 200) + '...');
                 }
-              });
+              }
 
-              if (!aiError && aiResponse?.response) {
+              // Preparar contexto completo
+              const systemInstruction = (chatConfig.system_instruction || 'Você é um assistente imobiliário prestativo.') + knowledgeContext;
+              const context = `Cliente ${leadData.name} iniciou um chat sobre: ${leadData.subject}. ${systemInstruction}`;
+
+              // Chamar função AI baseada no provider
+              let aiResponse;
+              if (chatConfig.api_provider === 'openai') {
+                const { data: response, error: aiError } = await supabase.functions.invoke('ai-chat-enhanced', {
+                  body: {
+                    message: leadData.message,
+                    context: context,
+                    sessionId: sessionResult.id,
+                    temperature: chatConfig.temperature,
+                    maxTokens: chatConfig.max_tokens
+                  }
+                });
+                aiResponse = response;
+              } else {
+                // Default to Gemini
+                const { data: response, error: aiError } = await supabase.functions.invoke('gemini-chat', {
+                  body: {
+                    message: leadData.message,
+                    context: context,
+                    sessionId: sessionResult.id,
+                    systemInstruction: systemInstruction,
+                    temperature: chatConfig.temperature,
+                    topP: chatConfig.top_p,
+                    maxOutputTokens: chatConfig.max_tokens,
+                    model: chatConfig.provider_model
+                  }
+                });
+                aiResponse = response;
+              }
+
+              if (aiResponse?.response) {
                 // Inserir resposta do bot
                 await supabase
                   .from('chat_messages')
@@ -160,7 +229,7 @@ serve(async (req) => {
                 
                 console.log('Resposta AI enviada:', aiResponse.response);
               } else {
-                console.error('Erro na resposta AI:', aiError);
+                console.error('Erro na resposta AI:', aiResponse);
               }
             } catch (error) {
               console.error('Erro ao chamar AI:', error);
@@ -211,11 +280,7 @@ serve(async (req) => {
 
         // Se a mensagem é de um lead e AI está habilitada, gerar resposta automática
         if (senderType === 'lead') {
-          const { data: chatConfig } = await supabase
-            .from('chat_configurations')
-            .select('*')
-            .eq('active', true)
-            .single();
+          const chatConfig = await getChatConfig();
 
           // Verificar se a sessão não tem atendente ativo
           const { data: session } = await supabase
@@ -226,17 +291,61 @@ serve(async (req) => {
 
           if (chatConfig?.ai_chat_enabled && !session?.attendant_id) {
             console.log('Gerando resposta AI automática...');
+            console.log('Usando configurações:', {
+              provider: chatConfig.api_provider,
+              model: chatConfig.provider_model,
+              temperature: chatConfig.temperature,
+              topP: chatConfig.top_p,
+              maxTokens: chatConfig.max_tokens,
+              knowledgeBase: chatConfig.knowledge_base_enabled
+            });
             
             try {
-              const { data: aiResponse, error: aiError } = await supabase.functions.invoke('gemini-chat', {
-                body: {
-                  message: message,
-                  context: 'Você é um assistente imobiliário prestativo. Responda de forma profissional e útil.',
-                  sessionId: sessionId
+              // Buscar na base de conhecimento se habilitada
+              let knowledgeContext = '';
+              if (chatConfig.knowledge_base_enabled) {
+                console.log('Buscando na base de conhecimento...');
+                const kbContent = await searchKnowledgeBase(message);
+                if (kbContent) {
+                  knowledgeContext = `\n\nContexto da Base de Conhecimento:\n${kbContent}`;
+                  console.log('Conhecimento encontrado:', kbContent.substring(0, 200) + '...');
                 }
-              });
+              }
 
-              if (!aiError && aiResponse?.response) {
+              // Preparar contexto completo
+              const systemInstruction = (chatConfig.system_instruction || 'Você é um assistente imobiliário prestativo. Responda de forma profissional e útil.') + knowledgeContext;
+
+              // Chamar função AI baseada no provider
+              let aiResponse;
+              if (chatConfig.api_provider === 'openai') {
+                const { data: response, error: aiError } = await supabase.functions.invoke('ai-chat-enhanced', {
+                  body: {
+                    message: message,
+                    context: systemInstruction,
+                    sessionId: sessionId,
+                    temperature: chatConfig.temperature,
+                    maxTokens: chatConfig.max_tokens
+                  }
+                });
+                aiResponse = response;
+              } else {
+                // Default to Gemini
+                const { data: response, error: aiError } = await supabase.functions.invoke('gemini-chat', {
+                  body: {
+                    message: message,
+                    context: systemInstruction,
+                    sessionId: sessionId,
+                    systemInstruction: systemInstruction,
+                    temperature: chatConfig.temperature,
+                    topP: chatConfig.top_p,
+                    maxOutputTokens: chatConfig.max_tokens,
+                    model: chatConfig.provider_model
+                  }
+                });
+                aiResponse = response;
+              }
+
+              if (aiResponse?.response) {
                 await supabase
                   .from('chat_messages')
                   .insert({

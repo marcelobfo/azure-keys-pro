@@ -1,275 +1,98 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import DashboardLayout from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import DashboardLayout from '@/components/DashboardLayout';
-import BusinessHoursSettings from '@/components/BusinessHoursSettings';
-import AutomaticMessages from '@/components/AutomaticMessages';
-
-interface ChatConfig {
-  id: string;
-  company: string;
-  ai_chat_enabled: boolean;
-  whatsapp_enabled: boolean;
-  api_provider: string;
-  api_key_encrypted?: string;
-  welcome_message?: string;
-  whatsapp_number?: string;
-  system_instruction?: string;
-  custom_responses: any;
-  active: boolean;
-}
+import { toast } from 'sonner';
+import { Save } from 'lucide-react';
+import AIParametersSettings from '@/components/AIParametersSettings';
+import KnowledgeBaseManager from '@/components/KnowledgeBaseManager';
 
 const AdminChatSettings = () => {
-  const { toast } = useToast();
-  const [config, setConfig] = useState<ChatConfig | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [formData, setFormData] = useState({
-    company: '',
-    ai_chat_enabled: true,
-    whatsapp_enabled: false,
-    api_provider: 'gemini',
-    api_key: '',
-    welcome_message: 'Olá! Como posso ajudá-lo hoje?',
-    whatsapp_number: '',
-    system_instruction: `Você é Maria, uma consultora imobiliária virtual especializada e experiente. Você trabalha para uma imobiliária premium e sua missão é ajudar clientes a encontrar o imóvel dos seus sonhos.
+  const [config, setConfig] = useState<any>({});
+  const queryClient = useQueryClient();
 
-PERSONALIDADE E ABORDAGEM:
-- Seja calorosa, profissional e sempre prestativa
-- Use linguagem natural e acessível, evitando jargões técnicos
-- Seja proativa em fazer perguntas para entender melhor as necessidades
-- Demonstre expertise sem ser arrogante
-- Seja empática com o orçamento e necessidades familiares
-
-CONHECIMENTO ESPECIALIZADO:
-- Tipos de imóveis: Casas, Apartamentos, Coberturas, Lofts, Studios, Empreendimentos
-- Categorias especiais: Imóveis Frente Mar, Quadra Mar, Lançamentos
-- Documentação: ITBI, escritura, registro, financiamento, FGTS
-- Financiamento: CEF, Itaú, Bradesco, Santander, financiamento próprio
-- Processo de compra: visitação, proposta, contrato, entrega das chaves
-- Investimento: rentabilidade, valorização, locação
-
-INFORMAÇÕES DA IMOBILIÁRIA:
-- Atendemos toda a região metropolitana
-- Especialistas em imóveis de alto padrão
-- Temos parcerias com os melhores bancos
-- Oferecemos acompanhamento completo do processo
-- Visitas agendadas 7 dias por semana
-
-FLUXO DE ATENDIMENTO:
-1. Cumprimente calorosamente e apresente-se
-2. Pergunte sobre o tipo de imóvel desejado
-3. Investigue: finalidade (morar/investir), localização preferida, orçamento
-4. Pergunte sobre características importantes: quartos, banheiros, área, garagem
-5. Ofereça opções e agende visitas
-6. Colete dados para follow-up: nome completo, WhatsApp, melhor horário
-
-PERGUNTAS ESTRATÉGICAS PARA FAZER:
-- "Qual seria a localização ideal para você?"
-- "Tem alguma preferência por andar alto ou baixo?"
-- "Precisa de quantos quartos e banheiros?"
-- "Tem interesse em imóveis frente ao mar?"
-- "É para morar ou investimento?"
-- "Qual seria um orçamento confortável?"
-- "Quando gostaria de fazer uma visita?"
-
-SEMPRE TERMINE SUAS RESPOSTAS COM:
-- Uma pergunta para manter a conversa fluindo
-- Oferta de agendamento de visita quando apropriado
-- Disponibilidade para mais informações
-
-Responda sempre em português brasileiro, de forma natural e útil.`,
-    active: true,
-    custom_responses: {
-      greeting: 'Olá! Bem-vindo à nossa imobiliária!',
-      contact_info: 'Para entrar em contato, ligue para (11) 99999-9999 ou envie um email para contato@imobiliaria.com',
-      business_hours: 'Funcionamos de segunda a sexta das 8h às 18h, e sábados das 8h às 12h.'
-    }
-  });
-
-  useEffect(() => {
-    fetchChatConfig();
-  }, []);
-
-  const fetchChatConfig = async () => {
-    try {
-      console.log('🔍 Admin: Buscando configurações do chat...');
+  // Fetch current configuration
+  const { data: chatConfig, isLoading } = useQuery({
+    queryKey: ['chat-configuration'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('chat_configurations')
         .select('*')
-        .limit(1)
-        .maybeSingle();
-
+        .eq('active', true)
+        .single();
+      
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
-
-      console.log('📊 Admin: Dados do banco:', data);
-
+      
+      return data;
+    },
+    onSuccess: (data) => {
       if (data) {
         setConfig(data);
-        setFormData({
-          company: data.company || '',
-          ai_chat_enabled: data.ai_chat_enabled || false,
-          whatsapp_enabled: data.whatsapp_enabled || false,
-          api_provider: data.api_provider === 'google' ? 'gemini' : (data.api_provider || 'gemini'),
-          api_key: '', // Não mostrar a chave por segurança
-          welcome_message: data.welcome_message || 'Olá! Como posso ajudá-lo hoje?',
-          whatsapp_number: data.whatsapp_number || '',
-          system_instruction: data.system_instruction || formData.system_instruction,
-          active: data.active ?? true,
-          custom_responses: typeof data.custom_responses === 'object' && data.custom_responses 
-            ? data.custom_responses as any
-            : formData.custom_responses
-        });
-        console.log('✅ Admin: Configurações carregadas, active:', data.active);
-      } else {
-        console.log('⚠️ Admin: Nenhuma configuração encontrada, usando padrões');
       }
-    } catch (error: any) {
-      console.error('❌ Admin: Erro ao buscar configurações:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar configurações do chat",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
     }
-  };
+  });
 
-  const saveChatConfig = async () => {
-    setSaving(true);
-    try {
-      console.log('💾 Admin: Salvando configurações...', { active: formData.active });
-      
-      const configData = {
-        company: formData.company,
-        ai_chat_enabled: formData.ai_chat_enabled,
-        whatsapp_enabled: formData.whatsapp_enabled,
-        api_provider: formData.api_provider === 'google' ? 'gemini' : formData.api_provider,
-        welcome_message: formData.welcome_message,
-        whatsapp_number: formData.whatsapp_number,
-        system_instruction: formData.system_instruction,
-        custom_responses: formData.custom_responses,
-        active: formData.active,
-      };
-
-      console.log('📝 Admin: Dados a serem salvos:', configData);
-
-      if (config) {
-        // Atualizar configuração existente
-        const { error } = await supabase
+  // Save configuration mutation
+  const saveConfigMutation = useMutation({
+    mutationFn: async (configData: any) => {
+      if (chatConfig?.id) {
+        // Update existing configuration
+        const { data, error } = await supabase
           .from('chat_configurations')
           .update(configData)
-          .eq('id', config.id);
-
+          .eq('id', chatConfig.id)
+          .select()
+          .single();
         if (error) throw error;
-        console.log('✅ Admin: Configuração atualizada com sucesso');
+        return data;
       } else {
-        // Criar nova configuração
-        const { error } = await supabase
+        // Create new configuration
+        const { data, error } = await supabase
           .from('chat_configurations')
-          .insert(configData);
-
+          .insert({ ...configData, active: true })
+          .select()
+          .single();
         if (error) throw error;
-        console.log('✅ Admin: Nova configuração criada com sucesso');
+        return data;
       }
-
-      toast({
-        title: "Sucesso",
-        description: `Sistema de chat ${formData.active ? 'ativado' : 'desativado'} com sucesso`,
-      });
-
-      // Recarregar configurações para confirmar que foram salvas
-      await fetchChatConfig();
-    } catch (error: any) {
-      console.error('❌ Admin: Erro ao salvar:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar configurações",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chat-configuration'] });
+      toast.success('Configurações salvas com sucesso!');
+    },
+    onError: (error) => {
+      console.error('Erro ao salvar configurações:', error);
+      toast.error('Erro ao salvar configurações');
     }
-  };
+  });
 
-  const handleCustomResponseChange = (key: string, value: string) => {
-    setFormData(prev => ({
+  const handleConfigChange = (key: string, value: any) => {
+    setConfig((prev: any) => ({
       ...prev,
-      custom_responses: {
-        ...prev.custom_responses,
-        [key]: value
-      }
+      [key]: value
     }));
   };
 
-  const testConnection = async () => {
-    if (!formData.api_provider) {
-      toast({
-        title: "Erro",
-        description: "Selecione um provedor de API primeiro",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setTesting(true);
-    setTestResult(null);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('test-ai-provider', {
-        body: { 
-          provider: formData.api_provider,
-          message: 'Teste de conexão'
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.success) {
-        setTestResult({ success: true, message: 'Conexão testada com sucesso!' });
-        toast({
-          title: "Sucesso",
-          description: "Conexão funcionando perfeitamente!",
-        });
-      } else {
-        setTestResult({ success: false, message: data.error || 'Erro desconhecido' });
-        toast({
-          title: "Erro",
-          description: `Erro na conexão: ${data.error}`,
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      console.error('Erro ao testar conexão:', error);
-      setTestResult({ success: false, message: error.message || 'Erro ao testar conexão' });
-      toast({
-        title: "Erro",
-        description: "Erro ao testar conexão",
-        variant: "destructive",
-      });
-    } finally {
-      setTesting(false);
-    }
+  const handleSave = () => {
+    saveConfigMutation.mutate(config);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <DashboardLayout title="Configurações do Chat" userRole="admin">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">Carregando configurações...</div>
         </div>
       </DashboardLayout>
     );
@@ -277,280 +100,134 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
 
   return (
     <DashboardLayout title="Configurações do Chat" userRole="admin">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold">Configurações do Chat IA</h2>
-          <p className="text-muted-foreground">Configure o chat com IA, integração WhatsApp e horários comerciais</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Configurações do Chat</h1>
+          <Button onClick={handleSave} disabled={saveConfigMutation.isPending}>
+            <Save className="h-4 w-4 mr-2" />
+            {saveConfigMutation.isPending ? 'Salvando...' : 'Salvar Configurações'}
+          </Button>
         </div>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Sistema de Chat</CardTitle>
-            <CardDescription>
-              Ativar ou desativar todo o sistema de chat do site
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-4">
-              <Switch
-                id="chat-system-active"
-                checked={formData.active}
-                onCheckedChange={(checked) => {
-                  console.log('🔄 Admin: Mudando status do sistema para:', checked);
-                  setFormData({...formData, active: checked});
-                }}
-              />
-              <Label htmlFor="chat-system-active" className="text-lg font-medium">
-                {formData.active ? '✅ Sistema de Chat Ativo' : '🚫 Sistema de Chat Desativado'}
-              </Label>
-            </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              {formData.active 
-                ? 'O chat está disponível para os visitantes do site' 
-                : 'O chat não será exibido no site'}
-            </p>
-            <div className="mt-4">
-              <Button onClick={saveChatConfig} disabled={saving}>
-                {saving ? 'Salvando...' : 'Salvar Status do Sistema'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="general" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="general">Geral</TabsTrigger>
+            <TabsTrigger value="ai-params">Parâmetros IA</TabsTrigger>
+            <TabsTrigger value="knowledge-base">Base de Conhecimento</TabsTrigger>
+            <TabsTrigger value="responses">Respostas</TabsTrigger>
+          </TabsList>
 
-        <div className="space-y-6">
-          <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="basic">Configurações Básicas</TabsTrigger>
-              <TabsTrigger value="ai">Chat com IA</TabsTrigger>
-              <TabsTrigger value="hours">Horários Comerciais</TabsTrigger>
-              <TabsTrigger value="automatic">Mensagens Automáticas</TabsTrigger>
-            </TabsList>
+          <TabsContent value="general" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configurações Gerais</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="ai-chat"
+                    checked={config.ai_chat_enabled || false}
+                    onCheckedChange={(checked) => handleConfigChange('ai_chat_enabled', checked)}
+                  />
+                  <Label htmlFor="ai-chat">Ativar Chat com IA</Label>
+                </div>
 
-            <TabsContent value="basic" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Informações Básicas</CardTitle>
-                  <CardDescription>
-                    Configure as informações básicas da empresa
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="company">Nome da Empresa</Label>
-                    <Input
-                      id="company"
-                      value={formData.company}
-                      onChange={(e) => setFormData({...formData, company: e.target.value})}
-                      placeholder="Ex: Imobiliária XYZ"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="welcome">Mensagem de Boas-vindas</Label>
-                    <Textarea
-                      id="welcome"
-                      value={formData.welcome_message}
-                      onChange={(e) => setFormData({...formData, welcome_message: e.target.value})}
-                      placeholder="Digite a mensagem que será exibida quando o chat iniciar"
-                      rows={3}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>Provedor de IA</Label>
+                  <Select
+                    value={config.api_provider || 'gemini'}
+                    onValueChange={(value) => handleConfigChange('api_provider', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o provedor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gemini">Google Gemini</SelectItem>
+                      <SelectItem value="openai">OpenAI</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="whatsapp"
-                      checked={formData.whatsapp_enabled}
-                      onCheckedChange={(checked) => setFormData({...formData, whatsapp_enabled: checked})}
-                    />
-                    <Label htmlFor="whatsapp">Habilitar WhatsApp</Label>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="system-instruction">Instruções do Sistema</Label>
+                  <Textarea
+                    id="system-instruction"
+                    value={config.system_instruction || ''}
+                    onChange={(e) => handleConfigChange('system_instruction', e.target.value)}
+                    placeholder="Digite as instruções gerais para o assistente IA..."
+                    rows={4}
+                  />
+                </div>
 
-                  {formData.whatsapp_enabled && (
-                    <div>
-                      <Label htmlFor="whatsapp-number">Número do WhatsApp</Label>
-                      <Input
-                        id="whatsapp-number"
-                        value={formData.whatsapp_number}
-                        onChange={(e) => setFormData({...formData, whatsapp_number: e.target.value})}
-                        placeholder="Ex: 5511999999999"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Digite apenas números (com código do país)
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="company">Nome da Empresa</Label>
+                  <Input
+                    id="company"
+                    value={config.company || ''}
+                    onChange={(e) => handleConfigChange('company', e.target.value)}
+                    placeholder="Nome da sua empresa"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              <div className="flex justify-end">
-                <Button onClick={saveChatConfig} disabled={saving}>
-                  {saving ? 'Salvando...' : 'Salvar Configurações'}
-                </Button>
-              </div>
-            </TabsContent>
+          <TabsContent value="ai-params">
+            <AIParametersSettings
+              config={config}
+              onConfigChange={handleConfigChange}
+            />
+          </TabsContent>
 
-            <TabsContent value="ai" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Chat com IA</CardTitle>
-                  <CardDescription>
-                    Configure o assistente virtual com IA
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="ai-chat"
-                      checked={formData.ai_chat_enabled}
-                      onCheckedChange={(checked) => setFormData({...formData, ai_chat_enabled: checked})}
-                    />
-                    <Label htmlFor="ai-chat">Habilitar Chat com IA</Label>
-                  </div>
+          <TabsContent value="knowledge-base">
+            <KnowledgeBaseManager />
+          </TabsContent>
 
-                  {formData.ai_chat_enabled && (
-                    <>
-                      <div>
-                        <Label htmlFor="provider">Provedor de IA</Label>
-                        <Select
-                          value={formData.api_provider}
-                          onValueChange={(value) => setFormData({...formData, api_provider: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o provedor" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="openai">OpenAI</SelectItem>
-                            <SelectItem value="gemini">Google Gemini</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+          <TabsContent value="responses" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Respostas Automáticas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="welcome-message">Mensagem de Boas-vindas</Label>
+                  <Textarea
+                    id="welcome-message"
+                    value={config.welcome_message || ''}
+                    onChange={(e) => handleConfigChange('welcome_message', e.target.value)}
+                    placeholder="Mensagem inicial quando o chat é iniciado..."
+                    rows={3}
+                  />
+                </div>
 
-                      <div className="space-y-3">
-                        <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                          <div className="flex items-start space-x-2">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                            <div>
-                              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                                Chave de API Gerenciada pelo Supabase
-                              </p>
-                              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                                {formData.api_provider === 'gemini' 
-                                  ? 'A chave do Gemini é gerenciada via Supabase Secrets (GEMINI_API_KEY)'
-                                  : 'A chave da OpenAI é gerenciada via Supabase Secrets (OPENAI_API_KEY)'
-                                }. Use o botão "Testar conexão" para verificar o status.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                <div className="space-y-2">
+                  <Label htmlFor="offline-message">Mensagem Fora do Horário</Label>
+                  <Textarea
+                    id="offline-message"
+                    value={config.offline_message || ''}
+                    onChange={(e) => handleConfigChange('offline_message', e.target.value)}
+                    placeholder="Mensagem quando fora do horário comercial..."
+                    rows={3}
+                  />
+                </div>
 
-                        <div className="flex items-center space-x-3">
-                          <Button 
-                            type="button"
-                            onClick={testConnection}
-                            disabled={testing}
-                            variant="outline"
-                            className="flex-shrink-0"
-                          >
-                            {testing ? 'Testando...' : 'Testar conexão'}
-                          </Button>
-                          
-                          {testResult && (
-                            <div className={`flex items-center space-x-2 text-sm ${
-                              testResult.success 
-                                ? 'text-green-600 dark:text-green-400' 
-                                : 'text-red-600 dark:text-red-400'
-                            }`}>
-                              <div className={`w-2 h-2 rounded-full ${
-                                testResult.success ? 'bg-green-500' : 'bg-red-500'
-                              }`}></div>
-                              <span className="font-medium">
-                                {testResult.success ? 'Chave configurada' : 'Chave não configurada'}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {testResult && !testResult.success && (
-                          <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                            <p className="text-sm text-red-800 dark:text-red-200">
-                              <strong>Erro:</strong> {testResult.message}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="system_instruction">Instruções do Sistema (System Instruction)</Label>
-                        <Textarea
-                          id="system_instruction"
-                          value={formData.system_instruction}
-                          onChange={(e) => setFormData({...formData, system_instruction: e.target.value})}
-                          placeholder="Configure como o assistente deve se comportar e responder..."
-                          rows={15}
-                          className="font-mono text-sm"
-                        />
-                        <p className="text-sm text-gray-500 mt-1">
-                          Define a personalidade, conhecimento e comportamento do assistente IA.
-                        </p>
-                      </div>
-
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold">Respostas Personalizadas</h3>
-                        
-                        <div>
-                          <Label htmlFor="greeting-admin">Saudação</Label>
-                          <Textarea
-                            id="greeting-admin"
-                            value={formData.custom_responses?.greeting || ''}
-                            onChange={(e) => handleCustomResponseChange('greeting', e.target.value)}
-                            placeholder="Mensagem de saudação"
-                            rows={2}
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="contact_info-admin">Informações de Contato</Label>
-                          <Textarea
-                            id="contact_info-admin"
-                            value={formData.custom_responses?.contact_info || ''}
-                            onChange={(e) => handleCustomResponseChange('contact_info', e.target.value)}
-                            placeholder="Como entrar em contato"
-                            rows={2}
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="business_hours-admin">Horário de Funcionamento</Label>
-                          <Textarea
-                            id="business_hours-admin"
-                            value={formData.custom_responses?.business_hours || ''}
-                            onChange={(e) => handleCustomResponseChange('business_hours', e.target.value)}
-                            placeholder="Horários de atendimento"
-                            rows={2}
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-
-              <div className="flex justify-end">
-                <Button onClick={saveChatConfig} disabled={saving}>
-                  {saving ? 'Salvando...' : 'Salvar Configurações'}
-                </Button>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="hours" className="space-y-6">
-              <BusinessHoursSettings />
-            </TabsContent>
-
-            <TabsContent value="automatic" className="space-y-6">
-              <AutomaticMessages />
-            </TabsContent>
-          </Tabs>
-        </div>
+                <div className="space-y-2">
+                  <Label htmlFor="custom-responses">Respostas Personalizadas (JSON)</Label>
+                  <Textarea
+                    id="custom-responses"
+                    value={config.custom_responses || ''}
+                    onChange={(e) => handleConfigChange('custom_responses', e.target.value)}
+                    placeholder='{"palavra-chave": "resposta personalizada"}'
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Formato JSON com palavras-chave e suas respostas correspondentes.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
