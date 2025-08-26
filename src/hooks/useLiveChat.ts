@@ -157,7 +157,7 @@ export const useLiveChat = () => {
 
   // Configurar canais de real-time
   const setupRealtimeChannels = () => {
-    if (!user || !chatEnabled) return;
+    if (!user) return;
 
     console.log('Configurando canais real-time para usuário:', user.id);
     cleanupChannels();
@@ -562,23 +562,20 @@ export const useLiveChat = () => {
     }
   };
 
-  // Configurar real-time quando usuário e chat estão disponíveis
+  // Configurar real-time quando usuário é carregado
   useEffect(() => {
     if (!user || isInitialized.current) return;
 
     console.log('Configurando sistema de real-time para usuário:', user.id);
     isInitialized.current = true;
-
-    if (chatEnabled) {
-      setupRealtimeChannels();
-    }
+    setupRealtimeChannels();
 
     return () => {
       console.log('Limpando canais de real-time');
       isInitialized.current = false;
       cleanupChannels();
     };
-  }, [user?.id, chatEnabled]);
+  }, [user?.id]);
 
   // Buscar disponibilidade do atendente atual
   useEffect(() => {

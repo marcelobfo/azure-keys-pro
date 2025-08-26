@@ -14,6 +14,7 @@ import TypingIndicator from '@/components/TypingIndicator';
 import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2, Volume2, VolumeX, RotateCcw, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { processBotMessage } from '@/utils/chatUtils';
 
 const LiveChat = () => {
   const { toast } = useToast();
@@ -131,7 +132,7 @@ const LiveChat = () => {
       console.log('🔍 LiveChat: Verificando status do sistema de chat...');
       const { data, error } = await supabase
         .from('chat_configurations')
-        .select('active')
+        .select('active, ai_chat_enabled')
         .maybeSingle();
       
       if (error) {
@@ -141,7 +142,8 @@ const LiveChat = () => {
 
       console.log('📊 LiveChat: Dados brutos do banco:', data);
       
-      const isActive = data?.active ?? false;
+      // Use both active and ai_chat_enabled to determine if chat should be shown
+      const isActive = data?.active === true && data?.ai_chat_enabled === true;
       console.log('🎯 LiveChat: Status do sistema de chat:', isActive ? '✅ ATIVO' : '🚫 INATIVO');
       console.log('🔄 LiveChat: Atualizando estado chatSystemEnabled de', chatSystemEnabled, 'para', isActive);
       
@@ -240,6 +242,11 @@ const LiveChat = () => {
           };
           
           if (payload.new.sender_type !== 'lead' || payload.new.sender_id !== null) {
+            // Process bot messages for better display
+            if (payload.new.sender_type === 'bot') {
+              newMsg.message = processBotMessage(newMsg.message, formData);
+            }
+            
             setMessages(prev => {
               if (prev.some(msg => msg.id === newMsg.id)) {
                 return prev;

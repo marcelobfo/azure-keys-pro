@@ -15,6 +15,7 @@ import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useChatSounds } from '@/hooks/useChatSounds';
 import TypingIndicator from '@/components/TypingIndicator';
 import AttendantStatusToggle from '@/components/AttendantStatusToggle';
+import { processBotMessage } from '@/utils/chatUtils';
 import { 
   MessageCircle, 
   Clock, 
@@ -247,27 +248,26 @@ const AttendantDashboard = () => {
         </Card>
         
         {/* Chats em Espera */}
-        {chatEnabled && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-yellow-500" />
-                Chats em Espera ({waitingSessions.length})
-              </CardTitle>
-            </CardHeader>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-500" />
+              Chats em Espera ({waitingSessions.length})
+            </CardTitle>
+          </CardHeader>
             <CardContent>
               <ScrollArea className="h-64">
                 <div className="space-y-3">
-                  {waitingSessions.map((session) => (
-                    <div key={session.id} className="p-3 border rounded-lg">
-                       <div className="flex items-center justify-between mb-2">
-                         <div className="flex items-center gap-2">
-                           <User className="h-4 w-4" />
-                           <span className="font-medium">{session.lead?.name}</span>
-                             <Badge variant="secondary" className="text-xs">
-                               #{session.protocol || session.id.slice(0, 8)}
-                             </Badge>
-                         </div>
+                   {waitingSessions.map((session) => (
+                     <div key={session.id} className="p-3 border rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            <span className="font-medium">{session.lead?.name}</span>
+                              <Badge variant="secondary" className="text-xs">
+                                #{session.protocol || session.id.slice(0, 8)}
+                              </Badge>
+                          </div>
                          <Badge variant="outline" className="text-xs">
                            {new Date(session.started_at).toLocaleTimeString('pt-BR', {
                              hour: '2-digit',
@@ -293,37 +293,36 @@ const AttendantDashboard = () => {
                         )}
                       </div>
                       
-                      <Button 
-                        size="sm" 
-                        onClick={() => handleAcceptSession(session.id)}
-                        className="w-full"
-                      >
-                        Aceitar Chat
-                      </Button>
-                    </div>
-                  ))}
-                  
-                  {waitingSessions.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>Nenhum chat em espera</p>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        )}
+                       <Button 
+                         size="sm" 
+                         onClick={() => handleAcceptSession(session.id)}
+                         className="w-full"
+                         disabled={!chatEnabled}
+                       >
+                         {chatEnabled ? 'Aceitar Chat' : 'Chat Desativado'}
+                       </Button>
+                     </div>
+                   ))}
+                   
+                   {waitingSessions.length === 0 && (
+                     <div className="text-center py-8 text-muted-foreground">
+                       <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                       <p>Nenhum chat em espera</p>
+                     </div>
+                   )}
+                 </div>
+               </ScrollArea>
+             </CardContent>
+           </Card>
 
         {/* Meus Chats Ativos */}
-        {chatEnabled && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-green-500" />
-                Meus Chats Ativos ({activeSessions.length})
-              </CardTitle>
-            </CardHeader>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-green-500" />
+              Meus Chats Ativos ({activeSessions.length})
+            </CardTitle>
+          </CardHeader>
             <CardContent>
               <ScrollArea className="h-32">
                 <div className="space-y-2">
@@ -352,11 +351,10 @@ const AttendantDashboard = () => {
                       Nenhum chat ativo
                     </div>
                   )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        )}
+                 </div>
+               </ScrollArea>
+             </CardContent>
+           </Card>
       </div>
 
       {/* Área de Chat */}
@@ -434,9 +432,9 @@ const AttendantDashboard = () => {
                             ? "bg-muted text-foreground border"
                             : "bg-muted text-foreground"
                         )}
-                      >
-                        <p>{message.message}</p>
-                        <div className={cn(
+                       >
+                         <p>{message.sender_type === 'bot' ? processBotMessage(message.message) : message.message}</p>
+                         <div className={cn(
                           "text-xs mt-1 flex items-center gap-1",
                           message.sender_type === 'attendant' 
                             ? "text-primary-foreground/70 justify-end" 

@@ -6,6 +6,7 @@ import { Textarea } from './ui/textarea';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Card } from './ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import { processBotMessage } from '@/utils/chatUtils';
 
 interface Message {
   id: string;
@@ -109,10 +110,14 @@ const AIChat = () => {
     setStep('chat');
     
     // Add welcome message from bot
+    const defaultWelcome = `Olá {name}! Sou seu assistente virtual. Como posso ajudá-lo com imóveis hoje?`;
+    const rawWelcomeMessage = chatConfig?.welcome_message || defaultWelcome;
+    const processedWelcome = processBotMessage(rawWelcomeMessage, formData);
+    
     const welcomeMessage: Message = {
       id: Date.now().toString(),
       type: 'bot',
-      content: chatConfig?.welcome_message || `Olá ${formData.name}! Sou seu assistente virtual. Como posso ajudá-lo com imóveis hoje?`,
+      content: processedWelcome,
       timestamp: new Date()
     };
     setMessages([welcomeMessage]);
@@ -184,11 +189,12 @@ const AIChat = () => {
 
     // Get AI response
     const aiResponse = await sendMessageToAI(currentMessage);
+    const processedResponse = processBotMessage(aiResponse, formData);
     
     const botMessage: Message = {
       id: (Date.now() + 1).toString(),
       type: 'bot',
-      content: aiResponse,
+      content: processedResponse,
       timestamp: new Date()
     };
 
@@ -203,7 +209,7 @@ const AIChat = () => {
   };
 
   // Don't render if chat is disabled
-  if (!isEnabled) {
+  if (!isEnabled || !chatConfig?.ai_chat_enabled) {
     return null;
   }
 
