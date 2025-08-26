@@ -17,6 +17,17 @@ serve(async (req) => {
   try {
     const { message, context, systemInstruction } = await req.json();
 
+    if (!geminiApiKey) {
+      console.error('Gemini API key not configured');
+      return new Response(JSON.stringify({ 
+        error: 'Chave da API não configurada',
+        response: 'Desculpe, o sistema de IA não está configurado. Entre em contato com o administrador para configurar a chave da API do Gemini.'
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Use o system instruction personalizado se fornecido, senão usa o padrão
     const defaultSystemPrompt = `Você é Maria, uma consultora imobiliária virtual especializada e experiente. Você trabalha para uma imobiliária premium e sua missão é ajudar clientes a encontrar o imóvel dos seus sonhos.
 
@@ -125,9 +136,18 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in gemini-chat function:', error);
+    
+    let errorMessage = 'Desculpe, estou com dificuldades técnicas. Pode tentar novamente em alguns minutos?';
+    
+    if (error.message?.includes('API key')) {
+      errorMessage = 'Erro de configuração da API. Entre em contato com o administrador do sistema.';
+    } else if (error.message?.includes('quota')) {
+      errorMessage = 'O serviço está temporariamente indisponível devido a limites de uso. Tente novamente mais tarde.';
+    }
+    
     return new Response(JSON.stringify({ 
-      error: 'Erro interno do servidor',
-      response: 'Desculpe, estou com dificuldades técnicas. Pode tentar novamente em alguns minutos? Para urgências, entre em contato diretamente pelo WhatsApp: (11) 99999-9999'
+      error: error.message || 'Erro interno do servidor',
+      response: errorMessage + ' Para urgências, entre em contato diretamente pelo WhatsApp: (11) 99999-9999'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

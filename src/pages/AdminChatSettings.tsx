@@ -32,6 +32,8 @@ const AdminChatSettings = () => {
   const [config, setConfig] = useState<ChatConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [formData, setFormData] = useState({
     company: '',
     ai_chat_enabled: true,
@@ -212,6 +214,56 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
         [key]: value
       }
     }));
+  };
+
+  const testConnection = async () => {
+    if (!formData.api_provider) {
+      toast({
+        title: "Erro",
+        description: "Selecione um provedor de API primeiro",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setTesting(true);
+    setTestResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('test-ai-provider', {
+        body: { 
+          provider: formData.api_provider,
+          message: 'Teste de conexão'
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setTestResult({ success: true, message: 'Conexão testada com sucesso!' });
+        toast({
+          title: "Sucesso",
+          description: "Conexão funcionando perfeitamente!",
+        });
+      } else {
+        setTestResult({ success: false, message: data.error || 'Erro desconhecido' });
+        toast({
+          title: "Erro",
+          description: `Erro na conexão: ${data.error}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao testar conexão:', error);
+      setTestResult({ success: false, message: error.message || 'Erro ao testar conexão' });
+      toast({
+        title: "Erro",
+        description: "Erro ao testar conexão",
+        variant: "destructive",
+      });
+    } finally {
+      setTesting(false);
+    }
   };
 
   if (loading) {

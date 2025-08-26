@@ -118,47 +118,52 @@ const AIChat = () => {
     setMessages([welcomeMessage]);
   };
 
-  const sendMessageToAI = async (message: string) => {
+  const sendMessageToAI = async (message: string): Promise<string> => {
     try {
       let response;
       
-      if (chatConfig?.api_provider === 'google') {
-        // Call Gemini API
-        const { data, error } = await supabase.functions.invoke('gemini-chat', {
-          body: {
+      if (chatConfig?.api_provider === 'gemini') {
+        response = await supabase.functions.invoke('gemini-chat', {
+          body: { 
             message,
-            systemInstruction: chatConfig.system_instruction,
             context: {
               name: formData.name,
-              previousMessages: messages.slice(-5),
               customResponses: chatConfig.custom_responses
-            }
+            },
+            systemInstruction: chatConfig.system_instruction
           }
         });
-
-        if (error) throw new Error('Gemini API call failed');
-        return data.response;
       } else {
-        // Call OpenAI API (default)
-        const { data, error } = await supabase.functions.invoke('ai-chat', {
-          body: {
+        // Default to OpenAI
+        response = await supabase.functions.invoke('ai-chat', {
+          body: { 
             message,
-            systemInstruction: chatConfig?.system_instruction,
             context: {
               name: formData.name,
-              previousMessages: messages.slice(-5),
               customResponses: chatConfig?.custom_responses
-            }
+            },
+            systemInstruction: chatConfig?.system_instruction
           }
         });
-
-        if (error) throw new Error('AI API call failed');
-        return data.response;
       }
 
-    } catch (error) {
-      console.error('AI Chat Error:', error);
-      return 'Desculpe, não consegui processar sua mensagem no momento. Pode tentar novamente?';
+      if (response.error) {
+        console.error('Error calling AI function:', response.error);
+        throw new Error(response.error.message || 'Erro na comunicação com a IA');
+      }
+
+      if (response.data?.error) {
+        console.error('AI function returned error:', response.data.error);
+        return response.data.response || 'Desculpe, estou com dificuldades técnicas no momento. Verifique se as configurações de API estão corretas.';
+      }
+
+      return response.data?.response || 'Desculpe, não consegui processar sua mensagem.';
+    } catch (error: any) {
+      console.error('Error in sendMessageToAI:', error);
+      if (error.message?.includes('API key')) {
+        return 'Erro de configuração: Verifique se a chave de API está configurada corretamente no sistema.';
+      }
+      return 'Desculpe, estou com dificuldades técnicas no momento. Pode tentar novamente em alguns minutos?';
     }
   };
 
