@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -35,13 +35,15 @@ const AdminChatSettings = () => {
       }
       
       return data;
-    },
-    onSuccess: (data) => {
-      if (data) {
-        setConfig(data);
-      }
     }
   });
+
+  // Sync fetched config into local state when it becomes available
+  useEffect(() => {
+    if (chatConfig) {
+      setConfig(chatConfig);
+    }
+  }, [chatConfig]);
 
   // Save configuration mutation
   const saveConfigMutation = useMutation({
