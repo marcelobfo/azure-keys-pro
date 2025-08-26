@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -28,7 +27,7 @@ serve(async (req) => {
         const { leadData } = data;
         console.log('Criando nova sessão de chat...', leadData);
 
-        // Inserir ou atualizar lead - sem usar onConflict
+        // Inserir ou atualizar lead
         const { data: existingLead } = await supabase
           .from('leads')
           .select('*')
@@ -76,7 +75,6 @@ serve(async (req) => {
           leadResult = data;
         }
 
-
         // Criar ticket de suporte
         const { data: ticketResult, error: ticketError } = await supabase
           .from('support_tickets')
@@ -101,8 +99,7 @@ serve(async (req) => {
           .insert({
             lead_id: leadResult.id,
             status: 'waiting',
-            subject: leadData.subject,
-            ticket_id: ticketResult.id
+            subject: leadData.subject
           })
           .select()
           .single();
@@ -121,7 +118,7 @@ serve(async (req) => {
             .insert({
               session_id: sessionResult.id,
               sender_type: 'lead',
-              sender_id: null, // Para leads, usar null
+              sender_id: null,
               message: leadData.message
             });
 
