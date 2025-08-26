@@ -38,7 +38,7 @@ const AdminChatSettings = () => {
     company: '',
     ai_chat_enabled: true,
     whatsapp_enabled: false,
-    api_provider: 'openai',
+    api_provider: 'gemini',
     api_key: '',
     welcome_message: 'Olá! Como posso ajudá-lo hoje?',
     whatsapp_number: '',
@@ -122,7 +122,7 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
           company: data.company || '',
           ai_chat_enabled: data.ai_chat_enabled || false,
           whatsapp_enabled: data.whatsapp_enabled || false,
-          api_provider: data.api_provider || 'openai',
+          api_provider: data.api_provider === 'google' ? 'gemini' : (data.api_provider || 'gemini'),
           api_key: '', // Não mostrar a chave por segurança
           welcome_message: data.welcome_message || 'Olá! Como posso ajudá-lo hoje?',
           whatsapp_number: data.whatsapp_number || '',
@@ -157,13 +157,12 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
         company: formData.company,
         ai_chat_enabled: formData.ai_chat_enabled,
         whatsapp_enabled: formData.whatsapp_enabled,
-        api_provider: formData.api_provider,
+        api_provider: formData.api_provider === 'google' ? 'gemini' : formData.api_provider,
         welcome_message: formData.welcome_message,
         whatsapp_number: formData.whatsapp_number,
         system_instruction: formData.system_instruction,
         custom_responses: formData.custom_responses,
         active: formData.active,
-        ...(formData.api_key && { api_key_encrypted: formData.api_key }),
       };
 
       console.log('📝 Admin: Dados a serem salvos:', configData);
@@ -421,23 +420,63 @@ Responda sempre em português brasileiro, de forma natural e útil.`,
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="openai">OpenAI</SelectItem>
-                            <SelectItem value="google">Google Gemini</SelectItem>
+                            <SelectItem value="gemini">Google Gemini</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
-                      <div>
-                        <Label htmlFor="api-key">Chave da API</Label>
-                        <Input
-                          id="api-key"
-                          type="password"
-                          value={formData.api_key}
-                          onChange={(e) => setFormData({...formData, api_key: e.target.value})}
-                          placeholder="Insira sua chave da API"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Deixe em branco para manter a chave atual
-                        </p>
+                      <div className="space-y-3">
+                        <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                          <div className="flex items-start space-x-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                            <div>
+                              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                Chave de API Gerenciada pelo Supabase
+                              </p>
+                              <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                                {formData.api_provider === 'gemini' 
+                                  ? 'A chave do Gemini é gerenciada via Supabase Secrets (GEMINI_API_KEY)'
+                                  : 'A chave da OpenAI é gerenciada via Supabase Secrets (OPENAI_API_KEY)'
+                                }. Use o botão "Testar conexão" para verificar o status.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-3">
+                          <Button 
+                            type="button"
+                            onClick={testConnection}
+                            disabled={testing}
+                            variant="outline"
+                            className="flex-shrink-0"
+                          >
+                            {testing ? 'Testando...' : 'Testar conexão'}
+                          </Button>
+                          
+                          {testResult && (
+                            <div className={`flex items-center space-x-2 text-sm ${
+                              testResult.success 
+                                ? 'text-green-600 dark:text-green-400' 
+                                : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              <div className={`w-2 h-2 rounded-full ${
+                                testResult.success ? 'bg-green-500' : 'bg-red-500'
+                              }`}></div>
+                              <span className="font-medium">
+                                {testResult.success ? 'Chave configurada' : 'Chave não configurada'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {testResult && !testResult.success && (
+                          <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <p className="text-sm text-red-800 dark:text-red-200">
+                              <strong>Erro:</strong> {testResult.message}
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <div>

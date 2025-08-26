@@ -122,7 +122,7 @@ const AIChat = () => {
     try {
       let response;
       
-      if (chatConfig?.api_provider === 'gemini') {
+      if (chatConfig?.api_provider === 'gemini' || chatConfig?.api_provider === 'google') {
         response = await supabase.functions.invoke('gemini-chat', {
           body: { 
             message,
