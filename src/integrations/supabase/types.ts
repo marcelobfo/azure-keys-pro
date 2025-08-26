@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -931,10 +931,10 @@ export type Database = {
       }
       generate_property_slug: {
         Args: {
-          property_type_input: string
           city_input: string
-          title_input: string
           property_code_input?: string
+          property_type_input: string
+          title_input: string
         }
         Returns: string
       }
@@ -959,7 +959,7 @@ export type Database = {
         Returns: boolean
       }
       verify_token: {
-        Args: { token: string; hash: string }
+        Args: { hash: string; token: string }
         Returns: boolean
       }
     }
