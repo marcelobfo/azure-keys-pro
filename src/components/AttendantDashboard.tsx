@@ -264,9 +264,9 @@ const AttendantDashboard = () => {
                          <div className="flex items-center gap-2">
                            <User className="h-4 w-4" />
                            <span className="font-medium">{session.lead?.name}</span>
-                            <Badge variant="secondary" className="text-xs">
-                              #{(session as any).protocol_number || session.id.slice(0, 8)}
-                            </Badge>
+                             <Badge variant="secondary" className="text-xs">
+                               #{session.protocol || session.id.slice(0, 8)}
+                             </Badge>
                          </div>
                          <Badge variant="outline" className="text-xs">
                            {new Date(session.started_at).toLocaleTimeString('pt-BR', {
@@ -340,9 +340,10 @@ const AttendantDashboard = () => {
                         <span className="font-medium text-sm">{session.lead?.name}</span>
                         {getStatusBadge(session.status)}
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {session.subject && <span>Assunto: {session.subject}</span>}
-                      </div>
+                       <div className="text-xs text-muted-foreground mt-1">
+                         {session.protocol && <div>Protocolo: {session.protocol}</div>}
+                         {session.subject && <span>Assunto: {session.subject}</span>}
+                       </div>
                     </div>
                   ))}
                   
@@ -382,9 +383,9 @@ const AttendantDashboard = () => {
                    <CardTitle className="flex items-center gap-2">
                      <User className="h-5 w-5" />
                      {activeSessionData.lead?.name}
-                      <Badge variant="secondary" className="ml-2">
-                        Protocolo #{(activeSessionData as any).protocol_number || activeSessionData.id.slice(0, 8)}
-                      </Badge>
+                       <Badge variant="secondary" className="ml-2">
+                         Protocolo #{activeSessionData.protocol || activeSessionData.id.slice(0, 8)}
+                       </Badge>
                    </CardTitle>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">

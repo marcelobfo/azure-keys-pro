@@ -16,6 +16,7 @@ export interface ChatSession {
   tags?: string[];
   notes?: string;
   ticket_id?: string;
+  protocol?: string;
   lead?: {
     name: string;
     email: string;
@@ -24,6 +25,9 @@ export interface ChatSession {
   attendant?: {
     full_name: string;
     avatar_url?: string;
+  };
+  support_tickets?: {
+    protocol_number: string;
   };
 }
 
@@ -483,7 +487,8 @@ export const useLiveChat = () => {
         .select(`
           *,
           leads!chat_sessions_lead_id_fkey (name, email, phone),
-          profiles!chat_sessions_attendant_id_fkey (full_name, avatar_url)
+          profiles!chat_sessions_attendant_id_fkey (full_name, avatar_url),
+          support_tickets!chat_sessions_ticket_id_fkey (protocol_number)
         `)
         .order('started_at', { ascending: false });
 
@@ -493,7 +498,8 @@ export const useLiveChat = () => {
         ...session,
         status: session.status as 'waiting' | 'active' | 'ended' | 'abandoned',
         lead: session.leads,
-        attendant: session.profiles
+        attendant: session.profiles,
+        protocol: session.support_tickets?.protocol_number
       })) || [];
       
       setSessions(formattedSessions);
@@ -528,7 +534,10 @@ export const useLiveChat = () => {
       
       const { data, error } = await supabase
         .from('chat_messages')
-        .select('*')
+        .select(`
+          *,
+          profiles!chat_messages_sender_id_fkey (full_name, avatar_url)
+        `)
         .eq('session_id', sessionId)
         .order('timestamp', { ascending: true });
 

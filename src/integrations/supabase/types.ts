@@ -300,6 +300,7 @@ export type Database = {
           status: string
           subject: string | null
           tags: string[] | null
+          ticket_id: string | null
           updated_at: string
         }
         Insert: {
@@ -313,6 +314,7 @@ export type Database = {
           status?: string
           subject?: string | null
           tags?: string[] | null
+          ticket_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -326,6 +328,7 @@ export type Database = {
           status?: string
           subject?: string | null
           tags?: string[] | null
+          ticket_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -341,6 +344,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_sessions_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
             referencedColumns: ["id"]
           },
         ]
@@ -944,6 +954,10 @@ export type Database = {
       }
       generate_secure_token: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_user_email: {
+        Args: { user_id: string }
         Returns: string
       }
       hash_token: {

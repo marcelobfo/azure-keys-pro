@@ -99,7 +99,8 @@ serve(async (req) => {
           .insert({
             lead_id: leadResult.id,
             status: 'waiting',
-            subject: leadData.subject
+            subject: leadData.subject,
+            ticket_id: ticketResult.id
           })
           .select()
           .single();
@@ -124,6 +125,46 @@ serve(async (req) => {
 
           if (messageError) {
             console.error('Erro ao enviar mensagem inicial:', messageError);
+          }
+
+          // Verificar se há configuração de AI ativa
+          const { data: chatConfig } = await supabase
+            .from('chat_configurations')
+            .select('*')
+            .eq('active', true)
+            .single();
+
+          if (chatConfig?.ai_chat_enabled) {
+            console.log('AI Chat habilitado, enviando resposta automática...');
+            
+            try {
+              // Chamar a função AI para gerar resposta
+              const { data: aiResponse, error: aiError } = await supabase.functions.invoke('gemini-chat', {
+                body: {
+                  message: leadData.message,
+                  context: `Cliente ${leadData.name} iniciou um chat sobre: ${leadData.subject}. Seja prestativo e profissional.`,
+                  sessionId: sessionResult.id
+                }
+              });
+
+              if (!aiError && aiResponse?.response) {
+                // Inserir resposta do bot
+                await supabase
+                  .from('chat_messages')
+                  .insert({
+                    session_id: sessionResult.id,
+                    sender_type: 'bot',
+                    sender_id: null,
+                    message: aiResponse.response
+                  });
+                
+                console.log('Resposta AI enviada:', aiResponse.response);
+              } else {
+                console.error('Erro na resposta AI:', aiError);
+              }
+            } catch (error) {
+              console.error('Erro ao chamar AI:', error);
+            }
           }
         }
 
@@ -167,6 +208,51 @@ serve(async (req) => {
         }
 
         console.log('Mensagem enviada com sucesso');
+
+        // Se a mensagem é de um lead e AI está habilitada, gerar resposta automática
+        if (senderType === 'lead') {
+          const { data: chatConfig } = await supabase
+            .from('chat_configurations')
+            .select('*')
+            .eq('active', true)
+            .single();
+
+          // Verificar se a sessão não tem atendente ativo
+          const { data: session } = await supabase
+            .from('chat_sessions')
+            .select('attendant_id')
+            .eq('id', sessionId)
+            .single();
+
+          if (chatConfig?.ai_chat_enabled && !session?.attendant_id) {
+            console.log('Gerando resposta AI automática...');
+            
+            try {
+              const { data: aiResponse, error: aiError } = await supabase.functions.invoke('gemini-chat', {
+                body: {
+                  message: message,
+                  context: 'Você é um assistente imobiliário prestativo. Responda de forma profissional e útil.',
+                  sessionId: sessionId
+                }
+              });
+
+              if (!aiError && aiResponse?.response) {
+                await supabase
+                  .from('chat_messages')
+                  .insert({
+                    session_id: sessionId,
+                    sender_type: 'bot',
+                    sender_id: null,
+                    message: aiResponse.response
+                  });
+                
+                console.log('Resposta AI automática enviada');
+              }
+            } catch (error) {
+              console.error('Erro ao gerar resposta AI:', error);
+            }
+          }
+        }
 
         return new Response(
           JSON.stringify({ success: true }),
