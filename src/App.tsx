@@ -1,5 +1,5 @@
 
-import * as React from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from '@/pages/Home';
 import PropertiesPage from '@/pages/Properties';
@@ -39,6 +39,7 @@ import AttendantChat from '@/pages/AttendantChat';
 import LiveChat from '@/components/LiveChat';
 import SEOUpdater from '@/components/SEOUpdater';
 
+// Create QueryClient outside component to prevent recreation
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -50,6 +51,9 @@ const queryClient = new QueryClient({
 
 function App() {
   console.log('[App] mounting with React version:', React.version);
+  console.log('[App] React object:', React);
+  console.log('[App] React.useEffect:', React.useEffect);
+  console.log('[App] React.useState:', React.useState);
   
   return (
     <QueryClientProvider client={queryClient}>
