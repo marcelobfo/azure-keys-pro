@@ -1,5 +1,5 @@
 
-import React from 'react';
+import * as React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from '@/pages/Home';
 import PropertiesPage from '@/pages/Properties';
@@ -39,9 +39,18 @@ import AttendantChat from '@/pages/AttendantChat';
 import LiveChat from '@/components/LiveChat';
 import SEOUpdater from '@/components/SEOUpdater';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 function App() {
+  console.log('[App] mounting with React version:', React.version);
+  
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
