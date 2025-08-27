@@ -69,6 +69,7 @@ const AttendantDashboard = () => {
   const [sessionToEnd, setSessionToEnd] = useState<string | null>(null);
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
+  const [activeSessionInfo, setActiveSessionInfo] = useState<any>(null);
 
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(
     activeSession, 
@@ -87,6 +88,43 @@ const AttendantDashboard = () => {
     }
   }, [activeSession]);
 
+  const waitingSessions = sessions.filter(s => s.status === 'waiting');
+  const activeSessions = sessions.filter(s => s.status === 'active' && s.attendant_id === user?.id);
+  const activeSessionData = sessions.find(s => s.id === activeSession);
+  const sessionForView = activeSessionData || activeSessionInfo;
+  const sessionMessages = activeSession ? messages[activeSession] || [] : [];
+
+  // Fetch session info when activeSession changes but activeSessionData is not available
+  useEffect(() => {
+    const fetchSessionInfo = async () => {
+      if (activeSession && !activeSessionData && !isLoadingSession) {
+        setIsLoadingSession(true);
+        try {
+          const { data: sessionData, error } = await supabase
+            .from('chat_sessions')
+            .select(`
+              *,
+              lead:leads(*)
+            `)
+            .eq('id', activeSession)
+            .single();
+
+          if (!error && sessionData) {
+            setActiveSessionInfo(sessionData);
+          }
+        } catch (error) {
+          console.error('Error fetching session info:', error);
+        } finally {
+          setIsLoadingSession(false);
+        }
+      } else if (activeSessionData) {
+        setActiveSessionInfo(activeSessionData);
+      }
+    };
+
+    fetchSessionInfo();
+  }, [activeSession, activeSessionData, isLoadingSession]);
+
   const handleToggleChatSystem = () => {
     toggleChatSystem(!chatEnabled);
   };
@@ -94,8 +132,15 @@ const AttendantDashboard = () => {
   const handleAcceptSession = async (sessionId: string) => {
     try {
       setIsLoadingSession(true);
-      await acceptChatSession(sessionId);
       setActiveSession(sessionId);
+      
+      // Find session locally first to display immediately
+      const localSession = sessions.find(s => s.id === sessionId);
+      if (localSession) {
+        setActiveSessionInfo(localSession);
+      }
+      
+      await acceptChatSession(sessionId);
       
       // Only open mobile sheet on mobile
       if (isMobile) {
@@ -103,8 +148,10 @@ const AttendantDashboard = () => {
       }
       
       // Force refresh to load session and messages immediately
-      await fetchChatSessions();
-      await fetchMessages(sessionId);
+      await Promise.all([
+        fetchChatSessions(),
+        fetchMessages(sessionId)
+      ]);
       
       if (soundEnabled) {
         playNotificationSound();
@@ -172,10 +219,6 @@ const AttendantDashboard = () => {
     }
   };
 
-  const waitingSessions = sessions.filter(s => s.status === 'waiting');
-  const activeSessions = sessions.filter(s => s.status === 'active' && s.attendant_id === user?.id);
-  const activeSessionData = sessions.find(s => s.id === activeSession);
-  const sessionMessages = activeSession ? messages[activeSession] || [] : [];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -203,9 +246,13 @@ const AttendantDashboard = () => {
   const handleTakeOverChat = async (sessionId: string) => {
     try {
       setIsLoadingSession(true);
+      setActiveSession(sessionId);
+      
       // Find the session and update it
       const session = sessions.find(s => s.id === sessionId);
-      if (!session) return;
+      if (session) {
+        setActiveSessionInfo(session);
+      }
 
       const { error } = await supabase
         .from('chat_sessions')
@@ -216,8 +263,6 @@ const AttendantDashboard = () => {
         .eq('id', sessionId);
 
       if (error) throw error;
-
-      setActiveSession(sessionId);
       
       // Only open mobile sheet on mobile
       if (isMobile) {
@@ -225,8 +270,10 @@ const AttendantDashboard = () => {
       }
       
       // Force refresh to load session and messages immediately
-      await fetchChatSessions();
-      await fetchMessages(sessionId);
+      await Promise.all([
+        fetchChatSessions(),
+        fetchMessages(sessionId)
+      ]);
       
       toast({
         title: "Chat assumido",
@@ -249,14 +296,22 @@ const AttendantDashboard = () => {
       setIsLoadingSession(true);
       setActiveSession(sessionId);
       
+      // Find session locally first to display immediately
+      const localSession = sessions.find(s => s.id === sessionId);
+      if (localSession) {
+        setActiveSessionInfo(localSession);
+      }
+      
       // Only open mobile sheet on mobile
       if (isMobile) {
         setIsMobileChatOpen(true);
       }
       
       // Force refresh to load session and messages immediately
-      await fetchChatSessions();
-      await fetchMessages(sessionId);
+      await Promise.all([
+        fetchChatSessions(),
+        fetchMessages(sessionId)
+      ]);
     } catch (error) {
       console.error('Erro ao abrir chat:', error);
     } finally {
@@ -446,7 +501,7 @@ const AttendantDashboard = () => {
 
       {/* Área de Chat - Desktop */}
       <div className="lg:col-span-2 hidden lg:block">
-        {isLoadingSession ? (
+        {isLoadingSession || (activeSession && !sessionForView) ? (
           <Card className="h-full flex flex-col">
             <CardHeader className="border-b">
               <div className="flex items-center gap-2">
@@ -466,42 +521,42 @@ const AttendantDashboard = () => {
               </div>
             </CardContent>
           </Card>
-        ) : activeSession && activeSessionData ? (
+        ) : activeSession && sessionForView ? (
           <Card className="h-full flex flex-col">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
-                 <div>
-                   <CardTitle className="flex items-center gap-2">
-                     <User className="h-5 w-5" />
-                     {activeSessionData.lead?.name}
-                       <Badge variant="secondary" className="ml-2">
-                         Protocolo #{activeSessionData.protocol || activeSessionData.id.slice(0, 8)}
-                       </Badge>
-                   </CardTitle>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Mail className="h-4 w-4" />
-                      {activeSessionData.lead?.email}
-                    </div>
-                    {activeSessionData.lead?.phone && (
-                      <div className="flex items-center gap-1">
-                        <Phone className="h-4 w-4" />
-                        {activeSessionData.lead.phone}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(activeSessionData.status)}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEndSession(activeSessionData.id)}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-1" />
-                    Finalizar
-                  </Button>
-                </div>
+                   <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      {sessionForView.lead?.name}
+                        <Badge variant="secondary" className="ml-2">
+                          Protocolo #{sessionForView.protocol || sessionForView.id.slice(0, 8)}
+                        </Badge>
+                    </CardTitle>
+                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                     <div className="flex items-center gap-1">
+                       <Mail className="h-4 w-4" />
+                       {sessionForView.lead?.email}
+                     </div>
+                     {sessionForView.lead?.phone && (
+                       <div className="flex items-center gap-1">
+                         <Phone className="h-4 w-4" />
+                         {sessionForView.lead.phone}
+                       </div>
+                     )}
+                   </div>
+                 </div>
+                 <div className="flex items-center gap-2">
+                   {getStatusBadge(sessionForView.status)}
+                   <Button
+                     size="sm"
+                     variant="outline"
+                     onClick={() => handleEndSession(sessionForView.id)}
+                   >
+                     <CheckCircle className="h-4 w-4 mr-1" />
+                     Finalizar
+                   </Button>
+                 </div>
               </div>
             </CardHeader>
 
@@ -603,42 +658,42 @@ const AttendantDashboard = () => {
       {/* Mobile Chat Sheet */}
       <Sheet open={isMobileChatOpen} onOpenChange={setIsMobileChatOpen}>
         <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
-          {activeSession && activeSessionData && (
+          {activeSession && sessionForView && (
             <>
               <SheetHeader className="border-b p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <SheetTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5" />
-                      {activeSessionData.lead?.name}
-                      <Badge variant="secondary" className="ml-2">
-                        #{activeSessionData.protocol || activeSessionData.id.slice(0, 8)}
-                      </Badge>
-                    </SheetTitle>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                      <div className="flex items-center gap-1">
-                        <Mail className="h-4 w-4" />
-                        {activeSessionData.lead?.email}
-                      </div>
-                      {activeSessionData.lead?.phone && (
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-4 w-4" />
-                          {activeSessionData.lead.phone}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getStatusBadge(activeSessionData.status)}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEndSession(activeSessionData.id)}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Finalizar
-                    </Button>
-                  </div>
+                     <SheetTitle className="flex items-center gap-2">
+                       <User className="h-5 w-5" />
+                       {sessionForView.lead?.name}
+                       <Badge variant="secondary" className="ml-2">
+                         #{sessionForView.protocol || sessionForView.id.slice(0, 8)}
+                       </Badge>
+                     </SheetTitle>
+                     <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                       <div className="flex items-center gap-1">
+                         <Mail className="h-4 w-4" />
+                         {sessionForView.lead?.email}
+                       </div>
+                       {sessionForView.lead?.phone && (
+                         <div className="flex items-center gap-1">
+                           <Phone className="h-4 w-4" />
+                           {sessionForView.lead.phone}
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                   <div className="flex items-center gap-2">
+                     {getStatusBadge(sessionForView.status)}
+                     <Button
+                       size="sm"
+                       variant="outline"
+                       onClick={() => handleEndSession(sessionForView.id)}
+                     >
+                       <CheckCircle className="h-4 w-4 mr-1" />
+                       Finalizar
+                     </Button>
+                   </div>
                 </div>
               </SheetHeader>
 
