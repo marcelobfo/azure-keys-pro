@@ -88,12 +88,12 @@ export const useTickets = () => {
         .from('support_tickets')
         .select(`
           *,
-          lead:leads!support_tickets_lead_id_fkey (
+          lead:leads!lead_id (
             name,
             email,
             phone
           ),
-          assignee:profiles!support_tickets_assigned_to_fkey (
+          assignee:profiles!assigned_to (
             full_name,
             avatar_url
           )
@@ -175,7 +175,7 @@ export const useTickets = () => {
         })
         .select(`
           *,
-          lead:leads!support_tickets_lead_id_fkey (
+          lead:leads!lead_id (
             name,
             email,
             phone
@@ -307,12 +307,12 @@ export const useTickets = () => {
         .from('support_tickets')
         .select(`
           *,
-          lead:leads!support_tickets_lead_id_fkey (
+          lead:leads!lead_id (
             name,
             email,
             phone
           ),
-          assignee:profiles!support_tickets_assigned_to_fkey (
+          assignee:profiles!assigned_to (
             full_name,
             avatar_url
           )
