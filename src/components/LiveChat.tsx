@@ -48,6 +48,7 @@ const LiveChat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
   const configChannelRef = useRef<any>(null);
+  const msgChannelRef = useRef<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(sessionId, 'lead-user');
@@ -211,65 +212,43 @@ const LiveChat = () => {
   }, []);
 
   const setupRealtime = (sessionId: string) => {
-    if (realtimeChannel) {
-      console.log('🧹 LiveChat: Removendo canal de mensagens existente');
-      supabase.removeChannel(realtimeChannel);
-      setRealtimeChannel(null);
-    }
-
-    console.log('📡 LiveChat: Configurando real-time para sessão:', sessionId);
+    console.log('Configurando real-time para sessão:', sessionId);
     setConnectionStatus('connecting');
     
-    // Usar nome único para evitar conflitos
-    const channelName = `visitor-session-${sessionId}-${Date.now()}`;
-    const channel = supabase.channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `session_id=eq.${sessionId}`
-        },
-        (payload) => {
-          console.log('💬 LiveChat: Nova mensagem recebida via real-time:', payload);
-          const newMsg = {
-            id: payload.new.id,
-            message: payload.new.message,
-            sender_type: payload.new.sender_type,
-            timestamp: payload.new.timestamp
-          };
-          
-          // Process bot messages for better display
-          if (payload.new.sender_type === 'bot') {
-            newMsg.message = processBotMessage(newMsg.message, formData);
-          }
-          
-          setMessages(prev => {
-            // Avoid duplicate messages
-            if (prev.some(msg => msg.id === newMsg.id)) {
-              return prev;
-            }
-            // Replace temp messages with real ones (if message content matches)
-            const updatedMessages = prev.filter(msg => 
-              !msg.id.startsWith('temp-') || 
-              !(msg.sender_type === newMsg.sender_type && 
-                Math.abs(new Date(msg.timestamp).getTime() - new Date(newMsg.timestamp).getTime()) < 5000 &&
-                msg.message === newMsg.message)
-            );
-            return [...updatedMessages, newMsg];
-          });
-
-          if (soundEnabled && payload.new.sender_type === 'attendant') {
-            playNotificationSound();
-          }
+    const channel = supabase
+      .channel(`chat-session-${sessionId}`)
+      .on('broadcast', { event: 'new_message' }, (payload) => {
+        console.log('Nova mensagem recebida via broadcast:', payload);
+        const newMessage = payload.payload;
+        
+        // Process bot messages for better display
+        if (newMessage.sender_type === 'bot') {
+          newMessage.message = processBotMessage(newMessage.message, formData);
         }
-      )
+        
+        setMessages(prev => {
+          // Evitar duplicatas
+          if (prev.some(msg => msg.id === newMessage.id)) {
+            return prev;
+          }
+          return [...prev, newMessage];
+        });
+        
+        // Play sound for received messages (not sent by user)
+        if (newMessage.sender_type === 'attendant' && soundEnabled) {
+          playNotificationSound();
+        }
+      })
       .subscribe((status) => {
-        console.log('📡 LiveChat: Status da conexão real-time:', status);
-        setConnectionStatus(status === 'SUBSCRIBED' ? 'connected' : 'disconnected');
+        console.log('Status da inscrição real-time:', status);
+        if (status === 'SUBSCRIBED') {
+          setConnectionStatus('connected');
+        } else if (status === 'CHANNEL_ERROR') {
+          setConnectionStatus('disconnected');
+        }
       });
 
+    msgChannelRef.current = channel;
     setRealtimeChannel(channel);
   };
 
@@ -329,31 +308,31 @@ const LiveChat = () => {
   };
 
   const loadMessages = async (sessionId: string) => {
+    console.log('Carregando mensagens para sessão:', sessionId);
     try {
-      await fetchMessages(sessionId);
-      
-      const { data, error } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('timestamp', { ascending: true });
+      const response = await supabase.functions.invoke('list_messages_public', {
+        body: { sessionId }
+      });
 
-      if (error) {
-        console.error('❌ LiveChat: Erro ao buscar mensagens:', error);
-        return;
-      }
+      if (response.error) throw response.error;
 
-      const formattedMessages = data?.map(msg => ({
+      const messages = response.data?.messages || [];
+      const formattedMessages = messages.map(msg => ({
         id: msg.id,
         message: msg.message,
         sender_type: msg.sender_type as 'lead' | 'attendant' | 'bot',
         timestamp: msg.timestamp
-      })) || [];
+      }));
 
       setMessages(formattedMessages);
-      console.log('✅ LiveChat: Mensagens carregadas:', formattedMessages.length);
+      console.log(`Carregadas ${formattedMessages.length} mensagens`);
     } catch (error) {
-      console.error('❌ LiveChat: Erro ao carregar mensagens:', error);
+      console.error('Erro ao carregar mensagens:', error);
+      toast({
+        title: "Erro", 
+        description: "Não foi possível carregar as mensagens",
+        variant: "destructive",
+      });
     }
   };
 

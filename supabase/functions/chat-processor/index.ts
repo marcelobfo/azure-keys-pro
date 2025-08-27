@@ -278,6 +278,23 @@ serve(async (req) => {
 
         console.log('Mensagem enviada com sucesso');
 
+        // Broadcast message immediately to all listeners
+        const broadcastChannel = supabase.channel(`chat-session-${sessionId}`);
+        await broadcastChannel.send({
+          type: 'broadcast',
+          event: 'new_message',
+          payload: {
+            id: `msg-${Date.now()}`,
+            session_id: sessionId,
+            message: message,
+            sender_type: senderType,
+            sender_id: finalSenderId,
+            timestamp: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            read_status: false
+          }
+        });
+
         // Se a mensagem é de um lead e AI está habilitada, gerar resposta automática
         if (senderType === 'lead') {
           const chatConfig = await getChatConfig();

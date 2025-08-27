@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -86,6 +86,7 @@ const AttendantDashboard = () => {
     description: '',
     priority: 'medium'
   });
+  const msgChannelRef = useRef<any>(null);
 
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(
     activeSession, 
@@ -112,6 +113,36 @@ const AttendantDashboard = () => {
   const activeSessionData = sessions.find(s => s.id === activeSession);
   const sessionForView = activeSessionData || activeSessionInfo;
   const sessionMessages = activeSession ? messages[activeSession] || [] : [];
+
+  // Set up real-time listening for new messages via broadcast
+  useEffect(() => {
+    if (!activeSession || !user?.id) return;
+
+    console.log('Configurando real-time para sessão ativa:', activeSession);
+    
+    const channel = supabase
+      .channel(`chat-session-${activeSession}`)
+      .on('broadcast', { event: 'new_message' }, (payload) => {
+        console.log('Nova mensagem recebida via broadcast:', payload);
+        const newMessage = payload.payload;
+        
+        // Play sound for new messages from leads
+        if (newMessage.sender_type === 'lead' && soundEnabled) {
+          playNotificationSound();
+        }
+      })
+      .subscribe();
+
+    msgChannelRef.current = channel;
+
+    return () => {
+      console.log('Removendo canal real-time para sessão:', activeSession);
+      if (msgChannelRef.current) {
+        supabase.removeChannel(msgChannelRef.current);
+        msgChannelRef.current = null;
+      }
+    };
+  }, [activeSession, user?.id, soundEnabled, playNotificationSound]);
 
   // Fetch session info when activeSession changes but activeSessionData is not available
   useEffect(() => {
@@ -236,11 +267,33 @@ const AttendantDashboard = () => {
     stopTyping();
     setIsSending(true);
     
+    const messageText = newMessage.trim();
+    setNewMessage('');
+    
     try {
-      await sendMessage(activeSession, newMessage, 'attendant');
-      setNewMessage('');
+      await sendMessage(activeSession, messageText, 'attendant');
+      
+      // Broadcast message immediately to visitor
+      if (msgChannelRef.current) {
+        msgChannelRef.current.send({
+          type: 'broadcast',
+          event: 'new_message',
+          payload: {
+            id: `msg-${Date.now()}`,
+            session_id: activeSession,
+            message: messageText,
+            sender_type: 'attendant',
+            sender_id: user?.id,
+            timestamp: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            read_status: false
+          }
+        });
+      }
+      
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
+      setNewMessage(messageText); // Restore message on error
     } finally {
       setIsSending(false);
     }
