@@ -42,8 +42,11 @@ export const useTickets = () => {
 
   // Setup realtime subscription
   useEffect(() => {
+    // Generate unique channel name to prevent conflicts
+    const channelName = `support-tickets-${Date.now()}-${Math.random()}`;
+    
     const channel = supabase
-      .channel('support-tickets-realtime')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -73,9 +76,8 @@ export const useTickets = () => {
     setRealtimeChannel(channel);
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      console.log('[useTickets] Cleaning up channel:', channelName);
+      supabase.removeChannel(channel);
     };
   }, []);
 
