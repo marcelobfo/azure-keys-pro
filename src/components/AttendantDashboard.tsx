@@ -442,12 +442,12 @@ const AttendantDashboard = () => {
           </CardContent>
         </Card>
         
-        {/* Chats em Espera */}
+        {/* Chats Aguardando Atendimento */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-              Chats em Espera ({waitingSessions.length})
+              <MessageCircle className="h-5 w-5 text-yellow-500" />
+              Aguardando Atendimento ({waitingSessions.length})
             </CardTitle>
           </CardHeader>
             <CardContent>
