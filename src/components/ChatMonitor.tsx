@@ -49,7 +49,7 @@ const ChatMonitor: React.FC<ChatMonitorProps> = ({ onTakeOverChat, onOpenChat })
     if (user) {
       fetchChatSessions();
       
-      // Setup realtime subscription for chat updates
+      // Setup realtime subscription for chat session updates only
       const channel = supabase
         .channel('chat-monitor')
         .on(
@@ -60,17 +60,7 @@ const ChatMonitor: React.FC<ChatMonitorProps> = ({ onTakeOverChat, onOpenChat })
             table: 'chat_sessions'
           },
           () => {
-            fetchChatSessions();
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'chat_messages'
-          },
-          () => {
+            console.log('[ChatMonitor] Chat session changed, refetching...');
             fetchChatSessions();
           }
         )

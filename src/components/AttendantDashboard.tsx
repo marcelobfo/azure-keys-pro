@@ -289,29 +289,32 @@ const AttendantDashboard = () => {
   };
 
   const handleOpenChat = async (sessionId: string) => {
-    try {
+    console.log('[AttendantDashboard] Opening chat:', sessionId);
+    setActiveSession(sessionId);
+    
+    // Find session locally first to display immediately
+    const localSession = sessions.find(s => s.id === sessionId);
+    if (localSession) {
+      setActiveSessionInfo(localSession);
+      // Don't set loading state since we have the data
+      setIsLoadingSession(false);
+    } else {
       setIsLoadingSession(true);
-      setActiveSession(sessionId);
-      
-      // Find session locally first to display immediately
-      const localSession = sessions.find(s => s.id === sessionId);
-      if (localSession) {
-        setActiveSessionInfo(localSession);
+    }
+    
+    // Only open mobile sheet on mobile
+    if (isMobile) {
+      setIsMobileChatOpen(true);
+    }
+    
+    // Only fetch messages, not sessions (to avoid triggering ChatMonitor refresh)
+    try {
+      await fetchMessages(sessionId);
+      if (!localSession) {
+        setIsLoadingSession(false);
       }
-      
-      // Only open mobile sheet on mobile
-      if (isMobile) {
-        setIsMobileChatOpen(true);
-      }
-      
-      // Force refresh to load session and messages immediately
-      await Promise.all([
-        fetchChatSessions(),
-        fetchMessages(sessionId)
-      ]);
     } catch (error) {
-      console.error('Erro ao abrir chat:', error);
-    } finally {
+      console.error('Erro ao carregar mensagens:', error);
       setIsLoadingSession(false);
     }
   };
