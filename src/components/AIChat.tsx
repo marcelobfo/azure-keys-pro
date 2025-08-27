@@ -127,24 +127,34 @@ const AIChat = () => {
       let response;
       
       if (chatConfig?.api_provider === 'gemini' || chatConfig?.api_provider === 'google') {
-        response = await supabase.functions.invoke('gemini-chat', {
+        response = await supabase.functions.invoke('gemini-chat-enhanced', {
           body: { 
             message,
             context: {
               name: formData.name,
-              customResponses: chatConfig.custom_responses
+              customResponses: chatConfig.custom_responses,
+              userPreferences: {
+                interestedIn: ['apartamento', 'casa'], // Pode ser personalizado
+                budget: null,
+                location: null
+              }
             },
             systemInstruction: chatConfig.system_instruction
           }
         });
       } else {
-        // Default to OpenAI
-        response = await supabase.functions.invoke('ai-chat', {
+        // Default to OpenAI  
+        response = await supabase.functions.invoke('ai-chat-enhanced', {
           body: { 
             message,
             context: {
               name: formData.name,
-              customResponses: chatConfig?.custom_responses
+              customResponses: chatConfig?.custom_responses,
+              userPreferences: {
+                interestedIn: ['apartamento', 'casa'],
+                budget: null,
+                location: null
+              }
             },
             systemInstruction: chatConfig?.system_instruction
           }

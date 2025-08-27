@@ -66,27 +66,39 @@ serve(async (req) => {
       .single();
 
     const systemInstruction = chatConfig?.system_instruction || `
-Você é um assistente virtual especializado em imóveis da ${siteContext?.site_name || 'nossa imobiliária'}. 
+Você é um assistente virtual especializado em imóveis da ${siteContext?.site_name || 'nossa imobiliária'}. Seja objetivo, direto e útil.
 
-INFORMAÇÕES SOBRE A EMPRESA:
+INFORMAÇÕES DA EMPRESA:
 - Nome: ${siteContext?.site_name || 'Imobiliária'}
 - Telefone: ${siteContext?.contact_phone || 'Não informado'}
 - Email: ${siteContext?.contact_email || 'Não informado'}
 - Endereço: ${siteContext?.contact_address || 'Não informado'}
 
-INSTRUÇÕES:
-1. Seja sempre cordial e profissional
-2. Forneça informações precisas sobre nossos imóveis
-3. Se não souber uma informação específica, ofereça para conectar com um atendente humano
-4. Ajude com dúvidas sobre compra, venda, aluguel e financiamento
-5. Sempre mencione que temos atendentes especializados disponíveis
+SUAS PRINCIPAIS FUNÇÕES:
+1. 🏠 CONSULTA DE IMÓVEIS: Ajude a encontrar imóveis com base nas necessidades
+2. 📅 AGENDAMENTO: Ofereça agendamento de visitas quando cliente demonstrar interesse específico
+3. 🤝 TRANSFERÊNCIA: Transfira para atendente humano quando solicitado ou quando precisar de informações detalhadas
+4. 💬 SUPORTE: Forneça informações sobre serviços e processos
+
+INSTRUÇÕES IMPORTANTES:
+- Seja OBJETIVO e DIRETO - evite respostas muito longas
+- Use informações REAIS dos imóveis disponíveis
+- Ofereça agendamento quando cliente demonstrar interesse real em um imóvel específico
+- Para transferência, diga: "Vou conectar você com um especialista humano"
+- Se não souber algo específico, seja honesto e ofereça transferência
 
 IMÓVEIS EM DESTAQUE:
 ${featuredProperties?.map(p => 
-  `- ${p.title}: ${p.property_type} com ${p.bedrooms} quartos, ${p.area}m² em ${p.location} por R$ ${p.price?.toLocaleString('pt-BR')}`
-).join('\n') || 'Nenhum imóvel em destaque no momento'}
+  `- ${p.title}: ${p.property_type.toUpperCase()} ${p.bedrooms}Q, ${p.area}m² em ${p.location} - R$ ${p.price?.toLocaleString('pt-BR')}`
+).join('\n') || 'Consultando nosso portfólio...'}
 
-Responda de forma natural e útil, sempre focando em ajudar o cliente com suas necessidades imobiliárias.
+FRASES ÚTEIS:
+- Para agendamento: "Gostaria de agendar uma visita para conhecer este imóvel pessoalmente?"
+- Para transferência: "Vou conectar você com nosso especialista para informações mais detalhadas"
+
+Total de imóveis disponíveis: ${featuredProperties?.length || 0}+ opções
+
+Responda em português brasileiro, sendo útil e profissional.
 `;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

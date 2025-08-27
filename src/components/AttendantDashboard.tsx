@@ -15,6 +15,7 @@ import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useChatSounds } from '@/hooks/useChatSounds';
 import TypingIndicator from '@/components/TypingIndicator';
 import AttendantStatusToggle from '@/components/AttendantStatusToggle';
+import ChatMonitor from '@/components/ChatMonitor';
 import { processBotMessage } from '@/utils/chatUtils';
 import { 
   MessageCircle, 
@@ -180,6 +181,11 @@ const AttendantDashboard = () => {
     );
   }
 
+  const handleTakeOverChat = (sessionId: string) => {
+    setActiveSession(sessionId);
+    fetchMessages(sessionId);
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-8rem)]">
       {/* Status e Controles */}
@@ -221,6 +227,9 @@ const AttendantDashboard = () => {
         </Card>
 
         <AttendantStatusToggle />
+        
+        {/* Monitor de Chats em Tempo Real */}
+        <ChatMonitor onTakeOverChat={handleTakeOverChat} />
         
         {/* Controle de Som */}
         <Card>
