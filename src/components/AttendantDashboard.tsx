@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useLiveChat } from '@/hooks/useLiveChat';
@@ -62,6 +63,7 @@ const AttendantDashboard = () => {
   const [isEndDialogOpen, setIsEndDialogOpen] = useState(false);
   const [endNotes, setEndNotes] = useState('');
   const [sessionToEnd, setSessionToEnd] = useState<string | null>(null);
+  const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
 
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(
     activeSession, 
@@ -88,6 +90,7 @@ const AttendantDashboard = () => {
     try {
       await acceptChatSession(sessionId);
       setActiveSession(sessionId);
+      setIsMobileChatOpen(true); // Open mobile chat on smaller screens
       
       if (soundEnabled) {
         playNotificationSound();
@@ -183,6 +186,7 @@ const AttendantDashboard = () => {
 
   const handleTakeOverChat = (sessionId: string) => {
     setActiveSession(sessionId);
+    setIsMobileChatOpen(true); // Open mobile chat on smaller screens
     fetchMessages(sessionId);
   };
 
@@ -336,14 +340,17 @@ const AttendantDashboard = () => {
               <ScrollArea className="h-32">
                 <div className="space-y-2">
                   {activeSessions.map((session) => (
-                    <div 
-                      key={session.id} 
-                      className={cn(
-                        "p-2 border rounded cursor-pointer transition-colors",
-                        activeSession === session.id ? "bg-primary/10 border-primary" : "hover:bg-muted"
-                      )}
-                      onClick={() => setActiveSession(session.id)}
-                    >
+                     <div 
+                       key={session.id} 
+                       className={cn(
+                         "p-2 border rounded cursor-pointer transition-colors",
+                         activeSession === session.id ? "bg-primary/10 border-primary" : "hover:bg-muted"
+                       )}
+                       onClick={() => {
+                         setActiveSession(session.id);
+                         setIsMobileChatOpen(true);
+                       }}
+                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">{session.lead?.name}</span>
                         {getStatusBadge(session.status)}
@@ -366,23 +373,9 @@ const AttendantDashboard = () => {
            </Card>
       </div>
 
-      {/* Área de Chat */}
-      <div className="lg:col-span-2">
-        {!chatEnabled ? (
-          <Card className="h-full flex items-center justify-center">
-            <CardContent className="text-center">
-              <PowerOff className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="text-lg font-medium mb-2">Sistema de Chat Desativado</h3>
-              <p className="text-muted-foreground mb-4">
-                Ative o sistema de chat para começar a receber atendimentos
-              </p>
-              <Button onClick={handleToggleChatSystem}>
-                <Power className="h-4 w-4 mr-2" />
-                Ativar Sistema de Chat
-              </Button>
-            </CardContent>
-          </Card>
-        ) : activeSession && activeSessionData ? (
+      {/* Área de Chat - Desktop */}
+      <div className="lg:col-span-2 hidden lg:block">
+        {activeSession && activeSessionData ? (
           <Card className="h-full flex flex-col">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
@@ -489,6 +482,20 @@ const AttendantDashboard = () => {
               </div>
             </CardContent>
           </Card>
+        ) : !chatEnabled ? (
+          <Card className="h-full flex items-center justify-center">
+            <CardContent className="text-center">
+              <PowerOff className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <h3 className="text-lg font-medium mb-2">Sistema de Chat Desativado</h3>
+              <p className="text-muted-foreground mb-4">
+                Ative o sistema de chat para começar a receber atendimentos
+              </p>
+              <Button onClick={handleToggleChatSystem}>
+                <Power className="h-4 w-4 mr-2" />
+                Ativar Sistema de Chat
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <Card className="h-full flex items-center justify-center">
             <CardContent className="text-center">
@@ -501,6 +508,120 @@ const AttendantDashboard = () => {
           </Card>
         )}
       </div>
+
+      {/* Mobile Chat Sheet */}
+      <Sheet open={isMobileChatOpen} onOpenChange={setIsMobileChatOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
+          {activeSession && activeSessionData && (
+            <>
+              <SheetHeader className="border-b p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <SheetTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      {activeSessionData.lead?.name}
+                      <Badge variant="secondary" className="ml-2">
+                        #{activeSessionData.protocol || activeSessionData.id.slice(0, 8)}
+                      </Badge>
+                    </SheetTitle>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                      <div className="flex items-center gap-1">
+                        <Mail className="h-4 w-4" />
+                        {activeSessionData.lead?.email}
+                      </div>
+                      {activeSessionData.lead?.phone && (
+                        <div className="flex items-center gap-1">
+                          <Phone className="h-4 w-4" />
+                          {activeSessionData.lead.phone}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(activeSessionData.status)}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEndSession(activeSessionData.id)}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Finalizar
+                    </Button>
+                  </div>
+                </div>
+              </SheetHeader>
+
+              <div className="flex-1 flex flex-col min-h-0">
+                <ScrollArea className="flex-1 p-4">
+                  <div className="space-y-4 min-h-full">
+                    {sessionMessages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={cn(
+                          "flex gap-3",
+                          message.sender_type === 'attendant' ? "justify-end" : "justify-start"
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                            message.sender_type === 'attendant'
+                              ? "bg-primary text-primary-foreground"
+                              : message.sender_type === 'bot'
+                              ? "bg-muted text-foreground border"
+                              : "bg-muted text-foreground"
+                          )}
+                        >
+                          <p>{message.sender_type === 'bot' ? processBotMessage(message.message) : message.message}</p>
+                          <div className={cn(
+                            "text-xs mt-1 flex items-center gap-1",
+                            message.sender_type === 'attendant' 
+                              ? "text-primary-foreground/70 justify-end" 
+                              : "text-muted-foreground"
+                          )}>
+                            <Clock className="h-3 w-3" />
+                            {new Date(message.timestamp).toLocaleTimeString('pt-BR', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                            {message.sender_type === 'attendant' && (
+                              <CheckCircle2 className="h-3 w-3" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Indicador de digitação */}
+                    <TypingIndicator 
+                      isVisible={typingUsers.length > 0} 
+                      userName="Cliente"
+                    />
+                  </div>
+                </ScrollArea>
+
+                <div className="p-4 border-t">
+                  <form onSubmit={handleSendMessage} className="flex gap-2">
+                    <Input
+                      placeholder="Digite sua mensagem..."
+                      value={newMessage}
+                      onChange={handleInputChange}
+                      disabled={sendingMessage}
+                      className="flex-1"
+                    />
+                    <Button 
+                      type="submit" 
+                      disabled={!newMessage.trim() || sendingMessage}
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </form>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Dialog para finalizar chat */}
       <Dialog open={isEndDialogOpen} onOpenChange={setIsEndDialogOpen}>
