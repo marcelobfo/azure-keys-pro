@@ -38,12 +38,21 @@ export const useTickets = () => {
   const { toast } = useToast();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(false);
-  const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
-  // Setup realtime subscription
+  // Setup realtime subscription with better control
   useEffect(() => {
-    // Generate unique channel name to prevent conflicts
-    const channelName = `support-tickets-${Date.now()}-${Math.random()}`;
+    // Prevent multiple subscriptions
+    if (isSubscribed) {
+      console.log('[useTickets] Already subscribed, skipping...');
+      return;
+    }
+
+    console.log('[useTickets] Setting up subscription...');
+    setIsSubscribed(true);
+    
+    // Generate unique channel name
+    const channelName = `tickets-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     const channel = supabase
       .channel(channelName)
@@ -71,15 +80,16 @@ export const useTickets = () => {
           }
         }
       )
-      .subscribe();
-
-    setRealtimeChannel(channel);
+      .subscribe((status) => {
+        console.log('[useTickets] Subscription status:', status);
+      });
 
     return () => {
-      console.log('[useTickets] Cleaning up channel:', channelName);
+      console.log('[useTickets] Cleaning up subscription for:', channelName);
+      setIsSubscribed(false);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [isSubscribed]);
 
   const fetchTickets = async (filters?: TicketFilters) => {
     try {
