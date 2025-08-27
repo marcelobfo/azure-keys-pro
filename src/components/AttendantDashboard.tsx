@@ -96,34 +96,31 @@ const AttendantDashboard = () => {
 
   // Fetch session info when activeSession changes but activeSessionData is not available
   useEffect(() => {
-    const fetchSessionInfo = async () => {
-      if (activeSession && !activeSessionData && !isLoadingSession) {
-        setIsLoadingSession(true);
-        try {
-          const { data: sessionData, error } = await supabase
-            .from('chat_sessions')
-            .select(`
-              *,
-              lead:leads(*)
-            `)
-            .eq('id', activeSession)
-            .single();
-
-          if (!error && sessionData) {
+    if (activeSession && !activeSessionData && !activeSessionInfo) {
+      console.log('[AttendantDashboard] Fetching session data for:', activeSession);
+      setIsLoadingSession(true);
+      
+      supabase
+        .from('chat_sessions')
+        .select(`
+          *,
+          lead:leads(*)
+        `)
+        .eq('id', activeSession)
+        .maybeSingle()
+        .then(({ data: sessionData, error }) => {
+          console.log('[AttendantDashboard] Session data fetched:', sessionData, error);
+          if (sessionData && !error) {
             setActiveSessionInfo(sessionData);
           }
-        } catch (error) {
-          console.error('Error fetching session info:', error);
-        } finally {
           setIsLoadingSession(false);
-        }
-      } else if (activeSessionData) {
-        setActiveSessionInfo(activeSessionData);
-      }
-    };
-
-    fetchSessionInfo();
-  }, [activeSession, activeSessionData, isLoadingSession]);
+        });
+    } else if (activeSessionData) {
+      // Use activeSessionData if available and clear loading
+      setActiveSessionInfo(activeSessionData);
+      setIsLoadingSession(false);
+    }
+  }, [activeSession, activeSessionData]); // Removed activeSessionInfo and isLoadingSession from dependencies
 
   const handleToggleChatSystem = () => {
     toggleChatSystem(!chatEnabled);
