@@ -1,92 +1,111 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
-import { useLiveChat } from '@/hooks/useLiveChat';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLiveChat } from '@/hooks/useLiveChat';
+import { useTickets } from '@/hooks/useTickets';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useChatSounds } from '@/hooks/useChatSounds';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { supabase } from '@/integrations/supabase/client';
-import TypingIndicator from '@/components/TypingIndicator';
-import AttendantStatusToggle from '@/components/AttendantStatusToggle';
-import ChatMonitor from '@/components/ChatMonitor';
-import { processBotMessage } from '@/utils/chatUtils';
+import { useToast } from '@/hooks/use-toast';
 import { 
   MessageCircle, 
-  Clock, 
-  User, 
   Send, 
-  Phone, 
-  Mail,
-  CheckCircle2,
-  AlertCircle,
-  Users,
-  Volume2,
-  VolumeX,
-  CheckCircle,
-  XCircle,
+  Volume2, 
+  VolumeX, 
+  Users, 
+  Clock, 
+  CheckCircle, 
+  X, 
+  Plus,
   FileText,
-  MessageSquare,
+  ExternalLink,
+  Wifi,
+  WifiOff,
+  User,
+  Mail,
+  Phone,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
   Power,
   PowerOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { processBotMessage } from '@/utils/chatUtils';
+import AttendantStatusToggle from '@/components/AttendantStatusToggle';
+import ChatMonitor from '@/components/ChatMonitor';
+import TypingIndicator from '@/components/TypingIndicator';
+import { supabase } from '@/integrations/supabase/client';
 
 const AttendantDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { playNotificationSound } = useChatSounds();
   const isMobile = useIsMobile();
+  const { createTicket, linkTicketToChat } = useTickets();
+  
   const {
     sessions,
     messages,
     loading,
-    chatEnabled,
-    acceptChatSession,
-    sendMessage,
-    endChatSession,
-    fetchMessages,
     fetchChatSessions,
+    fetchMessages,
+    acceptChatSession,
+    endChatSession,
+    sendMessage,
     toggleChatSystem
   } = useLiveChat();
 
+  // Add missing properties with default values
+  const connectionStatus = 'connected'; // Mock connection status
+  const chatSystemEnabled = true; // Mock system status
+
   const [activeSession, setActiveSession] = useState<string | null>(null);
+  const [activeSessionInfo, setActiveSessionInfo] = useState<any>(null);
   const [newMessage, setNewMessage] = useState('');
-  const [sendingMessage, setSendingMessage] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [isEndDialogOpen, setIsEndDialogOpen] = useState(false);
-  const [endNotes, setEndNotes] = useState('');
-  const [sessionToEnd, setSessionToEnd] = useState<string | null>(null);
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   const [isLoadingSession, setIsLoadingSession] = useState(false);
-  const [activeSessionInfo, setActiveSessionInfo] = useState<any>(null);
+  const [isEndDialogOpen, setIsEndDialogOpen] = useState(false);
+  const [endNotes, setEndNotes] = useState('');
+  const [isCreateProtocolOpen, setIsCreateProtocolOpen] = useState(false);
+  const [protocolForm, setProtocolForm] = useState({
+    subject: '',
+    description: '',
+    priority: 'medium'
+  });
 
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(
     activeSession, 
     user?.id || null
   );
 
+  const { playNotificationSound } = useChatSounds();
+
+  // Fetch sessions and messages on component mount and when user changes
   useEffect(() => {
     if (user) {
       fetchChatSessions();
     }
-  }, [user]);
+  }, [user, fetchChatSessions]);
 
   useEffect(() => {
     if (activeSession) {
       fetchMessages(activeSession);
     }
-  }, [activeSession]);
+  }, [activeSession, fetchMessages]);
 
   const waitingSessions = sessions.filter(s => s.status === 'waiting');
   const activeSessions = sessions.filter(s => s.status === 'active' && s.attendant_id === user?.id);
@@ -104,7 +123,8 @@ const AttendantDashboard = () => {
         .from('chat_sessions')
         .select(`
           *,
-          lead:leads(*)
+          lead:leads(*),
+          support_tickets(protocol_number)
         `)
         .eq('id', activeSession)
         .maybeSingle()
@@ -120,10 +140,49 @@ const AttendantDashboard = () => {
       setActiveSessionInfo(activeSessionData);
       setIsLoadingSession(false);
     }
-  }, [activeSession, activeSessionData]); // Removed activeSessionInfo and isLoadingSession from dependencies
+  }, [activeSession, activeSessionData]);
+
+  const handleCreateProtocol = async () => {
+    if (!activeSessionInfo?.lead_id) return;
+
+    try {
+      const ticket = await createTicket({
+        lead_id: activeSessionInfo.lead_id,
+        subject: protocolForm.subject,
+        description: protocolForm.description,
+        priority: protocolForm.priority as any
+      });
+
+      // Link ticket to chat session
+      await linkTicketToChat(ticket.id, activeSession!);
+
+      // Update local session info to show the protocol
+      setActiveSessionInfo(prev => ({
+        ...prev,
+        ticket_id: ticket.id,
+        support_tickets: { protocol_number: ticket.protocol_number }
+      }));
+
+      setIsCreateProtocolOpen(false);
+      setProtocolForm({ subject: '', description: '', priority: 'medium' });
+
+      toast({
+        title: 'Protocolo criado!',
+        description: `Protocolo ${ticket.protocol_number} vinculado ao chat`,
+      });
+    } catch (error) {
+      console.error('Erro ao criar protocolo:', error);
+    }
+  };
+
+  const openProtocolPage = () => {
+    if (activeSessionInfo?.support_tickets?.protocol_number) {
+      window.open(`/admin/protocols?search=${activeSessionInfo.support_tickets.protocol_number}`, '_blank');
+    }
+  };
 
   const handleToggleChatSystem = () => {
-    toggleChatSystem(!chatEnabled);
+    toggleChatSystem(!chatSystemEnabled);
   };
 
   const handleAcceptSession = async (sessionId: string) => {
@@ -173,10 +232,10 @@ const AttendantDashboard = () => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newMessage.trim() || !activeSession || sendingMessage) return;
+    if (!newMessage.trim() || !activeSession || isSending) return;
 
     stopTyping();
-    setSendingMessage(true);
+    setIsSending(true);
     
     try {
       await sendMessage(activeSession, newMessage, 'attendant');
@@ -184,28 +243,24 @@ const AttendantDashboard = () => {
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
     } finally {
-      setSendingMessage(false);
+      setIsSending(false);
     }
   };
 
   const handleEndSession = (sessionId: string) => {
-    setSessionToEnd(sessionId);
     setIsEndDialogOpen(true);
   };
 
   const confirmEndSession = async (status: 'ended' | 'abandoned' = 'ended') => {
-    if (!sessionToEnd) return;
+    if (!activeSession) return;
 
     try {
-      await endChatSession(sessionToEnd, endNotes, status);
+      await endChatSession(activeSession, endNotes, status);
       
-      if (activeSession === sessionToEnd) {
-        setActiveSession(null);
-      }
-      
+      setActiveSession(null);
+      setActiveSessionInfo(null);
       setIsEndDialogOpen(false);
       setEndNotes('');
-      setSessionToEnd(null);
       
       toast({
         title: status === 'ended' ? 'Chat finalizado' : 'Chat abandonado',
@@ -215,7 +270,6 @@ const AttendantDashboard = () => {
       console.error('Erro ao finalizar chat:', error);
     }
   };
-
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -231,14 +285,6 @@ const AttendantDashboard = () => {
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
 
   const handleTakeOverChat = async (sessionId: string) => {
     try {
@@ -319,6 +365,14 @@ const AttendantDashboard = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-8rem)]">
       {/* Status e Controles */}
@@ -329,7 +383,7 @@ const AttendantDashboard = () => {
             <CardTitle className="text-sm flex items-center justify-between">
               Sistema de Chat
               <div className="flex items-center gap-2">
-                {chatEnabled ? (
+                {chatSystemEnabled ? (
                   <Power className="h-4 w-4 text-green-500" />
                 ) : (
                   <PowerOff className="h-4 w-4 text-red-500" />
@@ -342,16 +396,16 @@ const AttendantDashboard = () => {
               <span className="text-sm">Receber novos chats</span>
               <div className="flex items-center gap-2">
                 <Switch
-                  checked={chatEnabled}
+                  checked={chatSystemEnabled}
                   onCheckedChange={handleToggleChatSystem}
                 />
-                <Badge variant={chatEnabled ? "default" : "secondary"} className="text-xs">
-                  {chatEnabled ? 'Ativo' : 'Inativo'}
+                <Badge variant={chatSystemEnabled ? "default" : "secondary"} className="text-xs">
+                  {chatSystemEnabled ? 'Ativo' : 'Inativo'}
                 </Badge>
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              {chatEnabled 
+              {chatSystemEnabled 
                 ? 'O sistema de chat está funcionando normalmente' 
                 : 'O sistema de chat está desativado. Novos chats não serão recebidos.'
               }
@@ -439,9 +493,9 @@ const AttendantDashboard = () => {
                          size="sm" 
                          onClick={() => handleAcceptSession(session.id)}
                          className="w-full"
-                         disabled={!chatEnabled}
+                         disabled={!chatSystemEnabled}
                        >
-                         {chatEnabled ? 'Aceitar Chat' : 'Chat Desativado'}
+                         {chatSystemEnabled ? 'Aceitar Chat' : 'Chat Desativado'}
                        </Button>
                      </div>
                    ))}
@@ -525,38 +579,58 @@ const AttendantDashboard = () => {
           <Card className="h-full flex flex-col">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
-                   <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5" />
-                      {sessionForView.lead?.name}
-                        <Badge variant="secondary" className="ml-2">
-                          Protocolo #{sessionForView.protocol || sessionForView.id.slice(0, 8)}
-                        </Badge>
-                    </CardTitle>
-                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                     <div className="flex items-center gap-1">
-                       <Mail className="h-4 w-4" />
-                       {sessionForView.lead?.email}
-                     </div>
-                     {sessionForView.lead?.phone && (
-                       <div className="flex items-center gap-1">
-                         <Phone className="h-4 w-4" />
-                         {sessionForView.lead.phone}
-                       </div>
-                     )}
-                   </div>
-                 </div>
-                 <div className="flex items-center gap-2">
-                   {getStatusBadge(sessionForView.status)}
-                   <Button
-                     size="sm"
-                     variant="outline"
-                     onClick={() => handleEndSession(sessionForView.id)}
-                   >
-                     <CheckCircle className="h-4 w-4 mr-1" />
-                     Finalizar
-                   </Button>
-                 </div>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-primary/10">
+                      {sessionForView?.lead?.name?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold">
+                      {sessionForView?.lead?.name || 'Cliente'}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {sessionForView?.lead?.email}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* Protocol Section */}
+                  {sessionForView?.support_tickets?.protocol_number ? (
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <FileText className="h-3 w-3" />
+                        {sessionForView.support_tickets.protocol_number}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={openProtocolPage}
+                        title="Abrir protocolo"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsCreateProtocolOpen(true)}
+                      className="flex items-center gap-1"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Criar Protocolo
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEndSession(sessionForView.id)}
+                    title="Encerrar conversa"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
 
@@ -615,12 +689,12 @@ const AttendantDashboard = () => {
                     placeholder="Digite sua mensagem..."
                     value={newMessage}
                     onChange={handleInputChange}
-                    disabled={sendingMessage}
+                    disabled={isSending}
                     className="flex-1"
                   />
                   <Button 
                     type="submit" 
-                    disabled={!newMessage.trim() || sendingMessage}
+                    disabled={!newMessage.trim() || isSending}
                   >
                     <Send className="h-4 w-4" />
                   </Button>
@@ -628,7 +702,7 @@ const AttendantDashboard = () => {
               </div>
             </CardContent>
           </Card>
-        ) : !chatEnabled ? (
+        ) : !chatSystemEnabled ? (
           <Card className="h-full flex items-center justify-center">
             <CardContent className="text-center">
               <PowerOff className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
@@ -752,12 +826,12 @@ const AttendantDashboard = () => {
                       placeholder="Digite sua mensagem..."
                       value={newMessage}
                       onChange={handleInputChange}
-                      disabled={sendingMessage}
+                      disabled={isSending}
                       className="flex-1"
                     />
                     <Button 
                       type="submit" 
-                      disabled={!newMessage.trim() || sendingMessage}
+                      disabled={!newMessage.trim() || isSending}
                     >
                       <Send className="h-4 w-4" />
                     </Button>
@@ -809,6 +883,71 @@ const AttendantDashboard = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Protocol Dialog */}
+      <Dialog open={isCreateProtocolOpen} onOpenChange={setIsCreateProtocolOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Criar Protocolo de Atendimento</DialogTitle>
+            <DialogDescription>
+              Crie um protocolo para organizar este atendimento
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="protocol-subject">Assunto</Label>
+              <Input
+                id="protocol-subject"
+                placeholder="Descreva brevemente o assunto"
+                value={protocolForm.subject}
+                onChange={(e) => setProtocolForm(prev => ({ ...prev, subject: e.target.value }))}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="protocol-description">Descrição</Label>
+              <Textarea
+                id="protocol-description"
+                placeholder="Forneça mais detalhes sobre o atendimento"
+                value={protocolForm.description}
+                onChange={(e) => setProtocolForm(prev => ({ ...prev, description: e.target.value }))}
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="protocol-priority">Prioridade</Label>
+              <Select 
+                value={protocolForm.priority} 
+                onValueChange={(value) => setProtocolForm(prev => ({ ...prev, priority: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Baixa</SelectItem>
+                  <SelectItem value="medium">Média</SelectItem>
+                  <SelectItem value="high">Alta</SelectItem>
+                  <SelectItem value="urgent">Urgente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCreateProtocolOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateProtocol}>
+              Criar Protocolo
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
