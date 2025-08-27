@@ -10,156 +10,374 @@ const corsHeaders = {
 interface ChatRequest {
   message: string;
   sessionId?: string;
-  context?: {
-    properties?: any[];
-    siteInfo?: any;
-    userInfo?: any;
-  };
+  context?: any;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key não configurada');
-    }
+    const { message, sessionId, context }: ChatRequest = await req.json();
+    console.log('AI Chat Enhanced - Received request:', { message, sessionId });
 
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Supabase credentials não configuradas');
+
+    if (!openaiApiKey || !supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Missing required environment variables');
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    const { message, sessionId, context }: ChatRequest = await req.json();
 
-    // Buscar informações do site para contexto
-    const { data: siteSettings } = await supabase
-      .from('site_settings')
-      .select('*');
+    // Get site context and search for relevant properties
+    const { data: siteContext } = await supabase.rpc('get_site_context_for_ai');
+    console.log('Site context loaded:', siteContext);
 
-    const siteContext = siteSettings?.reduce((acc: any, setting: any) => {
-      acc[setting.key] = setting.value;
-      return acc;
-    }, {});
+    // Extract search terms from message
+    const searchTerms = extractSearchTerms(message);
+    console.log('Extracted search terms:', searchTerms);
 
-    // Buscar algumas propriedades em destaque para contexto
-    const { data: featuredProperties } = await supabase
-      .from('properties')
-      .select('title, price, location, property_type, bedrooms, area, description')
-      .eq('status', 'active')
-      .eq('is_featured', true)
-      .limit(5);
+    let relevantProperties = null;
+    if (searchTerms.hasPropertyTerms) {
+      const { data: properties } = await supabase.rpc('search_properties_for_ai', {
+        property_type_filter: searchTerms.propertyType,
+        city_filter: searchTerms.city,
+        min_price_filter: searchTerms.minPrice,
+        max_price_filter: searchTerms.maxPrice,
+        min_bedrooms_filter: searchTerms.minBedrooms,
+        max_bedrooms_filter: searchTerms.maxBedrooms,
+        limit_count: 5
+      });
+      relevantProperties = properties;
+      console.log('Found relevant properties:', relevantProperties?.length || 0);
+    }
 
-    // Buscar configuração do chat
-    const { data: chatConfig } = await supabase
-      .from('chat_configurations')
-      .select('*')
-      .eq('active', true)
-      .single();
+    // Get/update session memory if sessionId provided
+    let sessionMemory = {};
+    if (sessionId) {
+      const { data: memoryData } = await supabase
+        .from('chat_context_memory')
+        .select('key, value')
+        .eq('session_id', sessionId);
+      
+      if (memoryData) {
+        sessionMemory = memoryData.reduce((acc: any, item: any) => {
+          acc[item.key] = item.value;
+          return acc;
+        }, {});
+      }
+      console.log('Loaded session memory:', sessionMemory);
+    }
 
-    const systemInstruction = chatConfig?.system_instruction || `
-Você é um assistente virtual especializado em imóveis da ${siteContext?.site_name || 'nossa imobiliária'}. Seja objetivo, direto e útil.
+    // Build enhanced context
+    const enhancedContext = {
+      site: siteContext,
+      properties: relevantProperties,
+      memory: sessionMemory,
+      original: context
+    };
 
-INFORMAÇÕES DA EMPRESA:
-- Nome: ${siteContext?.site_name || 'Imobiliária'}
-- Telefone: ${siteContext?.contact_phone || 'Não informado'}
-- Email: ${siteContext?.contact_email || 'Não informado'}
-- Endereço: ${siteContext?.contact_address || 'Não informado'}
+    // Create system instruction
+    const systemInstruction = buildSystemInstruction(enhancedContext);
 
-SUAS PRINCIPAIS FUNÇÕES:
-1. 🏠 CONSULTA DE IMÓVEIS: Ajude a encontrar imóveis com base nas necessidades
-2. 📅 AGENDAMENTO: Ofereça agendamento de visitas quando cliente demonstrar interesse específico
-3. 🤝 TRANSFERÊNCIA: Transfira para atendente humano quando solicitado ou quando precisar de informações detalhadas
-4. 💬 SUPORTE: Forneça informações sobre serviços e processos
-
-INSTRUÇÕES IMPORTANTES:
-- Seja OBJETIVO e DIRETO - evite respostas muito longas
-- Use informações REAIS dos imóveis disponíveis
-- Ofereça agendamento quando cliente demonstrar interesse real em um imóvel específico
-- Para transferência, diga: "Vou conectar você com um especialista humano"
-- Se não souber algo específico, seja honesto e ofereça transferência
-
-IMÓVEIS EM DESTAQUE:
-${featuredProperties?.map(p => 
-  `- ${p.title}: ${p.property_type.toUpperCase()} ${p.bedrooms}Q, ${p.area}m² em ${p.location} - R$ ${p.price?.toLocaleString('pt-BR')}`
-).join('\n') || 'Consultando nosso portfólio...'}
-
-FRASES ÚTEIS:
-- Para agendamento: "Gostaria de agendar uma visita para conhecer este imóvel pessoalmente?"
-- Para transferência: "Vou conectar você com nosso especialista para informações mais detalhadas"
-
-Total de imóveis disponíveis: ${featuredProperties?.length || 0}+ opções
-
-Responda em português brasileiro, sendo útil e profissional.
-`;
-
+    // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${openaiApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          {
-            role: 'system',
-            content: systemInstruction
-          },
-          {
-            role: 'user',
-            content: message
-          }
+          { role: 'system', content: systemInstruction },
+          { role: 'user', content: message }
         ],
-        max_tokens: 500,
-        temperature: 0.7,
+        max_tokens: 800,
+        temperature: 0.7
       }),
     });
 
     if (!response.ok) {
+      const errorData = await response.text();
+      console.error('OpenAI API error:', errorData);
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
     const aiResponse = data.choices[0].message.content;
+    console.log('AI response generated:', aiResponse.substring(0, 100) + '...');
 
-    // Se há um sessionId, salvar a mensagem no banco
+    // Check if user wants to schedule a visit
+    if (aiResponse.includes('[SCHEDULE_VISIT]') && sessionId) {
+      console.log('Visit scheduling detected');
+      // Extract visit data from response
+      const visitMatch = aiResponse.match(/\[SCHEDULE_VISIT:([^\]]+)\]/);
+      if (visitMatch) {
+        try {
+          const visitData = JSON.parse(visitMatch[1]);
+          await scheduleVisitFromBot(supabase, sessionId, visitData);
+        } catch (parseError) {
+          console.error('Error parsing visit data:', parseError);
+        }
+      }
+    }
+
+    // Check if user wants to transfer to human
+    if (aiResponse.includes('[TRANSFER_TO_HUMAN]') && sessionId) {
+      console.log('Human transfer detected');
+      await transferToHuman(supabase, sessionId);
+    }
+
+    // Update session memory if needed
     if (sessionId) {
-      await supabase
+      await updateSessionMemory(supabase, sessionId, message, aiResponse, searchTerms);
+    }
+
+    // Save AI message to chat if sessionId provided
+    if (sessionId) {
+      const { error: saveError } = await supabase
         .from('chat_messages')
-        .insert([
-          {
-            session_id: sessionId,
-            sender_type: 'bot',
-            message: aiResponse,
-            read_status: false
-          }
-        ]);
+        .insert({
+          session_id: sessionId,
+          message: aiResponse.replace(/\[(SCHEDULE_VISIT|TRANSFER_TO_HUMAN)[^\]]*\]/g, '').trim(),
+          sender_type: 'bot'
+        });
+
+      if (saveError) {
+        console.error('Error saving AI message:', saveError);
+      }
     }
 
     return new Response(JSON.stringify({ 
-      response: aiResponse,
-      canTransferToHuman: true
+      response: aiResponse.replace(/\[(SCHEDULE_VISIT|TRANSFER_TO_HUMAN)[^\]]*\]/g, '').trim(),
+      sessionId,
+      context: enhancedContext
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Error in ai-chat-enhanced function:', error);
+    console.error('Error in AI chat:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
-      response: 'Desculpe, ocorreu um erro. Por favor, tente novamente ou entre em contato com nossos atendentes.'
+      error: 'Desculpe, ocorreu um erro. Tente novamente.' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
+
+function extractSearchTerms(message: string) {
+  const lowerMessage = message.toLowerCase();
+  
+  // Property types
+  const propertyTypes = ['casa', 'apartamento', 'cobertura', 'lote', 'studio', 'loft'];
+  const foundType = propertyTypes.find(type => lowerMessage.includes(type));
+  
+  // Cities (common ones in Brazil)
+  const cities = ['balneário camboriú', 'camboriú', 'itajaí', 'florianópolis', 'joinville'];
+  const foundCity = cities.find(city => lowerMessage.includes(city));
+  
+  // Price ranges (in millions)
+  let minPrice = null, maxPrice = null;
+  const priceMatches = message.match(/(\d+(?:\.\d+)?)\s*(?:mil|milhão|milhões)/gi);
+  if (priceMatches) {
+    const prices = priceMatches.map(match => {
+      const num = parseFloat(match.match(/\d+(?:\.\d+)?/)[0]);
+      return match.includes('mil') ? num * 1000 : num * 1000000;
+    }).sort((a, b) => a - b);
+    
+    if (prices.length === 1) {
+      maxPrice = prices[0];
+    } else if (prices.length >= 2) {
+      minPrice = prices[0];
+      maxPrice = prices[1];
+    }
+  }
+  
+  // Bedrooms
+  let minBedrooms = null;
+  const bedroomMatch = message.match(/(\d+)\s*(?:quarto|dormitório)/i);
+  if (bedroomMatch) {
+    minBedrooms = parseInt(bedroomMatch[1]);
+  }
+
+  const hasPropertyTerms = !!(foundType || foundCity || minPrice || maxPrice || minBedrooms);
+
+  return {
+    propertyType: foundType,
+    city: foundCity,
+    minPrice,
+    maxPrice,
+    minBedrooms,
+    maxBedrooms: null,
+    hasPropertyTerms
+  };
+}
+
+function buildSystemInstruction(context: any): string {
+  const { site, properties, memory } = context;
+  
+  let instruction = `Você é Alice, consultora imobiliária virtual da ${site?.company || 'Imobiliária'}. 
+
+**INSTRUÇÕES CRÍTICAS:**
+- Seja OBJETIVA e PRÁTICA
+- Respostas curtas (máximo 3 parágrafos)  
+- SEMPRE ofereça ações concretas
+- Use dados REAIS do sistema
+
+**DADOS DA EMPRESA:**
+${site?.company ? `Empresa: ${site.company}` : ''}
+${site?.phone ? `Telefone: ${site.phone}` : ''}
+${site?.email ? `Email: ${site.email}` : ''}
+
+**HORÁRIO DE ATENDIMENTO:**
+${site?.business_hours ? site.business_hours.map((h: any) => 
+  `${getDayName(h.day)}: ${h.start_time} às ${h.end_time}`
+).join('\n') : 'Consulte nossa equipe'}
+
+**AÇÕES DISPONÍVEIS:**
+
+1. **BUSCAR IMÓVEIS**: Quando solicitado, use os dados reais:
+${properties ? `
+IMÓVEIS ENCONTRADOS (${properties.length}):
+${JSON.stringify(properties, null, 2)}
+
+Apresente assim:
+🏠 **[Título]** - [Código]
+📍 [Localização] 
+💰 R$ [Preço formatado]
+🛏️ [Quartos] quartos | 🚿 [Banheiros] banheiros
+📐 [Área]m²
+
+[Link]: /imovel/[slug]
+` : 'Sem imóveis encontrados com esses critérios.'}
+
+2. **AGENDAR VISITA**: Quando cliente quiser visitar, colete:
+- Nome completo
+- Telefone  
+- Email
+- Data preferida
+- Horário preferido
+- Imóvel de interesse
+
+Após coletar TODOS os dados, adicione: [SCHEDULE_VISIT:{"property_id":"ID","client_name":"Nome","client_email":"email","client_phone":"phone","visit_date":"YYYY-MM-DD","visit_time":"HH:MM"}]
+
+3. **FALAR COM HUMANO**: Se cliente pedir, responda:
+"Vou conectar você com um de nossos especialistas. Aguarde um momento..."
+E adicione: [TRANSFER_TO_HUMAN]
+
+**MEMÓRIA DA CONVERSA:**
+${Object.keys(memory).length > 0 ? JSON.stringify(memory, null, 2) : 'Primeira interação'}
+
+Mantenha o foco e seja eficiente!`;
+
+  return instruction;
+}
+
+function getDayName(day: number): string {
+  const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  return days[day] || 'Dia inválido';
+}
+
+async function scheduleVisitFromBot(supabase: any, sessionId: string, visitData: any) {
+  try {
+    console.log('Scheduling visit from bot:', visitData);
+    
+    const { error } = await supabase
+      .from('visits')
+      .insert({
+        ...visitData,
+        status: 'scheduled'
+      });
+
+    if (error) {
+      console.error('Error scheduling visit:', error);
+    } else {
+      console.log('Visit scheduled successfully');
+    }
+  } catch (error) {
+    console.error('Error in scheduleVisitFromBot:', error);
+  }
+}
+
+async function transferToHuman(supabase: any, sessionId: string) {
+  try {
+    console.log('Transferring to human:', sessionId);
+    
+    // First get current tags
+    const { data: sessionData } = await supabase
+      .from('chat_sessions')
+      .select('tags')
+      .eq('id', sessionId)
+      .single();
+
+    const currentTags = sessionData?.tags || [];
+    const newTags = [...currentTags, 'human_requested'];
+    
+    const { error } = await supabase
+      .from('chat_sessions')
+      .update({
+        status: 'waiting',
+        attendant_id: null,
+        tags: newTags
+      })
+      .eq('id', sessionId);
+
+    if (error) {
+      console.error('Error transferring to human:', error);
+    } else {
+      console.log('Successfully transferred to human');
+    }
+  } catch (error) {
+    console.error('Error in transferToHuman:', error);
+  }
+}
+
+async function updateSessionMemory(supabase: any, sessionId: string, userMessage: string, aiResponse: string, searchTerms: any) {
+  try {
+    // Update user preferences
+    if (searchTerms.hasPropertyTerms) {
+      const preferences = {
+        propertyType: searchTerms.propertyType,
+        city: searchTerms.city,
+        priceRange: searchTerms.minPrice || searchTerms.maxPrice ? {
+          min: searchTerms.minPrice,
+          max: searchTerms.maxPrice
+        } : null,
+        bedrooms: searchTerms.minBedrooms,
+        lastSearch: new Date().toISOString()
+      };
+
+      await supabase
+        .from('chat_context_memory')
+        .upsert({
+          session_id: sessionId,
+          key: 'user_preferences',
+          value: preferences
+        });
+    }
+
+    // Update conversation history summary
+    const historyUpdate = {
+      lastMessage: userMessage.substring(0, 200),
+      lastResponse: aiResponse.substring(0, 200),
+      timestamp: new Date().toISOString()
+    };
+
+    await supabase
+      .from('chat_context_memory')
+      .upsert({
+        session_id: sessionId,
+        key: 'conversation_summary',
+        value: historyUpdate
+      });
+
+  } catch (error) {
+    console.error('Error updating session memory:', error);
+  }
+}

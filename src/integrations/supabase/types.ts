@@ -262,6 +262,41 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_context_memory: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          session_id: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          session_id: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          session_id?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_context_memory_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           created_at: string
@@ -294,6 +329,13 @@ export type Database = {
           timestamp?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "chat_messages_session_id_fkey"
             columns: ["session_id"]
@@ -1023,6 +1065,10 @@ export type Database = {
           whatsapp_number: string
         }[]
       }
+      get_site_context_for_ai: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_user_email: {
         Args: { user_id: string }
         Returns: string
@@ -1038,6 +1084,18 @@ export type Database = {
       is_business_hours: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      search_properties_for_ai: {
+        Args: {
+          city_filter?: string
+          limit_count?: number
+          max_bedrooms_filter?: number
+          max_price_filter?: number
+          min_bedrooms_filter?: number
+          min_price_filter?: number
+          property_type_filter?: string
+        }
+        Returns: Json
       }
       verify_token: {
         Args: { hash: string; token: string }

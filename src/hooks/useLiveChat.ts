@@ -536,7 +536,7 @@ export const useLiveChat = () => {
         .from('chat_messages')
         .select(`
           *,
-          profiles!chat_messages_sender_id_fkey (full_name, avatar_url)
+          sender:profiles(full_name, avatar_url)
         `)
         .eq('session_id', sessionId)
         .order('timestamp', { ascending: true });

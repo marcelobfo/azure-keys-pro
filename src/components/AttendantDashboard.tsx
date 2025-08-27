@@ -14,6 +14,7 @@ import { useLiveChat } from '@/hooks/useLiveChat';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useChatSounds } from '@/hooks/useChatSounds';
+import { supabase } from '@/integrations/supabase/client';
 import TypingIndicator from '@/components/TypingIndicator';
 import AttendantStatusToggle from '@/components/AttendantStatusToggle';
 import ChatMonitor from '@/components/ChatMonitor';
@@ -90,7 +91,11 @@ const AttendantDashboard = () => {
     try {
       await acceptChatSession(sessionId);
       setActiveSession(sessionId);
-      setIsMobileChatOpen(true); // Open mobile chat on smaller screens
+      setIsMobileChatOpen(true);
+      
+      // Force refresh to load session and messages immediately
+      await fetchChatSessions();
+      await fetchMessages(sessionId);
       
       if (soundEnabled) {
         playNotificationSound();
@@ -184,10 +189,41 @@ const AttendantDashboard = () => {
     );
   }
 
-  const handleTakeOverChat = (sessionId: string) => {
-    setActiveSession(sessionId);
-    setIsMobileChatOpen(true); // Open mobile chat on smaller screens
-    fetchMessages(sessionId);
+  const handleTakeOverChat = async (sessionId: string) => {
+    try {
+      // Find the session and update it
+      const session = sessions.find(s => s.id === sessionId);
+      if (!session) return;
+
+      const { error } = await supabase
+        .from('chat_sessions')
+        .update({ 
+          attendant_id: user?.id,
+          status: 'active'
+        })
+        .eq('id', sessionId);
+
+      if (error) throw error;
+
+      setActiveSession(sessionId);
+      setIsMobileChatOpen(true);
+      
+      // Force refresh to load session and messages immediately
+      await fetchChatSessions();
+      await fetchMessages(sessionId);
+      
+      toast({
+        title: "Chat assumido",
+        description: "Você agora está atendendo este cliente",
+      });
+    } catch (error) {
+      console.error('Erro ao assumir chat:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível assumir o chat",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

@@ -1,295 +1,354 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.10'
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.10';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-)
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 serve(async (req) => {
-  console.log('Gemini Enhanced - Request received:', req.method);
-  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { 
-      message, 
-      context, 
-      sessionId,
-      systemInstruction,
-      temperature = 0.7,
-      topP = 0.9,
-      maxOutputTokens = 1000,
-      model = 'gemini-2.0-flash-exp'
-    } = await req.json();
-    
-    console.log('Gemini Enhanced - Processing:', {
-      messageLength: message?.length,
-      sessionId,
-      model,
-      temperature,
-      topP,
-      maxOutputTokens,
-      hasSystemInstruction: !!systemInstruction
-    });
+    const { message, context, sessionId, ...aiParams } = await req.json();
+    console.log('Gemini Chat Enhanced - Received request:', { message, sessionId });
 
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
-    if (!apiKey) {
-      console.error('GEMINI_API_KEY não configurada');
-      throw new Error('API key do Gemini não configurada');
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!geminiApiKey) {
+      throw new Error('GEMINI_API_KEY not configured');
     }
 
-    // Buscar contexto do site - imóveis e informações
-    console.log('Buscando contexto do site...');
-    const { data: siteContext, error: siteError } = await supabase
-      .rpc('get_site_context_for_ai');
+    // Get site context and search for relevant properties  
+    const { data: siteContext } = await supabase.rpc('get_site_context_for_ai');
+    console.log('Site context loaded:', siteContext);
 
-    if (siteError) {
-      console.error('Erro ao buscar contexto do site:', siteError);
-    }
-
-    // Buscar imóveis específicos se a mensagem mencionar códigos ou termos de busca
-    let specificProperties = [];
-    const propertyCodeMatch = message.match(/[A-Z]{2}-\d{3}/g);
+    // Extract search terms from message
     const searchTerms = extractSearchTerms(message);
-    
-    if (propertyCodeMatch || searchTerms.hasTerms) {
-      console.log('Buscando imóveis específicos...');
-      const { data: properties, error: propError } = await supabase
-        .rpc('search_properties_for_ai', {
-          search_type: searchTerms.type,
-          search_city: searchTerms.city,
-          min_price: searchTerms.minPrice,
-          max_price: searchTerms.maxPrice,
-          min_bedrooms: searchTerms.minBedrooms,
-          property_type_filter: searchTerms.propertyType
-        });
+    console.log('Extracted search terms:', searchTerms);
 
-      if (!propError && properties) {
-        specificProperties = properties.slice(0, 5); // Limitar a 5 imóveis
+    let relevantProperties = null;
+    if (searchTerms.hasPropertyTerms) {
+      const { data: properties } = await supabase.rpc('search_properties_for_ai', {
+        property_type_filter: searchTerms.propertyType,
+        city_filter: searchTerms.city,
+        min_price_filter: searchTerms.minPrice,
+        max_price_filter: searchTerms.maxPrice,
+        min_bedrooms_filter: searchTerms.minBedrooms,
+        max_bedrooms_filter: searchTerms.maxBedrooms,
+        limit_count: 5
+      });
+      relevantProperties = properties;
+      console.log('Found relevant properties:', relevantProperties?.length || 0);
+    }
+
+    // Get/update session memory if sessionId provided
+    let sessionMemory = {};
+    if (sessionId) {
+      const { data: memoryData } = await supabase
+        .from('chat_context_memory')
+        .select('key, value')
+        .eq('session_id', sessionId);
+      
+      if (memoryData) {
+        sessionMemory = memoryData.reduce((acc: any, item: any) => {
+          acc[item.key] = item.value;
+          return acc;
+        }, {});
+      }
+      console.log('Loaded session memory:', sessionMemory);
+    }
+
+    // Build enhanced context
+    const enhancedContext = buildEnrichedContext(siteContext, relevantProperties, {
+      ...context,
+      memory: sessionMemory
+    });
+
+    // Build system instruction  
+    const systemInstruction = buildSystemInstruction(enhancedContext);
+
+    // Initialize Gemini AI with enhanced context
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+    const model = genAI.getGenerativeModel({
+      model: aiParams?.provider_model || "gemini-2.0-flash-exp",
+      generationConfig: {
+        temperature: aiParams?.temperature || 0.7,
+        topP: aiParams?.top_p || 0.9,
+        maxOutputTokens: aiParams?.max_tokens || 800,
+      },
+      systemInstruction: systemInstruction
+    });
+
+    const result = await model.generateContent(message);
+    const aiResponse = result.response.text();
+    console.log('Gemini response generated:', aiResponse.substring(0, 100) + '...');
+
+    // Check if user wants to schedule a visit
+    if (aiResponse.includes('[SCHEDULE_VISIT]') && sessionId) {
+      console.log('Visit scheduling detected');
+      const visitMatch = aiResponse.match(/\[SCHEDULE_VISIT:([^\]]+)\]/);
+      if (visitMatch) {
+        try {
+          const visitData = JSON.parse(visitMatch[1]);
+          await scheduleVisitFromBot(sessionId, visitData);
+        } catch (parseError) {
+          console.error('Error parsing visit data:', parseError);
+        }
       }
     }
 
-    // Construir contexto enriquecido
-    const enrichedContext = buildEnrichedContext(siteContext, specificProperties, context);
-    
-    console.log('Contexto enriquecido criado:', {
-      hasProperties: specificProperties.length > 0,
-      totalProperties: siteContext?.total_properties || 0,
-      featuredCount: siteContext?.featured_properties?.length || 0
-    });
+    // Check if user wants to transfer to human
+    if (aiResponse.includes('[TRANSFER_TO_HUMAN]') && sessionId) {
+      console.log('Human transfer detected');
+      await transferToHuman(sessionId);
+    }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    
-    // Configure generation parameters
-    const generationConfig = {
-      temperature: Math.max(0, Math.min(2, temperature)),
-      topP: Math.max(0.1, Math.min(1, topP)),
-      maxOutputTokens: Math.max(1, Math.min(4000, maxOutputTokens)),
-    };
+    // Update session memory if needed
+    if (sessionId) {
+      await updateSessionMemory(sessionId, message, aiResponse, searchTerms);
+    }
 
-    console.log('Gemini Enhanced - Using generation config:', generationConfig);
-
-    const enhancedSystemInstruction = buildSystemInstruction(enrichedContext, systemInstruction);
-
-    const modelInstance = genAI.getGenerativeModel({ 
-      model: model || 'gemini-2.0-flash-exp',
-      generationConfig,
-      systemInstruction: enhancedSystemInstruction
-    });
-
-    const result = await modelInstance.generateContent(message);
-    const response = result.response;
-    const text = response.text();
-
-    console.log('Gemini Enhanced - Response generated:', {
-      responseLength: text.length,
+    return new Response(JSON.stringify({
+      response: aiResponse.replace(/\[(SCHEDULE_VISIT|TRANSFER_TO_HUMAN)[^\]]*\]/g, '').trim(),
       sessionId,
-      containsPropertyInfo: text.includes('imóvel') || text.includes('propriedade')
+      context: enhancedContext
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-
-    return new Response(
-      JSON.stringify({ 
-        response: text,
-        sessionId,
-        model: model || 'gemini-2.0-flash-exp',
-        usedConfig: generationConfig,
-        contextUsed: {
-          siteData: !!siteContext,
-          specificProperties: specificProperties.length,
-          totalProperties: siteContext?.total_properties || 0
-        }
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    );
 
   } catch (error) {
-    console.error('Erro no Gemini Enhanced chat:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error.toString()
-      }),
-      { 
-        status: 500, 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    );
+    console.error('Error in Gemini chat enhanced:', error);
+    return new Response(JSON.stringify({
+      error: 'Desculpe, ocorreu um erro. Tente novamente.'
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
-})
+});
 
 function extractSearchTerms(message: string) {
   const lowerMessage = message.toLowerCase();
   
-  // Detectar tipo de propriedade
-  let type = null;
-  if (lowerMessage.includes('apartamento') || lowerMessage.includes('ap ')) {
-    type = 'apartamento';
-  } else if (lowerMessage.includes('casa')) {
-    type = 'casa';
-  } else if (lowerMessage.includes('cobertura')) {
-    type = 'cobertura';
-  } else if (lowerMessage.includes('lote')) {
-    type = 'lote';
-  }
-
-  // Detectar cidades comuns
-  let city = null;
-  const cities = ['são paulo', 'rio de janeiro', 'belo horizonte', 'salvador', 'brasília', 'fortaleza', 'recife'];
-  for (const c of cities) {
-    if (lowerMessage.includes(c)) {
-      city = c;
-      break;
-    }
-  }
-
-  // Detectar preços
-  let minPrice = null;
-  let maxPrice = null;
-  const priceMatch = lowerMessage.match(/(\d+(?:\.\d+)?)\s*(?:mil|k|milhões?)/gi);
-  if (priceMatch) {
-    const prices = priceMatch.map(p => {
-      const num = parseFloat(p.replace(/[^\d.]/g, ''));
-      if (p.includes('milhões') || p.includes('milhão')) {
-        return num * 1000000;
-      } else if (p.includes('mil') || p.includes('k')) {
-        return num * 1000;
-      }
-      return num;
-    });
+  // Property types
+  const propertyTypes = ['casa', 'apartamento', 'cobertura', 'lote', 'studio', 'loft'];
+  const foundType = propertyTypes.find(type => lowerMessage.includes(type));
+  
+  // Cities 
+  const cities = ['balneário camboriú', 'camboriú', 'itajaí', 'florianópolis', 'joinville'];
+  const foundCity = cities.find(city => lowerMessage.includes(city));
+  
+  // Price ranges
+  let minPrice = null, maxPrice = null;
+  const priceMatches = message.match(/(\d+(?:\.\d+)?)\s*(?:mil|milhão|milhões)/gi);
+  if (priceMatches) {
+    const prices = priceMatches.map(match => {
+      const num = parseFloat(match.match(/\d+(?:\.\d+)?/)[0]);
+      return match.includes('mil') ? num * 1000 : num * 1000000;
+    }).sort((a, b) => a - b);
     
     if (prices.length === 1) {
       maxPrice = prices[0];
-    } else if (prices.length === 2) {
-      minPrice = Math.min(...prices);
-      maxPrice = Math.max(...prices);
+    } else if (prices.length >= 2) {
+      minPrice = prices[0];
+      maxPrice = prices[1];
     }
   }
-
-  // Detectar quartos
+  
+  // Bedrooms
   let minBedrooms = null;
-  const bedroomMatch = lowerMessage.match(/(\d+)\s*(?:quartos?|dormitórios?)/i);
+  const bedroomMatch = message.match(/(\d+)\s*(?:quarto|dormitório)/i);
   if (bedroomMatch) {
     minBedrooms = parseInt(bedroomMatch[1]);
   }
 
+  const hasPropertyTerms = !!(foundType || foundCity || minPrice || maxPrice || minBedrooms);
+
   return {
-    hasTerms: !!(type || city || minPrice || maxPrice || minBedrooms),
-    type,
-    city,
+    propertyType: foundType,
+    city: foundCity,
     minPrice,
     maxPrice,
     minBedrooms,
-    propertyType: type
+    maxBedrooms: null,
+    hasPropertyTerms
   };
 }
 
 function buildEnrichedContext(siteContext: any, specificProperties: any[], originalContext: any) {
-  const context = {
-    site: siteContext || {},
-    properties: {
-      specific: specificProperties,
-      featured: siteContext?.featured_properties || [],
-      total: siteContext?.total_properties || 0,
-      types: siteContext?.property_types || [],
-      cities: siteContext?.cities || [],
-      priceRange: siteContext?.price_ranges || {}
-    },
-    services: siteContext?.site_info?.services || [],
-    original: originalContext || {}
+  return {
+    site: siteContext,
+    properties: specificProperties,
+    original: originalContext
   };
-
-  return context;
 }
 
-function buildSystemInstruction(context: any, originalInstruction?: string) {
-  const baseInstruction = originalInstruction || `
-Você é um assistente virtual especializado em imóveis. Você é profissional, prestativo e tem conhecimento completo sobre o portfólio de imóveis da empresa.
+function buildSystemInstruction(context: any): string {
+  const { site, properties, original } = context;
+  const memory = original?.memory || {};
+  
+  let instruction = `Você é Alice, consultora imobiliária virtual da ${site?.company || 'Imobiliária'}.
 
-INFORMAÇÕES IMPORTANTES:
-- Total de imóveis ativos: ${context.properties.total}
-- Tipos de imóveis disponíveis: ${context.properties.types.join(', ')}
-- Cidades atendidas: ${context.properties.cities.join(', ')}
-- Faixa de preços: R$ ${context.properties.priceRange.min_price?.toLocaleString('pt-BR')} - R$ ${context.properties.priceRange.max_price?.toLocaleString('pt-BR')}
+**INSTRUÇÕES CRÍTICAS:**
+- Seja OBJETIVA e PRÁTICA
+- Respostas curtas (máximo 3 parágrafos)
+- SEMPRE ofereça ações concretas  
+- Use dados REAIS do sistema
 
-SUAS PRINCIPAIS FUNÇÕES:
-1. 📋 CONSULTA DE IMÓVEIS: Ajude clientes a encontrar imóveis ideais
-2. 📅 AGENDAMENTO: Ofereça agendamento de visitas quando apropriado
-3. 🤝 TRANSFERÊNCIA: Transfira para atendente humano quando solicitado
-4. 💬 SUPORTE: Forneça informações precisas e úteis
+**DADOS DA EMPRESA:**
+${site?.company ? `Empresa: ${site.company}` : ''}
+${site?.phone ? `Telefone: ${site.phone}` : ''}
+${site?.email ? `Email: ${site.email}` : ''}
 
-INSTRUÇÕES ESPECÍFICAS:
-- Seja OBJETIVO e DIRETO nas respostas
-- Sempre mencione códigos dos imóveis quando relevante
-- Ofereça agendamento de visitas quando o cliente demonstrar interesse
-- Use dados REAIS dos imóveis disponíveis
-- Quando não souber algo específico, seja honesto e ofereça transferência
+**HORÁRIO DE ATENDIMENTO:**
+${site?.business_hours ? site.business_hours.map((h: any) => 
+  `${getDayName(h.day)}: ${h.start_time} às ${h.end_time}`
+).join('\n') : 'Consulte nossa equipe'}
 
-DADOS DISPONÍVEIS:
-${context.properties.specific.length > 0 ? `
-IMÓVEIS ESPECÍFICOS ENCONTRADOS:
-${context.properties.specific.map((prop: any) => `
-- ${prop.property_type} ${prop.title}
-  Código: ${prop.id.toString().slice(0, 8)}
-  Preço: R$ ${prop.price?.toLocaleString('pt-BR')}
-  Local: ${prop.location}, ${prop.city}
-  ${prop.bedrooms} quartos, ${prop.bathrooms} banheiros
-  Área: ${prop.area}m²
-  ${prop.description?.substring(0, 200)}...
+**AÇÕES DISPONÍVEIS:**
+
+1. **BUSCAR IMÓVEIS**: Quando solicitado, use os dados reais:
+${properties ? `
+IMÓVEIS ENCONTRADOS (${properties.length}):
+${properties.map((p: any) => `
+🏠 **${p.title}** - ${p.property_code}
+📍 ${p.location}
+💰 R$ ${p.price?.toLocaleString('pt-BR')}
+🛏️ ${p.bedrooms} quartos | 🚿 ${p.bathrooms} banheiros  
+📐 ${p.area}m²
+🔗 /imovel/${p.slug}
 `).join('\n')}
-` : ''}
+` : 'Sem imóveis encontrados com esses critérios.'}
 
-${context.properties.featured.length > 0 ? `
-IMÓVEIS EM DESTAQUE:
-${context.properties.featured.slice(0, 3).map((prop: any) => `
-- ${prop.property_type} ${prop.title}
-  Preço: R$ ${prop.price?.toLocaleString('pt-BR')}
-  Local: ${prop.location}, ${prop.city}
-  ${prop.bedrooms} quartos, ${prop.bathrooms} banheiros
-`).join('\n')}
-` : ''}
+2. **AGENDAR VISITA**: Quando cliente quiser visitar, colete:
+- Nome completo
+- Telefone
+- Email  
+- Data preferida (formato YYYY-MM-DD)
+- Horário preferido (formato HH:MM)
+- Imóvel de interesse
 
-SERVIÇOS OFERECIDOS:
-${context.services.join('\n- ')}
+Após coletar TODOS os dados, adicione: [SCHEDULE_VISIT:{"property_id":"ID","client_name":"Nome","client_email":"email","client_phone":"phone","visit_date":"YYYY-MM-DD","visit_time":"HH:MM"}]
 
-Responda sempre em português brasileiro, seja objetivo e profissional.
-`;
+3. **FALAR COM HUMANO**: Se cliente pedir, responda:
+"Vou conectar você com um de nossos especialistas. Aguarde um momento..."
+E adicione: [TRANSFER_TO_HUMAN]
 
-  return baseInstruction;
+**MEMÓRIA DA CONVERSA:**
+${Object.keys(memory).length > 0 ? JSON.stringify(memory, null, 2) : 'Primeira interação'}
+
+Mantenha o foco e seja eficiente!`;
+
+  return instruction;
+}
+
+function getDayName(day: number): string {
+  const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  return days[day] || 'Dia inválido';
+}
+
+async function scheduleVisitFromBot(sessionId: string, visitData: any) {
+  try {
+    console.log('Scheduling visit from bot:', visitData);
+    
+    const { error } = await supabase
+      .from('visits')
+      .insert({
+        ...visitData,
+        status: 'scheduled'
+      });
+
+    if (error) {
+      console.error('Error scheduling visit:', error);
+    } else {
+      console.log('Visit scheduled successfully');
+    }
+  } catch (error) {
+    console.error('Error in scheduleVisitFromBot:', error);
+  }
+}
+
+async function transferToHuman(sessionId: string) {
+  try {
+    console.log('Transferring to human:', sessionId);
+    
+    // First get current tags
+    const { data: sessionData } = await supabase
+      .from('chat_sessions')
+      .select('tags')
+      .eq('id', sessionId)
+      .single();
+
+    const currentTags = sessionData?.tags || [];
+    const newTags = [...currentTags, 'human_requested'];
+    
+    const { error } = await supabase
+      .from('chat_sessions')
+      .update({
+        status: 'waiting',
+        attendant_id: null,
+        tags: newTags
+      })
+      .eq('id', sessionId);
+
+    if (error) {
+      console.error('Error transferring to human:', error);
+    } else {
+      console.log('Successfully transferred to human');
+    }
+  } catch (error) {
+    console.error('Error in transferToHuman:', error);
+  }
+}
+
+async function updateSessionMemory(sessionId: string, userMessage: string, aiResponse: string, searchTerms: any) {
+  try {
+    // Update user preferences
+    if (searchTerms.hasPropertyTerms) {
+      const preferences = {
+        propertyType: searchTerms.propertyType,
+        city: searchTerms.city,
+        priceRange: searchTerms.minPrice || searchTerms.maxPrice ? {
+          min: searchTerms.minPrice,
+          max: searchTerms.maxPrice
+        } : null,
+        bedrooms: searchTerms.minBedrooms,
+        lastSearch: new Date().toISOString()
+      };
+
+      await supabase
+        .from('chat_context_memory')
+        .upsert({
+          session_id: sessionId,
+          key: 'user_preferences',
+          value: preferences
+        });
+    }
+
+    // Update conversation history summary
+    const historyUpdate = {
+      lastMessage: userMessage.substring(0, 200),
+      lastResponse: aiResponse.substring(0, 200), 
+      timestamp: new Date().toISOString()
+    };
+
+    await supabase
+      .from('chat_context_memory')
+      .upsert({
+        session_id: sessionId,
+        key: 'conversation_summary',
+        value: historyUpdate
+      });
+
+  } catch (error) {
+    console.error('Error updating session memory:', error);
+  }
 }
