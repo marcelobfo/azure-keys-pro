@@ -269,7 +269,7 @@ const AttendantDashboard = () => {
         <AttendantStatusToggle />
         
         {/* Monitor de Chats em Tempo Real */}
-        <ChatMonitor onTakeOverChat={handleTakeOverChat} />
+        <ChatMonitor onTakeOverChat={handleTakeOverChat} onOpenChat={(id) => { setActiveSession(id); setIsMobileChatOpen(true); fetchMessages(id); }} />
         
         {/* Controle de Som */}
         <Card>

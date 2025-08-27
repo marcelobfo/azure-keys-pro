@@ -36,9 +36,10 @@ interface ChatSession {
 
 interface ChatMonitorProps {
   onTakeOverChat: (sessionId: string) => void;
+  onOpenChat?: (sessionId: string) => void;
 }
 
-const ChatMonitor: React.FC<ChatMonitorProps> = ({ onTakeOverChat }) => {
+const ChatMonitor: React.FC<ChatMonitorProps> = ({ onTakeOverChat, onOpenChat }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -310,7 +311,7 @@ const ChatMonitor: React.FC<ChatMonitorProps> = ({ onTakeOverChat }) => {
                     <span className="text-xs text-muted-foreground">
                       Em atendimento há: {getTimeAgo(session.started_at)}
                     </span>
-                    {session.attendant_id !== user?.id && (
+                    {session.attendant_id !== user?.id ? (
                       <Button 
                         size="sm" 
                         variant="outline"
@@ -319,6 +320,15 @@ const ChatMonitor: React.FC<ChatMonitorProps> = ({ onTakeOverChat }) => {
                       >
                         <Eye className="h-4 w-4" />
                         Assumir
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="sm" 
+                        onClick={() => onOpenChat?.(session.id)}
+                        className="flex items-center gap-1"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        Abrir conversa
                       </Button>
                     )}
                   </div>
