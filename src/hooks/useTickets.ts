@@ -104,10 +104,6 @@ export const useTickets = () => {
             name,
             email,
             phone
-          ),
-          assignee:profiles!assigned_to (
-            full_name,
-            avatar_url
           )
         `)
         .order('created_at', { ascending: false });
@@ -323,10 +319,6 @@ export const useTickets = () => {
             name,
             email,
             phone
-          ),
-          assignee:profiles!assigned_to (
-            full_name,
-            avatar_url
           )
         `)
         .eq('protocol_number', protocol)

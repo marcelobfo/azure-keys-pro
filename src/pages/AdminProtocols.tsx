@@ -363,16 +363,10 @@ const AdminProtocols = () => {
                           {getPriorityBadge(ticket.priority)}
                         </TableCell>
                         <TableCell>
-                          {ticket.assignee ? (
+                          {ticket.assigned_to ? (
                             <div className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                <AvatarImage src={ticket.assignee.avatar_url} />
-                                <AvatarFallback>
-                                  {ticket.assignee.full_name?.charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
                               <span className="text-sm">
-                                {ticket.assignee.full_name}
+                                ID: {ticket.assigned_to}
                               </span>
                             </div>
                           ) : (
@@ -466,16 +460,8 @@ const AdminProtocols = () => {
                   <div>
                     <Label>Responsável</Label>
                     <div className="mt-1">
-                      {selectedTicket.assignee ? (
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={selectedTicket.assignee.avatar_url} />
-                            <AvatarFallback>
-                              {selectedTicket.assignee.full_name?.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>{selectedTicket.assignee.full_name}</span>
-                        </div>
+                      {selectedTicket.assigned_to ? (
+                        <span>ID: {selectedTicket.assigned_to}</span>
                       ) : (
                         <span className="text-muted-foreground">Não atribuído</span>
                       )}
