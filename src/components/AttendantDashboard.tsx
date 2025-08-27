@@ -9,11 +9,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useLiveChat } from '@/hooks/useLiveChat';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useChatSounds } from '@/hooks/useChatSounds';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import TypingIndicator from '@/components/TypingIndicator';
 import AttendantStatusToggle from '@/components/AttendantStatusToggle';
@@ -44,6 +46,7 @@ const AttendantDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { playNotificationSound } = useChatSounds();
+  const isMobile = useIsMobile();
   const {
     sessions,
     messages,
@@ -65,6 +68,7 @@ const AttendantDashboard = () => {
   const [endNotes, setEndNotes] = useState('');
   const [sessionToEnd, setSessionToEnd] = useState<string | null>(null);
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
 
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(
     activeSession, 
@@ -89,9 +93,14 @@ const AttendantDashboard = () => {
 
   const handleAcceptSession = async (sessionId: string) => {
     try {
+      setIsLoadingSession(true);
       await acceptChatSession(sessionId);
       setActiveSession(sessionId);
-      setIsMobileChatOpen(true);
+      
+      // Only open mobile sheet on mobile
+      if (isMobile) {
+        setIsMobileChatOpen(true);
+      }
       
       // Force refresh to load session and messages immediately
       await fetchChatSessions();
@@ -107,6 +116,8 @@ const AttendantDashboard = () => {
       });
     } catch (error) {
       console.error('Erro ao aceitar chat:', error);
+    } finally {
+      setIsLoadingSession(false);
     }
   };
 
@@ -191,6 +202,7 @@ const AttendantDashboard = () => {
 
   const handleTakeOverChat = async (sessionId: string) => {
     try {
+      setIsLoadingSession(true);
       // Find the session and update it
       const session = sessions.find(s => s.id === sessionId);
       if (!session) return;
@@ -206,7 +218,11 @@ const AttendantDashboard = () => {
       if (error) throw error;
 
       setActiveSession(sessionId);
-      setIsMobileChatOpen(true);
+      
+      // Only open mobile sheet on mobile
+      if (isMobile) {
+        setIsMobileChatOpen(true);
+      }
       
       // Force refresh to load session and messages immediately
       await fetchChatSessions();
@@ -223,6 +239,28 @@ const AttendantDashboard = () => {
         description: "Não foi possível assumir o chat",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingSession(false);
+    }
+  };
+
+  const handleOpenChat = async (sessionId: string) => {
+    try {
+      setIsLoadingSession(true);
+      setActiveSession(sessionId);
+      
+      // Only open mobile sheet on mobile
+      if (isMobile) {
+        setIsMobileChatOpen(true);
+      }
+      
+      // Force refresh to load session and messages immediately
+      await fetchChatSessions();
+      await fetchMessages(sessionId);
+    } catch (error) {
+      console.error('Erro ao abrir chat:', error);
+    } finally {
+      setIsLoadingSession(false);
     }
   };
 
@@ -269,7 +307,7 @@ const AttendantDashboard = () => {
         <AttendantStatusToggle />
         
         {/* Monitor de Chats em Tempo Real */}
-        <ChatMonitor onTakeOverChat={handleTakeOverChat} onOpenChat={(id) => { setActiveSession(id); setIsMobileChatOpen(true); fetchMessages(id); }} />
+        <ChatMonitor onTakeOverChat={handleTakeOverChat} onOpenChat={handleOpenChat} />
         
         {/* Controle de Som */}
         <Card>
@@ -382,10 +420,7 @@ const AttendantDashboard = () => {
                          "p-2 border rounded cursor-pointer transition-colors",
                          activeSession === session.id ? "bg-primary/10 border-primary" : "hover:bg-muted"
                        )}
-                       onClick={() => {
-                         setActiveSession(session.id);
-                         setIsMobileChatOpen(true);
-                       }}
+                        onClick={() => handleOpenChat(session.id)}
                      >
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-sm">{session.lead?.name}</span>
@@ -411,7 +446,27 @@ const AttendantDashboard = () => {
 
       {/* Área de Chat - Desktop */}
       <div className="lg:col-span-2 hidden lg:block">
-        {activeSession && activeSessionData ? (
+        {isLoadingSession ? (
+          <Card className="h-full flex flex-col">
+            <CardHeader className="border-b">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-5 rounded-full" />
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+              <div className="flex items-center gap-4 mt-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                <p className="text-muted-foreground">Carregando conversa...</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : activeSession && activeSessionData ? (
           <Card className="h-full flex flex-col">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
