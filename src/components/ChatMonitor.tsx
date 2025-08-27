@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -50,8 +51,9 @@ const ChatMonitor: React.FC<ChatMonitorProps> = ({ onTakeOverChat, onOpenChat })
       fetchChatSessions();
       
       // Setup realtime subscription for chat session updates only
+      const channelName = `chat-monitor-${user.id}-${Date.now()}`;
       const channel = supabase
-        .channel('chat-monitor')
+        .channel(channelName)
         .on(
           'postgres_changes',
           {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,10 +20,6 @@ export interface ChatSession {
     name: string;
     email: string;
     phone?: string;
-  };
-  attendant?: {
-    full_name: string;
-    avatar_url?: string;
   };
   support_tickets?: {
     protocol_number: string;
@@ -486,8 +481,7 @@ export const useLiveChat = () => {
         .from('chat_sessions')
         .select(`
           *,
-          leads!lead_id (name, email, phone),
-          profiles!attendant_id (full_name, avatar_url)
+          leads!lead_id (name, email, phone)
         `)
         .order('started_at', { ascending: false });
 
@@ -496,8 +490,7 @@ export const useLiveChat = () => {
       const formattedSessions = data?.map(session => ({
         ...session,
         status: session.status as 'waiting' | 'active' | 'ended' | 'abandoned',
-        lead: session.leads,
-        attendant: session.profiles
+        lead: session.leads
       })) || [];
       
       setSessions(formattedSessions);
@@ -532,10 +525,7 @@ export const useLiveChat = () => {
       
       const { data, error } = await supabase
         .from('chat_messages')
-        .select(`
-          *,
-          sender:profiles(full_name, avatar_url)
-        `)
+        .select('*')
         .eq('session_id', sessionId)
         .order('timestamp', { ascending: true });
 
