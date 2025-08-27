@@ -311,26 +311,27 @@ const ChatMonitor: React.FC<ChatMonitorProps> = ({ onTakeOverChat, onOpenChat })
                     <span className="text-xs text-muted-foreground">
                       Em atendimento há: {getTimeAgo(session.started_at)}
                     </span>
-                    {session.attendant_id !== user?.id ? (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleTakeOver(session.id)}
-                        className="flex items-center gap-1"
-                      >
-                        <Eye className="h-4 w-4" />
-                        Assumir
-                      </Button>
-                    ) : (
+                    <div className="flex items-center gap-2">
                       <Button 
                         size="sm" 
                         onClick={() => onOpenChat?.(session.id)}
                         className="flex items-center gap-1"
                       >
                         <MessageSquare className="h-4 w-4" />
-                        Abrir conversa
+                        {session.attendant_id === user?.id ? 'Minha conversa' : 'Ver conversa'}
                       </Button>
-                    )}
+                      {session.attendant_id !== user?.id && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleTakeOver(session.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <Eye className="h-4 w-4" />
+                          Assumir
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
