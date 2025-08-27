@@ -123,8 +123,7 @@ const AttendantDashboard = () => {
         .from('chat_sessions')
         .select(`
           *,
-          lead:leads(*),
-          support_tickets(protocol_number)
+          lead:leads(*)
         `)
         .eq('id', activeSession)
         .maybeSingle()

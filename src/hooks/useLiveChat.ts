@@ -486,9 +486,8 @@ export const useLiveChat = () => {
         .from('chat_sessions')
         .select(`
           *,
-          leads!chat_sessions_lead_id_fkey (name, email, phone),
-          profiles!chat_sessions_attendant_id_fkey (full_name, avatar_url),
-          support_tickets!chat_sessions_ticket_id_fkey (protocol_number)
+          leads!lead_id (name, email, phone),
+          profiles!attendant_id (full_name, avatar_url)
         `)
         .order('started_at', { ascending: false });
 
@@ -498,8 +497,7 @@ export const useLiveChat = () => {
         ...session,
         status: session.status as 'waiting' | 'active' | 'ended' | 'abandoned',
         lead: session.leads,
-        attendant: session.profiles,
-        protocol: session.support_tickets?.protocol_number
+        attendant: session.profiles
       })) || [];
       
       setSessions(formattedSessions);
