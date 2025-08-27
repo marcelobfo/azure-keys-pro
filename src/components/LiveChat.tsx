@@ -240,22 +240,28 @@ const LiveChat = () => {
             timestamp: payload.new.timestamp
           };
           
-          if (payload.new.sender_type !== 'lead' || payload.new.sender_id !== null) {
-            // Process bot messages for better display
-            if (payload.new.sender_type === 'bot') {
-              newMsg.message = processBotMessage(newMsg.message, formData);
+          // Process bot messages for better display
+          if (payload.new.sender_type === 'bot') {
+            newMsg.message = processBotMessage(newMsg.message, formData);
+          }
+          
+          setMessages(prev => {
+            // Avoid duplicate messages
+            if (prev.some(msg => msg.id === newMsg.id)) {
+              return prev;
             }
-            
-            setMessages(prev => {
-              if (prev.some(msg => msg.id === newMsg.id)) {
-                return prev;
-              }
-              return [...prev, newMsg];
-            });
+            // Replace temp messages with real ones (if message content matches)
+            const updatedMessages = prev.filter(msg => 
+              !msg.id.startsWith('temp-') || 
+              !(msg.sender_type === newMsg.sender_type && 
+                Math.abs(new Date(msg.timestamp).getTime() - new Date(newMsg.timestamp).getTime()) < 5000 &&
+                msg.message === newMsg.message)
+            );
+            return [...updatedMessages, newMsg];
+          });
 
-            if (soundEnabled && payload.new.sender_type === 'attendant') {
-              playNotificationSound();
-            }
+          if (soundEnabled && payload.new.sender_type === 'attendant') {
+            playNotificationSound();
           }
         }
       )

@@ -307,7 +307,7 @@ const AttendantDashboard = () => {
       setIsMobileChatOpen(true);
     }
     
-    // Only fetch messages, not sessions (to avoid triggering ChatMonitor refresh)
+    // Fetch messages
     try {
       await fetchMessages(sessionId);
       if (!localSession) {

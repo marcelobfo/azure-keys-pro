@@ -36,6 +36,7 @@ import Analytics from './pages/Analytics';
 import Sitemap from './pages/Sitemap';
 import Atendimento from '@/pages/Atendimento';
 import AttendantChat from '@/pages/AttendantChat';
+import AdminProtocols from '@/pages/AdminProtocols';
 import LiveChat from '@/components/LiveChat';
 import SEOUpdater from '@/components/SEOUpdater';
 
@@ -99,6 +100,7 @@ function App() {
                 <Route path="/admin/site-settings" element={<AdminSiteSettings />} />
                 <Route path="/admin/settings" element={<WebhookSettings />} />
                 <Route path="/admin/chat-settings" element={<AdminChatSettings />} />
+                <Route path="/admin/protocols" element={<AdminProtocols />} />
                 <Route path="/analytics" element={<Analytics />} />
 
                 {/* Corretor Routes */}
