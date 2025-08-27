@@ -131,9 +131,7 @@ const LiveChat = () => {
     try {
       console.log('🔍 LiveChat: Verificando status do sistema de chat...');
       const { data, error } = await supabase
-        .from('chat_configurations')
-        .select('active, ai_chat_enabled')
-        .maybeSingle();
+        .rpc('get_public_chat_config');
       
       if (error) {
         console.error('❌ LiveChat: Erro ao verificar status do chat:', error);
@@ -143,7 +141,8 @@ const LiveChat = () => {
       console.log('📊 LiveChat: Dados brutos do banco:', data);
       
       // Use both active and ai_chat_enabled to determine if chat should be shown
-      const isActive = data?.active === true && data?.ai_chat_enabled === true;
+      const config = data && data.length > 0 ? data[0] : null;
+      const isActive = config?.active === true && config?.ai_chat_enabled === true;
       console.log('🎯 LiveChat: Status do sistema de chat:', isActive ? '✅ ATIVO' : '🚫 INATIVO');
       console.log('🔄 LiveChat: Atualizando estado chatSystemEnabled de', chatSystemEnabled, 'para', isActive);
       

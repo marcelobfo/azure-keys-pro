@@ -1001,6 +1001,28 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_public_chat_config: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active: boolean
+          ai_chat_enabled: boolean
+          api_provider: string
+          company: string
+          created_at: string
+          custom_responses: Json
+          id: string
+          knowledge_base_enabled: boolean
+          max_tokens: number
+          provider_model: string
+          system_instruction: string
+          temperature: number
+          top_p: number
+          updated_at: string
+          welcome_message: string
+          whatsapp_enabled: boolean
+          whatsapp_number: string
+        }[]
+      }
       get_user_email: {
         Args: { user_id: string }
         Returns: string

@@ -16,22 +16,21 @@ const WhatsAppButton = () => {
     try {
       console.log('Buscando configuração do WhatsApp...');
       const { data, error } = await supabase
-        .from('chat_configurations')
-        .select('whatsapp_enabled, whatsapp_number')
-        .maybeSingle();
+        .rpc('get_public_chat_config');
 
       if (error) {
         console.error('Erro ao buscar configuração do WhatsApp:', error);
         return;
       }
 
-      if (data) {
+      if (data && data.length > 0) {
+        const config = data[0];
         console.log('Configuração WhatsApp carregada:', { 
-          enabled: data.whatsapp_enabled, 
-          hasNumber: !!data.whatsapp_number 
+          enabled: config.whatsapp_enabled, 
+          hasNumber: !!config.whatsapp_number 
         });
-        setIsEnabled(data.whatsapp_enabled || false);
-        setWhatsappNumber(data.whatsapp_number || '');
+        setIsEnabled(config.whatsapp_enabled || false);
+        setWhatsappNumber(config.whatsapp_number || '');
       }
     } catch (error) {
       console.error('Erro ao buscar configuração do WhatsApp:', error);

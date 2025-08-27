@@ -56,18 +56,17 @@ const AIChat = () => {
   const fetchChatConfig = async () => {
     try {
       const { data, error } = await supabase
-        .from('chat_configurations')
-        .select('ai_chat_enabled, api_provider, welcome_message, system_instruction, custom_responses')
-        .maybeSingle();
+        .rpc('get_public_chat_config');
 
       if (error) {
         console.error('Error fetching chat config:', error);
         return;
       }
 
-      if (data) {
-        setIsEnabled(data.ai_chat_enabled || false);
-        setChatConfig(data as ChatConfig);
+      if (data && data.length > 0) {
+        const config = data[0];
+        setIsEnabled(config.ai_chat_enabled || false);
+        setChatConfig(config as ChatConfig);
       }
     } catch (error) {
       console.error('Erro ao buscar configuração do chat:', error);

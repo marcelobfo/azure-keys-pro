@@ -33,18 +33,17 @@ const AutomaticMessages = () => {
   const fetchMessages = async () => {
     try {
       const { data, error } = await supabase
-        .from('chat_configurations')
-        .select('*')
-        .single();
+        .rpc('get_public_chat_config');
 
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
-      if (data?.custom_responses) {
-        const customResponses = typeof data.custom_responses === 'string' 
-          ? JSON.parse(data.custom_responses) 
-          : data.custom_responses;
+      const config = data && data.length > 0 ? data[0] : null;
+      if (config?.custom_responses) {
+        const customResponses = typeof config.custom_responses === 'string' 
+          ? JSON.parse(config.custom_responses) 
+          : config.custom_responses;
         
         const messageArray = Object.entries(customResponses || {}).map(([trigger, message], index) => ({
           id: `msg-${index}`,
