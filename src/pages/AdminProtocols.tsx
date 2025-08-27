@@ -45,9 +45,9 @@ const AdminProtocols = () => {
   } = useTickets();
 
   const [filters, setFilters] = useState({
-    status: '',
-    priority: '',
-    assigned_to: '',
+    status: 'all',
+    priority: 'all',
+    assigned_to: 'unassigned',
     search: '',
     date_from: '',
     date_to: ''
@@ -85,13 +85,25 @@ const AdminProtocols = () => {
   };
 
   const handleFilterChange = (key: string, value: string) => {
-    const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
+    // Convert special values back to empty strings for the filter logic
+    const filterValue = value === 'all' || value === 'unassigned' ? '' : value;
+    const newFilters = { ...filters, [key]: filterValue };
+    setFilters(prev => ({ ...prev, [key]: value })); // Keep original value for UI
     fetchTickets(newFilters);
   };
 
   const clearFilters = () => {
     const clearedFilters = {
+      status: 'all',
+      priority: 'all', 
+      assigned_to: 'unassigned',
+      search: '',
+      date_from: '',
+      date_to: ''
+    };
+    setFilters(clearedFilters);
+    // Convert to empty strings for the actual filter logic
+    const apiFilters = {
       status: '',
       priority: '',
       assigned_to: '',
@@ -99,8 +111,7 @@ const AdminProtocols = () => {
       date_from: '',
       date_to: ''
     };
-    setFilters(clearedFilters);
-    fetchTickets(clearedFilters);
+    fetchTickets(apiFilters);
   };
 
   const getStatusBadge = (status: string) => {
@@ -246,7 +257,7 @@ const AdminProtocols = () => {
                     <SelectValue placeholder="Todos os status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os status</SelectItem>
+                    <SelectItem value="all">Todos os status</SelectItem>
                     <SelectItem value="open">Aberto</SelectItem>
                     <SelectItem value="in_progress">Em Andamento</SelectItem>
                     <SelectItem value="resolved">Resolvido</SelectItem>
@@ -262,7 +273,7 @@ const AdminProtocols = () => {
                     <SelectValue placeholder="Todas as prioridades" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as prioridades</SelectItem>
+                    <SelectItem value="all">Todas as prioridades</SelectItem>
                     <SelectItem value="low">Baixa</SelectItem>
                     <SelectItem value="medium">Média</SelectItem>
                     <SelectItem value="high">Alta</SelectItem>
@@ -550,7 +561,7 @@ const AdminProtocols = () => {
                     <SelectValue placeholder="Selecione um responsável" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Não atribuído</SelectItem>
+                    <SelectItem value="unassigned">Não atribuído</SelectItem>
                     {teamMembers.map((member) => (
                       <SelectItem key={member.id} value={member.id}>
                         {member.full_name}
