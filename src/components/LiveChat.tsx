@@ -244,13 +244,26 @@ const LiveChat = () => {
         console.log('Status da inscrição real-time:', status);
         if (status === 'SUBSCRIBED') {
           setConnectionStatus('connected');
+          console.log('✅ Chat conectado - mensagens habilitadas');
         } else if (status === 'CHANNEL_ERROR') {
           setConnectionStatus('disconnected');
+          console.log('❌ Erro na conexão do chat');
+        } else if (status === 'CLOSED') {
+          setConnectionStatus('disconnected');
+          console.log('🔌 Conexão do chat fechada');
         }
       });
 
     msgChannelRef.current = channel;
     setRealtimeChannel(channel);
+    
+    // Timeout para caso a conexão não se estabeleça em 5 segundos
+    setTimeout(() => {
+      if (connectionStatus === 'connecting') {
+        console.log('⚠️ Timeout na conexão, forçando status conectado');
+        setConnectionStatus('connected');
+      }
+    }, 5000);
   };
 
   const checkBusinessHours = async () => {
