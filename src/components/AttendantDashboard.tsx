@@ -277,23 +277,7 @@ const AttendantDashboard = () => {
     try {
       await sendMessage(activeSession, messageText, 'attendant');
       
-      // Broadcast message immediately to visitor
-      if (msgChannelRef.current) {
-        msgChannelRef.current.send({
-          type: 'broadcast',
-          event: 'new_message',
-          payload: {
-            id: `msg-${Date.now()}`,
-            session_id: activeSession,
-            message: messageText,
-            sender_type: 'attendant',
-            sender_id: user?.id,
-            timestamp: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            read_status: false
-          }
-        });
-      }
+      // Não fazemos broadcast manual - o Edge Function chat-processor já faz isso
       
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);

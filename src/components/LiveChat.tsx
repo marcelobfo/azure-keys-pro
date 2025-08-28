@@ -367,6 +367,7 @@ const LiveChat = () => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Permitir envio mesmo se estiver conectando (contanto que tenha sessionId)
     if (!newMessage.trim() || !sessionId) return;
 
     stopTyping();

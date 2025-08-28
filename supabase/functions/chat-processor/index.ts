@@ -182,39 +182,35 @@ serve(async (req) => {
                 }
               }
 
-              // Preparar contexto completo
-              const systemInstruction = (chatConfig.system_instruction || 'Você é um assistente imobiliário prestativo.') + knowledgeContext;
+              // Preparar contexto completo com regras rigorosas
+              const systemInstruction = (chatConfig.system_instruction || 
+                `Você é uma IA de atendimento imobiliário autônoma da imobiliária premium Maresia Litoral.
+                Sua missão é atender clientes em tempo real, trazer imóveis da base de dados e conduzir o usuário dentro do site da Maresia Litoral.
+                
+                REGRAS CRÍTICAS DE ATENDIMENTO:
+                - Você é a assistente virtual oficial da Maresia Litoral
+                - NUNCA envie links externos ou mencione sites concorrentes
+                - SEMPRE conduza o usuário dentro do domínio atual
+                - Sua função principal é ajudar clientes a encontrar imóveis, responder dúvidas e registrar tickets quando necessário
+                - Consulte sempre a tabela properties para trazer imóveis reais da base de dados
+                - Quando o cliente pedir por imóveis, traga resultados da base de dados com id, título, descrição, preço, localização, tipo e status`
+              ) + knowledgeContext;
               const context = `Cliente ${leadData.name} iniciou um chat sobre: ${leadData.subject}. ${systemInstruction}`;
 
-              // Chamar função AI baseada no provider
-              let aiResponse;
-              if (chatConfig.api_provider === 'openai') {
-                const { data: response, error: aiError } = await supabase.functions.invoke('ai-chat-enhanced', {
-                  body: {
-                    message: leadData.message,
-                    context: context,
-                    sessionId: sessionResult.id,
-                    temperature: chatConfig.temperature,
-                    maxTokens: chatConfig.max_tokens
-                  }
-                });
-                aiResponse = response;
-              } else {
-                // Default to Gemini
-                const { data: response, error: aiError } = await supabase.functions.invoke('gemini-chat', {
-                  body: {
-                    message: leadData.message,
-                    context: context,
-                    sessionId: sessionResult.id,
-                    systemInstruction: systemInstruction,
-                    temperature: chatConfig.temperature,
-                    topP: chatConfig.top_p,
-                    maxOutputTokens: chatConfig.max_tokens,
-                    model: chatConfig.provider_model || 'gemini-1.5-flash'
-                  }
-                });
-                aiResponse = response;
-              }
+              // Sempre usar gemini-chat-enhanced para ter acesso completo aos imóveis
+              const { data: response, error: aiError } = await supabase.functions.invoke('gemini-chat-enhanced', {
+                body: {
+                  message: leadData.message,
+                  context: context,
+                  sessionId: sessionResult.id,
+                  systemInstruction: systemInstruction,
+                  temperature: chatConfig.temperature,
+                  topP: chatConfig.top_p,
+                  maxOutputTokens: chatConfig.max_tokens,
+                  model: chatConfig.provider_model || 'gemini-2.0-flash-exp'
+                }
+              });
+              const aiResponse = response;
 
               if (aiResponse?.response) {
                 // Inserir resposta do bot
@@ -348,38 +344,34 @@ serve(async (req) => {
                 }
               }
 
-              // Preparar contexto completo
-              const systemInstruction = (chatConfig.system_instruction || 'Você é um assistente imobiliário prestativo. Responda de forma profissional e útil.') + knowledgeContext;
+              // Preparar contexto completo com regras rigorosas
+              const systemInstruction = (chatConfig.system_instruction || 
+                `Você é uma IA de atendimento imobiliário autônoma da imobiliária premium Maresia Litoral.
+                Sua missão é atender clientes em tempo real, trazer imóveis da base de dados e conduzir o usuário dentro do site da Maresia Litoral.
+                
+                REGRAS CRÍTICAS DE ATENDIMENTO:
+                - Você é a assistente virtual oficial da Maresia Litoral
+                - NUNCA envie links externos ou mencione sites concorrentes
+                - SEMPRE conduza o usuário dentro do domínio atual
+                - Sua função principal é ajudar clientes a encontrar imóveis, responder dúvidas e registrar tickets quando necessário
+                - Consulte sempre a tabela properties para trazer imóveis reais da base de dados
+                - Quando o cliente pedir por imóveis, traga resultados da base de dados com id, título, descrição, preço, localização, tipo e status`
+              ) + knowledgeContext;
 
-              // Chamar função AI baseada no provider
-              let aiResponse;
-              if (chatConfig.api_provider === 'openai') {
-                const { data: response, error: aiError } = await supabase.functions.invoke('ai-chat-enhanced', {
-                  body: {
-                    message: message,
-                    context: systemInstruction,
-                    sessionId: sessionId,
-                    temperature: chatConfig.temperature,
-                    maxTokens: chatConfig.max_tokens
-                  }
-                });
-                aiResponse = response;
-              } else {
-                // Default to Gemini
-                const { data: response, error: aiError } = await supabase.functions.invoke('gemini-chat', {
-                  body: {
-                    message: message,
-                    context: systemInstruction,
-                    sessionId: sessionId,
-                    systemInstruction: systemInstruction,
-                    temperature: chatConfig.temperature,
-                    topP: chatConfig.top_p,
-                    maxOutputTokens: chatConfig.max_tokens,
-                    model: chatConfig.provider_model || 'gemini-1.5-flash'
-                  }
-                });
-                aiResponse = response;
-              }
+              // Sempre usar gemini-chat-enhanced para ter acesso completo aos imóveis
+              const { data: response, error: aiError } = await supabase.functions.invoke('gemini-chat-enhanced', {
+                body: {
+                  message: message,
+                  context: {},
+                  sessionId: sessionId,
+                  systemInstruction: systemInstruction,
+                  temperature: chatConfig.temperature,
+                  topP: chatConfig.top_p,
+                  maxOutputTokens: chatConfig.max_tokens,
+                  model: chatConfig.provider_model || 'gemini-2.0-flash-exp'
+                }
+              });
+              const aiResponse = response;
 
               if (aiResponse?.response) {
                 const { data: aiMessage } = await supabase
