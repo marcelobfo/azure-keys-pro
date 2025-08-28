@@ -210,7 +210,7 @@ serve(async (req) => {
                     temperature: chatConfig.temperature,
                     topP: chatConfig.top_p,
                     maxOutputTokens: chatConfig.max_tokens,
-                    model: chatConfig.provider_model
+                    model: chatConfig.provider_model || 'gemini-1.5-flash'
                   }
                 });
                 aiResponse = response;
@@ -356,7 +356,7 @@ serve(async (req) => {
                     temperature: chatConfig.temperature,
                     topP: chatConfig.top_p,
                     maxOutputTokens: chatConfig.max_tokens,
-                    model: chatConfig.provider_model
+                    model: chatConfig.provider_model || 'gemini-1.5-flash'
                   }
                 });
                 aiResponse = response;
