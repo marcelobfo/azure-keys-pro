@@ -218,14 +218,33 @@ serve(async (req) => {
 
               if (aiResponse?.response) {
                 // Inserir resposta do bot
-                await supabase
+                const { data: aiMessage } = await supabase
                   .from('chat_messages')
                   .insert({
                     session_id: sessionResult.id,
                     sender_type: 'bot',
                     sender_id: null,
                     message: aiResponse.response
-                  });
+                  })
+                  .select()
+                  .single();
+                
+                // Broadcast AI message immediately to all listeners
+                const broadcastChannel = supabase.channel(`chat-session-${sessionResult.id}`);
+                await broadcastChannel.send({
+                  type: 'broadcast',
+                  event: 'new_message',
+                  payload: {
+                    id: aiMessage?.id || `ai-msg-${Date.now()}`,
+                    session_id: sessionResult.id,
+                    message: aiResponse.response,
+                    sender_type: 'bot',
+                    sender_id: null,
+                    timestamp: aiMessage?.timestamp || new Date().toISOString(),
+                    created_at: aiMessage?.created_at || new Date().toISOString(),
+                    read_status: false
+                  }
+                });
                 
                 console.log('Resposta AI enviada:', aiResponse.response);
               } else {
@@ -363,14 +382,33 @@ serve(async (req) => {
               }
 
               if (aiResponse?.response) {
-                await supabase
+                const { data: aiMessage } = await supabase
                   .from('chat_messages')
                   .insert({
                     session_id: sessionId,
                     sender_type: 'bot',
                     sender_id: null,
                     message: aiResponse.response
-                  });
+                  })
+                  .select()
+                  .single();
+                
+                // Broadcast AI message immediately to all listeners
+                const broadcastChannel = supabase.channel(`chat-session-${sessionId}`);
+                await broadcastChannel.send({
+                  type: 'broadcast',
+                  event: 'new_message',
+                  payload: {
+                    id: aiMessage?.id || `ai-msg-${Date.now()}`,
+                    session_id: sessionId,
+                    message: aiResponse.response,
+                    sender_type: 'bot',
+                    sender_id: null,
+                    timestamp: aiMessage?.timestamp || new Date().toISOString(),
+                    created_at: aiMessage?.created_at || new Date().toISOString(),
+                    read_status: false
+                  }
+                });
                 
                 console.log('Resposta AI automática enviada');
               }
