@@ -11,6 +11,7 @@ import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useChatSounds } from '@/hooks/useChatSounds';
 import { useLiveChat } from '@/hooks/useLiveChat';
 import TypingIndicator from '@/components/TypingIndicator';
+import ClientTimeoutWarning from '@/components/ClientTimeoutWarning';
 import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2, Volume2, VolumeX, RotateCcw, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -619,6 +620,15 @@ const LiveChat = () => {
                   </Button>
                 </div>
               </div>
+
+              {/* Client Timeout Warning */}
+              <ClientTimeoutWarning 
+                sessionId={sessionId}
+                lastAttendantMessage={messages
+                  .filter(m => m.sender_type === 'attendant')
+                  .slice(-1)[0]?.timestamp
+                }
+              />
 
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">

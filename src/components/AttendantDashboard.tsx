@@ -47,6 +47,10 @@ import { processBotMessage } from '@/utils/chatUtils';
 import AttendantStatusToggle from '@/components/AttendantStatusToggle';
 import ChatMonitor from '@/components/ChatMonitor';
 import TypingIndicator from '@/components/TypingIndicator';
+import QuickMessageTemplates from '@/components/QuickMessageTemplates';
+import ClientTimeoutWarning from '@/components/ClientTimeoutWarning';
+import ChatHistorySearch from '@/components/ChatHistorySearch';
+import EnhancedChatAnalytics from '@/components/EnhancedChatAnalytics';
 import { supabase } from '@/integrations/supabase/client';
 
 const AttendantDashboard = () => {
@@ -470,19 +474,22 @@ const AttendantDashboard = () => {
         {/* Monitor de Chats em Tempo Real */}
         <ChatMonitor onTakeOverChat={handleTakeOverChat} onOpenChat={handleOpenChat} />
         
-        {/* Controle de Som */}
+        {/* Controle de Som e Ferramentas */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center justify-between">
-              Configurações
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                className="h-8 w-8 p-0"
-              >
-                {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-              </Button>
+              Ferramentas
+              <div className="flex items-center gap-2">
+                <ChatHistorySearch onOpenSession={handleOpenChat} />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  className="h-8 w-8 p-0"
+                >
+                  {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -687,6 +694,19 @@ const AttendantDashboard = () => {
             </CardHeader>
 
             <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+              {/* Client Timeout Warning */}
+              {activeSession && sessionMessages.length > 0 && (
+                <div className="p-3 border-b">
+                  <ClientTimeoutWarning 
+                    sessionId={activeSession}
+                    lastAttendantMessage={sessionMessages
+                      .filter(m => m.sender_type === 'attendant')
+                      .slice(-1)[0]?.timestamp
+                    }
+                  />
+                </div>
+              )}
+
               <ScrollArea className="flex-1 p-4 max-h-96">
                 <div className="space-y-4 min-h-full">
                   {sessionMessages.map((message) => (
@@ -734,6 +754,13 @@ const AttendantDashboard = () => {
                   />
                 </div>
               </ScrollArea>
+
+              {/* Quick Message Templates */}
+              <div className="border-t">
+                <QuickMessageTemplates 
+                  onSelectMessage={(message) => setNewMessage(message)}
+                />
+              </div>
 
               <div className="p-4 border-t">
                 <form onSubmit={handleSendMessage} className="flex gap-2">
