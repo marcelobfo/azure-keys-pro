@@ -8,3 +8,12 @@ verify_jwt = false
 
 [functions.test-ai-provider]
 verify_jwt = false
+
+[functions.chat-processor]
+verify_jwt = false
+
+[functions.list_messages_public]
+verify_jwt = false
+
+[functions.message-status]
+verify_jwt = false

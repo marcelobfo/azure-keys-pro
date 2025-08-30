@@ -300,32 +300,41 @@ export type Database = {
       chat_messages: {
         Row: {
           created_at: string
+          delivered_at: string | null
           id: string
           message: string
+          read_at: string | null
           read_status: boolean
           sender_id: string | null
           sender_type: string
           session_id: string
+          status: string
           timestamp: string
         }
         Insert: {
           created_at?: string
+          delivered_at?: string | null
           id?: string
           message: string
+          read_at?: string | null
           read_status?: boolean
           sender_id?: string | null
           sender_type: string
           session_id: string
+          status?: string
           timestamp?: string
         }
         Update: {
           created_at?: string
+          delivered_at?: string | null
           id?: string
           message?: string
+          read_at?: string | null
           read_status?: boolean
           sender_id?: string | null
           sender_type?: string
           session_id?: string
+          status?: string
           timestamp?: string
         }
         Relationships: [
@@ -358,6 +367,7 @@ export type Database = {
           subject: string | null
           tags: string[] | null
           ticket_id: string | null
+          ticket_protocol: string | null
           updated_at: string
         }
         Insert: {
@@ -372,6 +382,7 @@ export type Database = {
           subject?: string | null
           tags?: string[] | null
           ticket_id?: string | null
+          ticket_protocol?: string | null
           updated_at?: string
         }
         Update: {
@@ -386,6 +397,7 @@ export type Database = {
           subject?: string | null
           tags?: string[] | null
           ticket_id?: string | null
+          ticket_protocol?: string | null
           updated_at?: string
         }
         Relationships: [

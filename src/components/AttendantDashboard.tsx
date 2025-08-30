@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { processBotMessage } from '@/utils/chatUtils';
+import { updateMessageStatus, getMessageStatusIcon, getMessageStatusColor } from '@/utils/messageStatusUtils';
 import AttendantStatusToggle from '@/components/AttendantStatusToggle';
 import ChatMonitor from '@/components/ChatMonitor';
 import TypingIndicator from '@/components/TypingIndicator';
@@ -130,9 +131,26 @@ const AttendantDashboard = () => {
         console.log('Nova mensagem recebida via broadcast:', payload);
         const newMessage = payload.payload;
         
+        // Refresh messages to show the new one
+        if (newMessage.session_id === activeSession) {
+          fetchMessages(activeSession);
+          
+          // Mark attendant messages as delivered immediately
+          if (newMessage.sender_type === 'attendant') {
+            updateMessageStatus(newMessage.id, 'delivered', activeSession);
+          }
+        }
+        
         // Play sound for new messages from leads
         if (newMessage.sender_type === 'lead' && soundEnabled) {
           playNotificationSound();
+        }
+      })
+      .on('broadcast', { event: 'message_status_update' }, (payload) => {
+        console.log('Status da mensagem atualizado:', payload);
+        // Refresh messages to show updated status
+        if (activeSession) {
+          fetchMessages(activeSession);
         }
       })
       .subscribe();
@@ -701,33 +719,38 @@ const AttendantDashboard = () => {
                         message.sender_type === 'attendant' ? "justify-end" : "justify-start"
                       )}
                     >
-                      <div
-                        className={cn(
-                          "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                          message.sender_type === 'attendant'
-                            ? "bg-primary text-primary-foreground"
-                            : message.sender_type === 'bot'
-                            ? "bg-muted text-foreground border"
-                            : "bg-muted text-foreground"
-                        )}
-                       >
-                         <p>{message.sender_type === 'bot' ? processBotMessage(message.message) : message.message}</p>
-                         <div className={cn(
-                          "text-xs mt-1 flex items-center gap-1",
-                          message.sender_type === 'attendant' 
-                            ? "text-primary-foreground/70 justify-end" 
-                            : "text-muted-foreground"
-                        )}>
-                          <Clock className="h-3 w-3" />
-                          {new Date(message.timestamp).toLocaleTimeString('pt-BR', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                          {message.sender_type === 'attendant' && (
-                            <CheckCircle2 className="h-3 w-3" />
-                          )}
+                     <div className="flex flex-col">
+                       <div
+                         className={cn(
+                           "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                           message.sender_type === 'attendant'
+                             ? "bg-primary text-primary-foreground"
+                             : message.sender_type === 'bot'
+                             ? "bg-muted text-foreground border"
+                             : "bg-muted text-foreground"
+                         )}
+                        >
+                          <p>{message.sender_type === 'bot' ? processBotMessage(message.message) : message.message}</p>
                         </div>
-                      </div>
+                        <div className={cn(
+                         "text-xs mt-1 flex items-center gap-1",
+                         message.sender_type === 'attendant' 
+                           ? "text-primary-foreground/70 justify-end" 
+                           : "text-muted-foreground"
+                       )}>
+                         <Clock className="h-3 w-3" />
+                         {new Date(message.timestamp).toLocaleTimeString('pt-BR', {
+                           hour: '2-digit',
+                           minute: '2-digit'
+                         })}
+                         {/* Show message status for attendant messages */}
+                         {message.sender_type === 'attendant' && (
+                           <span className={getMessageStatusColor(message)}>
+                             {getMessageStatusIcon(message)}
+                           </span>
+                         )}
+                       </div>
+                     </div>
                     </div>
                   ))}
                   

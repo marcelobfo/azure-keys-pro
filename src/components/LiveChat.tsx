@@ -16,6 +16,7 @@ import { MessageCircle, X, Send, Phone, Mail, User, Clock, CheckCircle2, Volume2
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { processBotMessage } from '@/utils/chatUtils';
+import { updateMessageStatus, getMessageStatusIcon, getMessageStatusColor } from '@/utils/messageStatusUtils';
 
 const LiveChat = () => {
   const { toast } = useToast();
@@ -37,8 +38,12 @@ const LiveChat = () => {
     message: string;
     sender_type: 'lead' | 'attendant' | 'bot';
     timestamp: string;
+    status?: string;
+    delivered_at?: string;
+    read_at?: string;
   }>>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [tempMessages, setTempMessages] = useState<Map<string, any>>(new Map());
   const [isBusinessTime, setIsBusinessTime] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
   const [protocolNumber, setProtocolNumber] = useState<string>('');
@@ -234,11 +239,40 @@ const LiveChat = () => {
           }
           return [...prev, newMessage];
         });
+
+        // Remove any temp message that might be replaced by this real message
+        setTempMessages(prev => {
+          const newMap = new Map(prev);
+          // Remove temp messages from same sender with similar timestamp
+          for (const [tempId, tempMsg] of newMap) {
+            if (tempMsg.sender_type === newMessage.sender_type && 
+                tempMsg.message === newMessage.message &&
+                Math.abs(new Date(tempMsg.timestamp).getTime() - new Date(newMessage.timestamp).getTime()) < 5000) {
+              newMap.delete(tempId);
+            }
+          }
+          return newMap;
+        });
+
+        // Mark message as delivered if it's from lead
+        if (newMessage.sender_type === 'lead') {
+          updateMessageStatus(newMessage.id, 'delivered', sessionId);
+        }
         
         // Play sound for received messages (not sent by user)
         if (newMessage.sender_type === 'attendant' && soundEnabled) {
           playNotificationSound();
         }
+      })
+      .on('broadcast', { event: 'message_status_update' }, (payload) => {
+        console.log('Message status update received:', payload);
+        const { messageId, status, delivered_at, read_at } = payload.payload;
+        
+        setMessages(prev => prev.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, status, delivered_at, read_at }
+            : msg
+        ));
       })
       .subscribe((status) => {
         console.log('Status da inscrição real-time:', status);
@@ -367,37 +401,51 @@ const LiveChat = () => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Permitir envio mesmo se estiver conectando (contanto que tenha sessionId)
     if (!newMessage.trim() || !sessionId) return;
 
+    const tempId = `temp-${Date.now()}`;
+    const messageText = newMessage.trim();
+    
     stopTyping();
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-
+    
+    // Create temporary message for immediate UI feedback
     const tempMessage = {
-      id: 'temp-' + Date.now(),
-      message: newMessage,
+      id: tempId,
+      message: messageText,
       sender_type: 'lead' as const,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      status: 'sending'
     };
 
-    setMessages(prev => [...prev, tempMessage]);
-    const messageToSend = newMessage;
+    // Add to temp messages and display immediately
+    setTempMessages(prev => new Map(prev.set(tempId, tempMessage)));
     setNewMessage('');
-    
+
     try {
-      await sendMessage(sessionId, messageToSend, 'lead');
+      await sendMessage(sessionId, messageText, 'lead');
       console.log('✅ LiveChat: Mensagem de visitante enviada com sucesso');
 
-      setMessages(prev => 
-        prev.filter(msg => msg.id !== tempMessage.id)
-      );
+      // Remove temp message on success - real message will come via realtime
+      setTempMessages(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(tempId);
+        return newMap;
+      });
 
     } catch (error) {
       console.error('❌ LiveChat: Erro ao enviar mensagem:', error);
-      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
-      setNewMessage(messageToSend);
+      // Update temp message to show error
+      setTempMessages(prev => {
+        const newMap = new Map(prev);
+        const msg = newMap.get(tempId);
+        if (msg) {
+          newMap.set(tempId, { ...msg, status: 'error' });
+        }
+        return newMap;
+      });
       
       toast({
         title: 'Erro',
@@ -646,6 +694,7 @@ const LiveChat = () => {
 
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
+                  {/* Regular messages */}
                   {messages.map((message) => (
                     <div
                       key={message.id}
@@ -662,15 +711,17 @@ const LiveChat = () => {
                         </Avatar>
                       )}
                       
-                      <div
-                        className={cn(
-                          "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                          message.sender_type === 'lead'
-                            ? "bg-primary text-primary-foreground ml-auto"
-                            : "bg-muted text-foreground"
-                        )}
-                      >
-                        <p>{message.message}</p>
+                      <div className="flex flex-col">
+                        <div
+                          className={cn(
+                            "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                            message.sender_type === 'lead'
+                              ? "bg-primary text-primary-foreground ml-auto"
+                              : "bg-muted text-foreground"
+                          )}
+                        >
+                          <p>{message.message}</p>
+                        </div>
                         <div className={cn(
                           "text-xs mt-1 flex items-center gap-1",
                           message.sender_type === 'lead' 
@@ -682,9 +733,36 @@ const LiveChat = () => {
                             hour: '2-digit',
                             minute: '2-digit'
                           })}
+                          {/* Message status for lead messages */}
                           {message.sender_type === 'lead' && (
-                            <CheckCircle2 className="h-3 w-3" />
+                            <span className={getMessageStatusColor(message)}>
+                              {getMessageStatusIcon(message)}
+                            </span>
                           )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Temporary messages */}
+                  {Array.from(tempMessages.values()).map((message) => (
+                    <div
+                      key={message.id}
+                      className="flex gap-3 justify-end"
+                    >
+                      <div className="flex flex-col">
+                        <div className="max-w-[80%] rounded-lg px-3 py-2 text-sm bg-primary text-primary-foreground ml-auto opacity-70">
+                          <p>{message.message}</p>
+                        </div>
+                        <div className="text-xs mt-1 flex items-center gap-1 text-primary-foreground/70 justify-end">
+                          <Clock className="h-3 w-3" />
+                          {new Date(message.timestamp).toLocaleTimeString('pt-BR', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                          <span className={getMessageStatusColor(message)}>
+                            {getMessageStatusIcon(message)}
+                          </span>
                         </div>
                       </div>
                     </div>

@@ -277,14 +277,17 @@ serve(async (req) => {
         // Para leads, sempre usar null como senderId
         const finalSenderId = senderType === 'lead' ? null : senderId;
 
-        const { error } = await supabase
+        const { data: messageData, error } = await supabase
           .from('chat_messages')
           .insert({
             session_id: sessionId,
             sender_type: senderType,
             sender_id: finalSenderId,
-            message: message
-          });
+            message: message,
+            status: 'sent'
+          })
+          .select()
+          .single();
 
         if (error) {
           console.error('Erro ao inserir mensagem:', error);
@@ -293,20 +296,15 @@ serve(async (req) => {
 
         console.log('Mensagem enviada com sucesso');
 
-        // Broadcast message immediately to all listeners
+        // Broadcast message immediately to all listeners with real message ID
         const broadcastChannel = supabase.channel(`chat-session-${sessionId}`);
         await broadcastChannel.send({
           type: 'broadcast',
           event: 'new_message',
           payload: {
-            id: `msg-${Date.now()}`,
-            session_id: sessionId,
-            message: message,
-            sender_type: senderType,
-            sender_id: finalSenderId,
-            timestamp: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            read_status: false
+            ...messageData,
+            id: messageData.id, // Use real message ID from database
+            tempId: null // Clear any temporary ID
           }
         });
 
