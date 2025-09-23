@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Save } from 'lucide-react';
 import AIParametersSettings from '@/components/AIParametersSettings';
 import KnowledgeBaseManager from '@/components/KnowledgeBaseManager';
+import ApiKeyTester from '@/components/ApiKeyTester';
 
 const AdminChatSettings = () => {
   const [config, setConfig] = useState<any>({});
@@ -170,6 +171,26 @@ const AdminChatSettings = () => {
                     placeholder="Nome da sua empresa"
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Chave da API {config.api_provider === 'gemini' ? 'Gemini' : 'OpenAI'}</Label>
+                  <Input
+                    type="password"
+                    value={config.api_key_encrypted || ''}
+                    onChange={(e) => handleConfigChange('api_key_encrypted', e.target.value)}
+                    placeholder={`Digite sua chave da API ${config.api_provider === 'gemini' ? 'Gemini' : 'OpenAI'}`}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {config.api_provider === 'gemini' ? 
+                      'Obtenha sua chave em: https://aistudio.google.com/app/apikey' :
+                      'Obtenha sua chave em: https://platform.openai.com/api-keys'
+                    }
+                  </p>
+                  <ApiKeyTester 
+                    provider={config.api_provider || 'openai'} 
+                    apiKey={config.api_key_encrypted || ''} 
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -224,8 +245,12 @@ const AdminChatSettings = () => {
                   />
                   <p className="text-xs text-muted-foreground">
                     Formato JSON com palavras-chave e suas respostas correspondentes.
-                  </p>
-                </div>
+                </p>
+                <ApiKeyTester 
+                  provider={config.api_provider || 'openai'} 
+                  apiKey={config.api_key_encrypted || ''} 
+                />
+              </div>
               </CardContent>
             </Card>
           </TabsContent>

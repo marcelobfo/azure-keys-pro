@@ -51,7 +51,12 @@ export const usePropertyAlerts = () => {
   };
 
   const createAlert = async (alertData: Omit<PropertyAlert, 'id' | 'created_at'>) => {
-    if (!user) return { error: 'Not authenticated' };
+    if (!user) {
+      console.error('usePropertyAlerts: User not authenticated');
+      return { error: 'Not authenticated' };
+    }
+
+    console.log('usePropertyAlerts: Creating alert for user:', user.id, 'with data:', alertData);
 
     const { data, error } = await supabase
       .from('property_alerts')
@@ -62,7 +67,10 @@ export const usePropertyAlerts = () => {
       .select()
       .single();
 
+    console.log('usePropertyAlerts: Insert result:', { data, error });
+
     if (error) {
+      console.error('usePropertyAlerts: Create alert error:', error);
       toast({
         title: "Erro ao criar alerta",
         description: error.message,
