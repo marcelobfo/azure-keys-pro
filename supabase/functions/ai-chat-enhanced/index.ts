@@ -49,10 +49,26 @@ serve(async (req) => {
         max_price_filter: searchTerms.maxPrice,
         min_bedrooms_filter: searchTerms.minBedrooms,
         max_bedrooms_filter: searchTerms.maxBedrooms,
-        limit_count: 5
+        limit_count: 8
       });
       relevantProperties = properties;
       console.log('Found relevant properties:', relevantProperties?.length || 0);
+      
+      // If no properties found with specific filters, try a broader search
+      if (!relevantProperties || relevantProperties.length === 0) {
+        console.log('No properties found with specific filters, trying broader search...');
+        const { data: broadProperties } = await supabase.rpc('search_properties_for_ai', {
+          property_type_filter: searchTerms.propertyType,
+          city_filter: null, // Remove city filter
+          min_price_filter: null,
+          max_price_filter: null,
+          min_bedrooms_filter: null,
+          max_bedrooms_filter: null,
+          limit_count: 6
+        });
+        relevantProperties = broadProperties;
+        console.log('Broader search found:', relevantProperties?.length || 0);
+      }
     }
 
     // Get/update session memory if sessionId provided
@@ -174,39 +190,101 @@ serve(async (req) => {
 function extractSearchTerms(message: string) {
   const lowerMessage = message.toLowerCase();
   
+  // Expanded property-related keywords
+  const propertyKeywords = [
+    'imóvel', 'imóveis', 'propriedade', 'propriedades',
+    'casa', 'casas', 'apartamento', 'apartamentos', 'cobertura', 'coberturas',
+    'lote', 'lotes', 'studio', 'studios', 'loft', 'lofts',
+    'comprar', 'vender', 'alugar', 'locação', 'venda',
+    'disponível', 'disponíveis', 'catálogo', 'portfólio',
+    'quero', 'procuro', 'busco', 'interesse', 'tenho interesse'
+  ];
+  
   // Property types
   const propertyTypes = ['casa', 'apartamento', 'cobertura', 'lote', 'studio', 'loft'];
   const foundType = propertyTypes.find(type => lowerMessage.includes(type));
   
-  // Cities (common ones in Brazil)
-  const cities = ['balneário camboriú', 'camboriú', 'itajaí', 'florianópolis', 'joinville'];
+  // Expanded cities - should be dynamically loaded from database in production
+  const cities = [
+    'balneário camboriú', 'camboriú', 'itajaí', 'florianópolis', 'joinville',
+    'blumenau', 'são josé', 'palhoça', 'biguaçu', 'tijucas',
+    'porto belo', 'bombinhas', 'navegantes', 'penha'
+  ];
   const foundCity = cities.find(city => lowerMessage.includes(city));
   
-  // Price ranges (in millions)
+  // Price detection - improved patterns
   let minPrice = null, maxPrice = null;
-  const priceMatches = message.match(/(\d+(?:\.\d+)?)\s*(?:mil|milhão|milhões)/gi);
-  if (priceMatches) {
-    const prices = priceMatches.map(match => {
-      const num = parseFloat(match.match(/\d+(?:\.\d+)?/)[0]);
-      return match.includes('mil') ? num * 1000 : num * 1000000;
-    }).sort((a, b) => a - b);
-    
-    if (prices.length === 1) {
-      maxPrice = prices[0];
-    } else if (prices.length >= 2) {
-      minPrice = prices[0];
-      maxPrice = prices[1];
+  const pricePatterns = [
+    /(\d+(?:\.\d+)?)\s*(?:mil|k)/gi,
+    /(\d+(?:\.\d+)?)\s*(?:milhão|milhões|mi)/gi,
+    /r\$\s*(\d+(?:\.\d+)?)/gi,
+    /até\s*(?:r\$\s*)?(\d+(?:\.\d+)?)\s*(?:mil|milhão|k|mi)?/gi,
+    /entre\s*(?:r\$\s*)?(\d+(?:\.\d+)?)\s*(?:e|até)\s*(?:r\$\s*)?(\d+(?:\.\d+)?)/gi
+  ];
+  
+  for (const pattern of pricePatterns) {
+    const matches = [...message.matchAll(pattern)];
+    if (matches.length > 0) {
+      matches.forEach(match => {
+        const num = parseFloat(match[1]);
+        let value = num;
+        
+        // Convert based on context
+        if (match[0].includes('mil') || match[0].includes('k')) {
+          value = num * 1000;
+        } else if (match[0].includes('milhão') || match[0].includes('mi')) {
+          value = num * 1000000;
+        } else if (num < 10000) {
+          // Assume thousands if less than 10k
+          value = num * 1000;
+        }
+        
+        if (match[0].includes('até')) {
+          maxPrice = value;
+        } else if (!minPrice || value < minPrice) {
+          if (maxPrice) {
+            minPrice = Math.min(value, maxPrice);
+            maxPrice = Math.max(value, maxPrice);
+          } else {
+            maxPrice = value;
+          }
+        }
+      });
     }
   }
   
-  // Bedrooms
+  // Bedrooms detection - improved
   let minBedrooms = null;
-  const bedroomMatch = message.match(/(\d+)\s*(?:quarto|dormitório)/i);
-  if (bedroomMatch) {
-    minBedrooms = parseInt(bedroomMatch[1]);
+  const bedroomPatterns = [
+    /(\d+)\s*(?:quarto|quartos|dormitório|dormitórios|qto|qtos)/gi,
+    /(\d+)\s*(?:bed|beds|br)/gi
+  ];
+  
+  for (const pattern of bedroomPatterns) {
+    const match = message.match(pattern);
+    if (match) {
+      minBedrooms = parseInt(match[1]);
+      break;
+    }
   }
+  
+  // Check if message contains any property-related terms or is a general inquiry
+  const hasPropertyTerms = propertyKeywords.some(keyword => lowerMessage.includes(keyword)) ||
+                          foundType || foundCity || minPrice || maxPrice || minBedrooms ||
+                          // General questions that should trigger property search
+                          lowerMessage.includes('que') && (lowerMessage.includes('tem') || lowerMessage.includes('têm')) ||
+                          lowerMessage.includes('mostrar') || lowerMessage.includes('ver') ||
+                          lowerMessage.includes('opções') || lowerMessage.includes('opção');
 
-  const hasPropertyTerms = !!(foundType || foundCity || minPrice || maxPrice || minBedrooms);
+  console.log('Enhanced search terms analysis:', {
+    message: lowerMessage,
+    foundKeywords: propertyKeywords.filter(k => lowerMessage.includes(k)),
+    hasPropertyTerms,
+    foundType,
+    foundCity,
+    priceRange: { minPrice, maxPrice },
+    bedrooms: minBedrooms
+  });
 
   return {
     propertyType: foundType,
