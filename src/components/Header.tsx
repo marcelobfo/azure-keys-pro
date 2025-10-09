@@ -17,12 +17,14 @@ import { useProfile } from '@/hooks/useProfile';
 import { Badge } from '@/components/ui/badge';
 import NotificationDropdown from './NotificationDropdown';
 import { supabase } from '@/integrations/supabase/client';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
+  const { trackEvent } = useAnalytics();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [lightLogoUrl, setLightLogoUrl] = useState<string | null>(null);
@@ -80,6 +82,13 @@ const Header = () => {
     }
   };
 
+  const handleMenuClick = (label: string, href: string) => {
+    trackEvent('menu_click', {
+      menu_item: label,
+      destination: href,
+    });
+  };
+
   const navItems = [
     { href: '/', label: 'Início', icon: Home },
     { href: '/properties', label: 'Imóveis', icon: Home },
@@ -124,6 +133,7 @@ const Header = () => {
               <Link
                 key={item.href}
                 to={item.href}
+                onClick={() => handleMenuClick(item.label, item.href)}
                 className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               >
                 {item.label}
@@ -234,7 +244,10 @@ const Header = () => {
                   key={item.href}
                   to={item.href}
                   className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => {
+                    handleMenuClick(item.label, item.href);
+                    setIsMobileMenuOpen(false);
+                  }}
                 >
                   <item.icon className="h-4 w-4" />
                   <span>{item.label}</span>

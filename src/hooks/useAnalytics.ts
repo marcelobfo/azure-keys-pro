@@ -25,6 +25,41 @@ export const useAnalytics = () => {
   const { user } = useAuth();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random()}`);
 
+  // Track to external platforms (GA, Facebook Pixel)
+  const trackToExternalPlatforms = useCallback((eventType: string, data?: any) => {
+    try {
+      // Push to Google Tag Manager dataLayer
+      if (window.dataLayer) {
+        window.dataLayer.push({
+          event: eventType,
+          ...data,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Track with Google Analytics gtag
+      if (window.gtag) {
+        window.gtag('event', eventType, data);
+      }
+
+      // Track with Facebook Pixel
+      if (window.fbq) {
+        // Map custom events to Facebook standard events when possible
+        const fbEventMap: Record<string, string> = {
+          view_property: 'ViewContent',
+          schedule_visit: 'Schedule',
+          favorite_added: 'AddToWishlist',
+          lead_generated: 'Lead',
+          contact_form: 'Contact',
+        };
+        const fbEvent = fbEventMap[eventType] || eventType;
+        window.fbq('track', fbEvent, data);
+      }
+    } catch (error) {
+      console.error('Error tracking to external platforms:', error);
+    }
+  }, []);
+
   // Track an analytics event
   const trackEvent = useCallback(async (eventType: string, data?: any, pagePath?: string) => {
     try {
@@ -46,12 +81,15 @@ export const useAnalytics = () => {
         console.log(`Analytics event tracked: ${eventType}`);
       }
 
+      // Track to external platforms
+      trackToExternalPlatforms(eventType, data);
+
       // Also trigger universal webhook
       await triggerWebhook(eventType, data);
     } catch (error) {
       console.error('Error in trackEvent:', error);
     }
-  }, [user?.id, sessionId]);
+  }, [user?.id, sessionId, trackToExternalPlatforms]);
 
   // Trigger universal webhook
   const triggerWebhook = async (eventType: string, data?: any) => {
@@ -104,6 +142,7 @@ export const useAnalytics = () => {
     trackEvent,
     trackPageView,
     trackUniqueVisitor,
+    trackToExternalPlatforms,
     sessionId
   };
 };

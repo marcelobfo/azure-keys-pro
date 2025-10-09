@@ -39,6 +39,7 @@ import AttendantChat from '@/pages/AttendantChat';
 import AdminProtocols from '@/pages/AdminProtocols';
 import LiveChat from '@/components/LiveChat';
 import SEOUpdater from '@/components/SEOUpdater';
+import AnalyticsTracker from '@/components/AnalyticsTracker';
 
 // Create QueryClient outside component to prevent recreation
 const queryClient = new QueryClient({
@@ -62,6 +63,7 @@ function App() {
         <LanguageProvider>
           <ThemeProvider>
             <SEOUpdater />
+            <AnalyticsTracker />
             <Router>
               <Routes>
                 {/* Public Routes */}

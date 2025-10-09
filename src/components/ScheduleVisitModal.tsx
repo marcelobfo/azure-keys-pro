@@ -8,6 +8,7 @@ import { Calendar } from 'lucide-react';
 import { useVisitForm } from '@/hooks/useVisitForm';
 import { validateVisitForm, createVisitData } from '@/utils/visitFormValidation';
 import VisitForm from './VisitForm';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 // Extend props to allow button/style customization
 interface ScheduleVisitModalProps {
@@ -26,6 +27,7 @@ const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({
   label = "Agendar Visita"
 }) => {
   const { toast } = useToast();
+  const { trackEvent } = useAnalytics();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const { formData, handleChange, resetForm } = useVisitForm();
@@ -56,6 +58,13 @@ const ScheduleVisitModal: React.FC<ScheduleVisitModalProps> = ({
       if (error) {
         throw error;
       }
+
+      // Track visit scheduling
+      trackEvent('schedule_visit', {
+        property_id: propertyId,
+        property_title: propertyTitle,
+        visit_date: formData.visit_date,
+      });
 
       toast({
         title: "Visita agendada!",

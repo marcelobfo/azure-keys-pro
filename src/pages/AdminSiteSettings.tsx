@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 
 // Novo: Tabs para organizaçao das configurações por página/setor
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 
 const TEMPLATE_PREVIEWS = [
   {
@@ -216,12 +217,40 @@ const SITE_FIELDS = [
   },
 ];
 
+const ANALYTICS_FIELDS = [
+  {
+    key: 'gtm_id',
+    label: 'Google Tag Manager ID',
+    placeholder: 'GTM-XXXXXXX',
+    help: 'ID do Google Tag Manager. Encontre em tagmanager.google.com',
+  },
+  {
+    key: 'ga_measurement_id',
+    label: 'Google Analytics Measurement ID',
+    placeholder: 'G-XXXXXXXXXX',
+    help: 'ID do Google Analytics. Encontre em analytics.google.com',
+  },
+  {
+    key: 'facebook_pixel_id',
+    label: 'Facebook Pixel ID',
+    placeholder: 'XXXXXXXXXXXXXX',
+    help: 'ID do Facebook Pixel. Encontre em business.facebook.com',
+  },
+];
+
 const ALL_FIELDS = [
   ...HOMEPAGE_SETTINGS.filter(f => f.key !== 'home_layout'),
   ...FOOTER_FIELDS,
   ...CONTACT_FIELDS,
   ...SITE_FIELDS,
+  ...ANALYTICS_FIELDS,
   // O layout é tratado separadamente (com cards/imagem)
+];
+
+const ANALYTICS_TOGGLES = [
+  { key: 'gtm_enabled', label: 'Ativar Google Tag Manager' },
+  { key: 'ga_enabled', label: 'Ativar Google Analytics' },
+  { key: 'facebook_pixel_enabled', label: 'Ativar Facebook Pixel' },
 ];
 
 const AdminSiteSettings = () => {
@@ -236,7 +265,7 @@ const AdminSiteSettings = () => {
     if (!profile || profile.role !== 'admin') return;
 
     async function fetchSettings() {
-      const keys = ALL_FIELDS.map(s => s.key).concat(['home_layout']);
+      const keys = ALL_FIELDS.map(s => s.key).concat(['home_layout']).concat(ANALYTICS_TOGGLES.map(t => t.key));
       const { data, error } = await supabase
         .from('site_settings')
         .select('key, value')
@@ -283,6 +312,15 @@ const AdminSiteSettings = () => {
       const { error } = await supabase
         .from('site_settings')
         .upsert([{ key: 'home_layout', value: values['home_layout'], updated_at: new Date().toISOString() }], { onConflict: 'key' });
+      if (error) isOk = false;
+    }
+    
+    // Salva toggles de analytics
+    for (const toggle of ANALYTICS_TOGGLES) {
+      const value = values[toggle.key] || 'false';
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert([{ key: toggle.key, value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
       if (error) isOk = false;
     }
 
@@ -342,11 +380,12 @@ const AdminSiteSettings = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="home">
-              <TabsList className="mb-4 grid grid-cols-4 w-full">
+              <TabsList className="mb-4 grid grid-cols-5 w-full">
                 <TabsTrigger value="home">Home</TabsTrigger>
                 <TabsTrigger value="footer">Rodapé</TabsTrigger>
                 <TabsTrigger value="contact">Contato</TabsTrigger>
-                <TabsTrigger value="site">Site e Favicon</TabsTrigger>
+                <TabsTrigger value="site">Site</TabsTrigger>
+                <TabsTrigger value="analytics">Analytics</TabsTrigger>
               </TabsList>
 
               {/* HOME TAB */}
@@ -526,6 +565,138 @@ const AdminSiteSettings = () => {
                   ))}
                   <Button type="submit" className="w-full mt-6" disabled={isSaving}>
                     {isSaving ? "Salvando..." : "Salvar Configurações"}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              {/* ANALYTICS TAB */}
+              <TabsContent value="analytics">
+                <form
+                  className="space-y-6"
+                  onSubmit={e => {
+                    e.preventDefault();
+                    saveSettings();
+                  }}
+                >
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                    <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                      📊 Rastreamento de Analytics
+                    </h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      Configure suas ferramentas de analytics para rastrear visualizações de imóveis, cliques em menus e outras interações importantes no site.
+                    </p>
+                  </div>
+
+                  {/* Google Tag Manager */}
+                  <div className="space-y-4 p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold">Google Tag Manager</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Gerencie todas suas tags em um só lugar
+                        </p>
+                      </div>
+                      <Switch
+                        checked={values['gtm_enabled'] === 'true'}
+                        onCheckedChange={(checked) => handleChange('gtm_enabled', checked ? 'true' : 'false')}
+                      />
+                    </div>
+                    {values['gtm_enabled'] === 'true' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="gtm_id">GTM ID</Label>
+                        <Input
+                          id="gtm_id"
+                          type="text"
+                          value={values['gtm_id'] || ''}
+                          onChange={e => handleChange('gtm_id', e.target.value)}
+                          placeholder="GTM-XXXXXXX"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Encontre seu ID em <a href="https://tagmanager.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">tagmanager.google.com</a>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Google Analytics */}
+                  <div className="space-y-4 p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold">Google Analytics</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Acompanhe visitantes e comportamento no site
+                        </p>
+                      </div>
+                      <Switch
+                        checked={values['ga_enabled'] === 'true'}
+                        onCheckedChange={(checked) => handleChange('ga_enabled', checked ? 'true' : 'false')}
+                      />
+                    </div>
+                    {values['ga_enabled'] === 'true' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="ga_measurement_id">Measurement ID</Label>
+                        <Input
+                          id="ga_measurement_id"
+                          type="text"
+                          value={values['ga_measurement_id'] || ''}
+                          onChange={e => handleChange('ga_measurement_id', e.target.value)}
+                          placeholder="G-XXXXXXXXXX"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Encontre seu ID em <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">analytics.google.com</a>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Facebook Pixel */}
+                  <div className="space-y-4 p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold">Facebook Pixel</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Rastreie conversões de anúncios do Facebook
+                        </p>
+                      </div>
+                      <Switch
+                        checked={values['facebook_pixel_enabled'] === 'true'}
+                        onCheckedChange={(checked) => handleChange('facebook_pixel_enabled', checked ? 'true' : 'false')}
+                      />
+                    </div>
+                    {values['facebook_pixel_enabled'] === 'true' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="facebook_pixel_id">Pixel ID</Label>
+                        <Input
+                          id="facebook_pixel_id"
+                          type="text"
+                          value={values['facebook_pixel_id'] || ''}
+                          onChange={e => handleChange('facebook_pixel_id', e.target.value)}
+                          placeholder="XXXXXXXXXXXXXX"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Encontre seu ID em <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">business.facebook.com</a>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <h4 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+                      ℹ️ Eventos Rastreados Automaticamente
+                    </h4>
+                    <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1 list-disc list-inside">
+                      <li>Visualizações de páginas</li>
+                      <li>Visualizações de imóveis individuais</li>
+                      <li>Cliques em menus de navegação</li>
+                      <li>Agendamentos de visitas</li>
+                      <li>Adição de favoritos</li>
+                      <li>Envio de formulários de contato</li>
+                      <li>Início de conversas no chat</li>
+                    </ul>
+                  </div>
+
+                  <Button type="submit" className="w-full mt-6" disabled={isSaving}>
+                    {isSaving ? "Salvando..." : "Salvar Configurações de Analytics"}
                   </Button>
                 </form>
               </TabsContent>

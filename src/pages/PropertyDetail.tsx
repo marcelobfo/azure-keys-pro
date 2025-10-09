@@ -11,6 +11,7 @@ import PropertyMainInfo from '@/components/PropertyMainInfo';
 import PropertySidebar from '@/components/PropertySidebar';
 import Breadcrumb from '@/components/Breadcrumb';
 import { useSEO, generatePropertySEO } from '@/hooks/useSEO';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface Property {
   id: string;
@@ -42,6 +43,7 @@ const PropertyDetail = () => {
   const { identifier } = useParams<{ identifier: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { trackEvent } = useAnalytics();
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -84,6 +86,16 @@ const PropertyDetail = () => {
 
       // Incrementar contador de visualizações
       await supabase.rpc('increment_property_views', { property_id: data.id });
+
+      // Track property view analytics
+      trackEvent('view_property', {
+        property_id: data.id,
+        property_title: data.title,
+        property_type: data.property_type,
+        property_price: data.price,
+        property_city: data.city,
+        property_location: data.location,
+      });
       
     } catch (error: any) {
       console.error('Erro ao buscar propriedade:', error);
