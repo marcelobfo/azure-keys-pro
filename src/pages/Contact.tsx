@@ -8,9 +8,11 @@ import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 const Contact = () => {
   const { toast } = useToast();
+  const { settings, loading: settingsLoading } = useSiteSettings();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -188,64 +190,73 @@ const Contact = () => {
                 <CardTitle>Informações de Contato</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <MapPin className="w-5 h-5 text-blue-600 mt-1" />
-                  <div>
-                    <h4 className="font-medium">Endereço</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Rua das Flores, 123<br />
-                      Centro, São Paulo - SP<br />
-                      CEP: 01234-567
-                    </p>
+                {settings.contact_address && (
+                  <div className="flex items-start space-x-3">
+                    <MapPin className="w-5 h-5 text-blue-600 mt-1" />
+                    <div>
+                      <h4 className="font-medium">Endereço</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">
+                        {settings.contact_address}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex items-start space-x-3">
-                  <Phone className="w-5 h-5 text-blue-600 mt-1" />
-                  <div>
-                    <h4 className="font-medium">Telefone</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      (11) 3456-7890<br />
-                      (11) 99999-9999
-                    </p>
+                {settings.contact_phone && (
+                  <div className="flex items-start space-x-3">
+                    <Phone className="w-5 h-5 text-blue-600 mt-1" />
+                    <div>
+                      <h4 className="font-medium">Telefone</h4>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                        {settings.contact_phone.split('|').map((phone, idx) => (
+                          <p key={idx}>{phone.trim()}</p>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex items-start space-x-3">
-                  <Mail className="w-5 h-5 text-blue-600 mt-1" />
-                  <div>
-                    <h4 className="font-medium">E-mail</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      contato@imobiliaria.com<br />
-                      vendas@imobiliaria.com
-                    </p>
+                {settings.contact_email && (
+                  <div className="flex items-start space-x-3">
+                    <Mail className="w-5 h-5 text-blue-600 mt-1" />
+                    <div>
+                      <h4 className="font-medium">E-mail</h4>
+                      <div className="text-sm text-gray-600 dark:text-gray-300">
+                        {settings.contact_email.split('|').map((email, idx) => (
+                          <p key={idx}>{email.trim()}</p>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex items-start space-x-3">
-                  <Clock className="w-5 h-5 text-blue-600 mt-1" />
-                  <div>
-                    <h4 className="font-medium">Horário de Funcionamento</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Segunda a Sexta: 8h às 18h<br />
-                      Sábado: 8h às 12h<br />
-                      Domingo: Fechado
-                    </p>
+                {settings.contact_hours && (
+                  <div className="flex items-start space-x-3">
+                    <Clock className="w-5 h-5 text-blue-600 mt-1" />
+                    <div>
+                      <h4 className="font-medium">Horário de Funcionamento</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">
+                        {settings.contact_hours}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Localização</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                  <p className="text-gray-500 dark:text-gray-400">Mapa em breve</p>
-                </div>
-              </CardContent>
-            </Card>
+            {settings.contact_map_url && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Localização</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div 
+                    className="aspect-video rounded-lg overflow-hidden"
+                    dangerouslySetInnerHTML={{ __html: settings.contact_map_url }}
+                  />
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
