@@ -22,6 +22,7 @@ interface Property {
   bedrooms: number;
   bathrooms: number;
   area: number;
+  suites?: number;
   description?: string;
   features?: string[];
   virtual_tour_url?: string;
@@ -126,6 +127,7 @@ const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
           bedrooms={property.bedrooms}
           bathrooms={property.bathrooms}
           area={property.area}
+          suites={property.suites}
         />
 
         {/* Description */}
