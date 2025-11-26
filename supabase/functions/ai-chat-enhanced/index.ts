@@ -11,6 +11,10 @@ interface ChatRequest {
   message: string;
   sessionId?: string;
   context?: any;
+  systemInstruction?: string;
+  temperature?: number;
+  maxTokens?: number;
+  model?: string;
 }
 
 serve(async (req) => {
@@ -19,7 +23,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, sessionId, context }: ChatRequest = await req.json();
+    const { message, sessionId, context, systemInstruction: customSystemInstruction, temperature, maxTokens, model }: ChatRequest = await req.json();
     console.log('AI Chat Enhanced - Received request:', { message, sessionId });
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -97,7 +101,7 @@ serve(async (req) => {
     };
 
     // Create system instruction
-    const systemInstruction = buildSystemInstruction(enhancedContext);
+    const systemInstruction = customSystemInstruction || buildSystemInstruction(enhancedContext);
 
     // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -107,13 +111,13 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: model || 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemInstruction },
           { role: 'user', content: message }
         ],
-        max_tokens: 800,
-        temperature: 0.7
+        max_tokens: maxTokens || 800,
+        temperature: temperature !== undefined ? temperature : 0.7
       }),
     });
 

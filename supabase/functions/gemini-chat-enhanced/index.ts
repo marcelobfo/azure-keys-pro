@@ -18,8 +18,8 @@ serve(async (req) => {
   }
 
   try {
-    const { message, context, sessionId, ...aiParams } = await req.json();
-    console.log('Gemini Chat Enhanced - Received request:', { message, sessionId });
+    const { message, context, sessionId, systemInstruction, temperature, topP, maxOutputTokens, model, ...otherParams } = await req.json();
+    console.log('Gemini Chat Enhanced - Received request:', { message, sessionId, temperature, topP, maxOutputTokens, model });
 
     // Try to get API key from database first, fallback to env
     let geminiApiKey = Deno.env.get('GEMINI_API_KEY');
@@ -106,21 +106,21 @@ serve(async (req) => {
     });
 
     // Build system instruction  
-    const systemInstruction = buildSystemInstruction(enhancedContext);
+    const finalSystemInstruction = systemInstruction || buildSystemInstruction(enhancedContext);
 
     // Initialize Gemini AI with enhanced context
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({
-      model: aiParams?.provider_model || "gemini-2.5-pro",
+    const modelInstance = genAI.getGenerativeModel({
+      model: model || "gemini-2.5-flash",
       generationConfig: {
-        temperature: aiParams?.temperature || 1.0, // Gemini 3 recommendation
-        topP: aiParams?.top_p || 0.95,
-        maxOutputTokens: aiParams?.max_tokens || 800,
+        temperature: temperature !== undefined ? temperature : 1.0,
+        topP: topP !== undefined ? topP : 0.95,
+        maxOutputTokens: maxOutputTokens || 800,
       },
-      systemInstruction: systemInstruction
+      systemInstruction: finalSystemInstruction
     });
 
-    const result = await model.generateContent(message);
+    const result = await modelInstance.generateContent(message);
     const aiResponse = result.response.text();
     console.log('Gemini response generated:', aiResponse.substring(0, 100) + '...');
 
