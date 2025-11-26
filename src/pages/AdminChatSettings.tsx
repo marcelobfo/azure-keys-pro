@@ -172,24 +172,48 @@ const AdminChatSettings = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Chave da API {config.api_provider === 'gemini' ? 'Gemini' : 'OpenAI'}</Label>
-                  <Input
-                    type="password"
-                    value={config.api_key_encrypted || ''}
-                    onChange={(e) => handleConfigChange('api_key_encrypted', e.target.value)}
-                    placeholder={`Digite sua chave da API ${config.api_provider === 'gemini' ? 'Gemini' : 'OpenAI'}`}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {config.api_provider === 'gemini' ? 
-                      'Obtenha sua chave em: https://aistudio.google.com/app/apikey' :
-                      'Obtenha sua chave em: https://platform.openai.com/api-keys'
-                    }
-                  </p>
-                  <ApiKeyTester 
-                    provider={config.api_provider || 'openai'} 
-                    apiKey={config.api_key_encrypted || ''} 
-                  />
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-sm font-semibold">Chaves de API</h3>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="gemini-key">Chave da API Gemini</Label>
+                    <Input
+                      id="gemini-key"
+                      type="password"
+                      value={config.gemini_api_key || ''}
+                      onChange={(e) => handleConfigChange('gemini_api_key', e.target.value)}
+                      placeholder="Digite sua chave da API Gemini"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Obtenha sua chave em: https://aistudio.google.com/app/apikey
+                    </p>
+                    {config.gemini_api_key && (
+                      <ApiKeyTester 
+                        provider="gemini" 
+                        apiKey={config.gemini_api_key} 
+                      />
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="openai-key">Chave da API OpenAI</Label>
+                    <Input
+                      id="openai-key"
+                      type="password"
+                      value={config.openai_api_key || ''}
+                      onChange={(e) => handleConfigChange('openai_api_key', e.target.value)}
+                      placeholder="Digite sua chave da API OpenAI"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Obtenha sua chave em: https://platform.openai.com/api-keys
+                    </p>
+                    {config.openai_api_key && (
+                      <ApiKeyTester 
+                        provider="openai" 
+                        apiKey={config.openai_api_key} 
+                      />
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -245,12 +269,8 @@ const AdminChatSettings = () => {
                   />
                   <p className="text-xs text-muted-foreground">
                     Formato JSON com palavras-chave e suas respostas correspondentes.
-                </p>
-                <ApiKeyTester 
-                  provider={config.api_provider || 'openai'} 
-                  apiKey={config.api_key_encrypted || ''} 
-                />
-              </div>
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
