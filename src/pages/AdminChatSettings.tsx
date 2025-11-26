@@ -88,7 +88,12 @@ const AdminChatSettings = () => {
   };
 
   const handleSave = () => {
-    saveConfigMutation.mutate(config);
+    // Garantir que company sempre tenha um valor
+    const configToSave = {
+      ...config,
+      company: config.company || 'Minha Imobiliária'
+    };
+    saveConfigMutation.mutate(configToSave);
   };
 
   if (isLoading) {
@@ -163,13 +168,17 @@ const AdminChatSettings = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="company">Nome da Empresa</Label>
+                  <Label htmlFor="company">Nome da Empresa *</Label>
                   <Input
                     id="company"
                     value={config.company || ''}
                     onChange={(e) => handleConfigChange('company', e.target.value)}
                     placeholder="Nome da sua empresa"
+                    required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Campo obrigatório
+                  </p>
                 </div>
 
                 <div className="space-y-4 border-t pt-4">
