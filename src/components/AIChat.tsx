@@ -21,6 +21,10 @@ interface ChatConfig {
   welcome_message: string;
   system_instruction?: string;
   custom_responses: any;
+  temperature?: number;
+  top_p?: number;
+  max_tokens?: number;
+  provider_model?: string;
 }
 
 const AIChat = () => {
@@ -139,7 +143,11 @@ const AIChat = () => {
                 location: null
               }
             },
-            systemInstruction: chatConfig.system_instruction
+            systemInstruction: chatConfig.system_instruction,
+            temperature: chatConfig.temperature,
+            topP: chatConfig.top_p,
+            maxOutputTokens: chatConfig.max_tokens,
+            model: chatConfig.provider_model
           }
         });
       } else {
@@ -156,7 +164,10 @@ const AIChat = () => {
                 location: null
               }
             },
-            systemInstruction: chatConfig?.system_instruction
+            systemInstruction: chatConfig?.system_instruction,
+            temperature: chatConfig?.temperature,
+            maxTokens: chatConfig?.max_tokens,
+            model: chatConfig?.provider_model
           }
         });
       }
