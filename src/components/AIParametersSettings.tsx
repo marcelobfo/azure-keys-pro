@@ -22,20 +22,31 @@ const AIParametersSettings: React.FC<AIParametersSettingsProps> = ({ config, onC
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label>Modelo do Provedor</Label>
-            <Input
-              value={config.provider_model || 'gemini-2.0-flash-exp'}
-              onChange={(e) => onConfigChange('provider_model', e.target.value)}
-              placeholder="ex: gemini-2.0-flash-exp, gpt-4"
-            />
+            <Select
+              value={config.provider_model || 'gemini-2.5-pro'}
+              onValueChange={(value) => onConfigChange('provider_model', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o modelo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro (Recomendado)</SelectItem>
+                <SelectItem value="gemini-3-pro-preview">Gemini 3 Pro Preview (Mais recente)</SelectItem>
+                <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash (Rápido)</SelectItem>
+                <SelectItem value="gemini-3-pro-image-preview">Gemini 3 Pro Image (Geração de Imagens)</SelectItem>
+                <SelectItem value="gpt-4o">GPT-4 Omni (OpenAI)</SelectItem>
+                <SelectItem value="gpt-4o-mini">GPT-4 Omni Mini (OpenAI - Rápido)</SelectItem>
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground">
-              Para Gemini: gemini-2.0-flash-exp, gemini-1.5-pro, etc. Para OpenAI: gpt-4, gpt-3.5-turbo, etc.
+              Gemini 2.5 Pro: estável e confiável. Gemini 3 Pro: raciocínio avançado. Flash: mais rápido.
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label>Temperatura: {config.temperature || 0.7}</Label>
+            <Label>Temperatura: {config.temperature || 1.0}</Label>
             <Slider
-              value={[config.temperature || 0.7]}
+              value={[config.temperature || 1.0]}
               onValueChange={(value) => onConfigChange('temperature', value[0])}
               max={2}
               min={0}
@@ -43,7 +54,7 @@ const AIParametersSettings: React.FC<AIParametersSettingsProps> = ({ config, onC
               className="w-full"
             />
             <p className="text-xs text-muted-foreground">
-              Controla a criatividade das respostas. 0 = mais focado, 2 = mais criativo.
+              Recomendado: 1.0 para Gemini 3. Controla a criatividade das respostas.
             </p>
           </div>
 

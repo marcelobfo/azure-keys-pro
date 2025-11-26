@@ -30,7 +30,8 @@ serve(async (req) => {
         });
       }
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`, {
+      // Using gemini-2.5-pro - stable model with good performance
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,8 +47,7 @@ serve(async (req) => {
             }
           ],
           generationConfig: {
-            temperature: 0.7,
-            topK: 40,
+            temperature: 1.0, // Gemini 3 recommendation
             topP: 0.95,
             maxOutputTokens: 100,
           }
@@ -57,9 +57,25 @@ serve(async (req) => {
       if (!response.ok) {
         const errorData = await response.text();
         console.error('Gemini API error:', errorData);
+        
+        // Parse error for better messages
+        let errorMessage = `Erro na API do Gemini: ${response.status}`;
+        try {
+          const errorJson = JSON.parse(errorData);
+          if (errorJson.error?.message) {
+            errorMessage = errorJson.error.message;
+            // Check for quota errors
+            if (errorMessage.includes('quota') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+              errorMessage = 'Quota do Gemini excedida. Verifique seus limites em https://ai.google.dev/usage';
+            }
+          }
+        } catch (e) {
+          // Keep default error message
+        }
+        
         return new Response(JSON.stringify({ 
           success: false, 
-          error: `Erro na API do Gemini: ${response.status} - Verifique se a chave está correta` 
+          error: errorMessage
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

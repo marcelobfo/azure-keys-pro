@@ -20,10 +20,10 @@ serve(async (req) => {
       context, 
       sessionId,
       systemInstruction,
-      temperature = 0.7,
-      topP = 0.9,
+      temperature = 1.0, // Gemini 3 recommendation
+      topP = 0.95,
       maxOutputTokens = 800,
-      model = 'gemini-2.0-flash-exp'
+      model = 'gemini-2.5-pro' // Updated to stable version
     } = await req.json();
     
     console.log('Gemini chat - Processing:', {
@@ -54,7 +54,7 @@ serve(async (req) => {
     console.log('Gemini - Using generation config:', generationConfig);
 
     const modelInstance = genAI.getGenerativeModel({ 
-      model: model || 'gemini-2.0-flash-exp',
+      model: model || 'gemini-2.5-pro',
       generationConfig,
       systemInstruction: systemInstruction || context || 'Você é um assistente imobiliário prestativo. Responda de forma profissional e útil.'
     });
@@ -72,7 +72,7 @@ serve(async (req) => {
       JSON.stringify({ 
         response: text,
         sessionId,
-        model: model || 'gemini-2.0-flash-exp',
+        model: model || 'gemini-2.5-pro',
         usedConfig: generationConfig
       }),
       { 
@@ -85,9 +85,18 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Erro no Gemini chat:', error);
+    
+    // Improve error messages
+    let errorMessage = error.message || 'Erro desconhecido';
+    if (errorMessage.includes('quota') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
+      errorMessage = 'Quota do Gemini excedida. Verifique seus limites em https://ai.google.dev/usage';
+    } else if (errorMessage.includes('API key')) {
+      errorMessage = 'Chave da API do Gemini inválida ou não configurada';
+    }
+    
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: errorMessage,
         details: error.toString()
       }),
       { 
