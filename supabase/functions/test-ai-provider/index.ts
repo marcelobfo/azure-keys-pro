@@ -85,9 +85,14 @@ serve(async (req) => {
       }
 
       const data = await response.json();
+      console.log('Gemini test raw response:', JSON.stringify(data));
       
-      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-        console.error('Invalid Gemini response structure:', JSON.stringify(data));
+      const firstCandidate = data?.candidates?.[0];
+      const firstPart = firstCandidate?.content?.parts?.[0];
+      const text = typeof firstPart?.text === 'string' ? firstPart.text : '';
+      
+      if (!text) {
+        console.error('Invalid Gemini response structure (no text):', JSON.stringify(data));
         return new Response(JSON.stringify({ 
           success: false, 
           error: 'Resposta inválida da API do Gemini. Verifique se a chave da API está correta.' 
@@ -99,7 +104,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         success: true, 
         message: 'Conexão com Gemini funcionando perfeitamente!',
-        response: data.candidates[0].content.parts[0].text
+        response: text
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
