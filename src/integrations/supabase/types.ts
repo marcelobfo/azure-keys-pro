@@ -208,9 +208,11 @@ export type Database = {
           company: string
           created_at: string | null
           custom_responses: Json | null
+          gemini_api_key: string | null
           id: string
           knowledge_base_enabled: boolean | null
           max_tokens: number | null
+          openai_api_key: string | null
           provider_model: string | null
           system_instruction: string | null
           temperature: number | null
@@ -228,9 +230,11 @@ export type Database = {
           company: string
           created_at?: string | null
           custom_responses?: Json | null
+          gemini_api_key?: string | null
           id?: string
           knowledge_base_enabled?: boolean | null
           max_tokens?: number | null
+          openai_api_key?: string | null
           provider_model?: string | null
           system_instruction?: string | null
           temperature?: number | null
@@ -248,9 +252,11 @@ export type Database = {
           company?: string
           created_at?: string | null
           custom_responses?: Json | null
+          gemini_api_key?: string | null
           id?: string
           knowledge_base_enabled?: boolean | null
           max_tokens?: number | null
+          openai_api_key?: string | null
           provider_model?: string | null
           system_instruction?: string | null
           temperature?: number | null

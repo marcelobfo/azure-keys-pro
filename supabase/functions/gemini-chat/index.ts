@@ -36,10 +36,34 @@ serve(async (req) => {
       hasSystemInstruction: !!systemInstruction
     });
 
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
+    // Try to get API key from database first, fallback to env
+    let apiKey = Deno.env.get('GEMINI_API_KEY');
+    
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      
+      const configResponse = await fetch(`${supabaseUrl}/rest/v1/chat_configurations?active=eq.true&select=gemini_api_key`, {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`
+        }
+      });
+      
+      if (configResponse.ok) {
+        const configs = await configResponse.json();
+        if (configs && configs.length > 0 && configs[0].gemini_api_key) {
+          apiKey = configs[0].gemini_api_key;
+          console.log('Using Gemini API key from database');
+        }
+      }
+    } catch (error) {
+      console.warn('Could not fetch API key from database, using env variable:', error);
+    }
+    
     if (!apiKey) {
       console.error('GEMINI_API_KEY não configurada');
-      throw new Error('API key do Gemini não configurada');
+      throw new Error('API key do Gemini não configurada. Configure em Admin > Configurações do Chat');
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);

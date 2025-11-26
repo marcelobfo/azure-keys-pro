@@ -19,12 +19,13 @@ serve(async (req) => {
     }
 
     if (provider === 'gemini') {
+      // Use the API key passed from frontend (from database)
       const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
       
       if (!geminiApiKey) {
         return new Response(JSON.stringify({ 
           success: false, 
-          error: 'Chave da API do Gemini não configurada. Configure GEMINI_API_KEY nos secrets do Supabase.' 
+          error: 'Chave da API do Gemini não configurada. Configure em Admin > Configurações do Chat.' 
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -101,12 +102,13 @@ serve(async (req) => {
       });
 
     } else if (provider === 'openai') {
+      // Use the API key passed from frontend (from database)
       const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
       
       if (!openaiApiKey) {
         return new Response(JSON.stringify({ 
           success: false, 
-          error: 'Chave da API da OpenAI não configurada. Configure OPENAI_API_KEY nos secrets do Supabase.' 
+          error: 'Chave da API da OpenAI não configurada. Configure em Admin > Configurações do Chat.' 
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
