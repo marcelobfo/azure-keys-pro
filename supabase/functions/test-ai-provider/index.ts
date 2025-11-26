@@ -12,15 +12,15 @@ serve(async (req) => {
   }
 
   try {
-    const { provider, message } = await req.json();
+    const { provider, message, apiKey } = await req.json();
 
     if (!provider) {
       throw new Error('Provider is required');
     }
 
     if (provider === 'gemini') {
-      // Use the API key passed from frontend (from database)
-      const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+      // Use the API key from request (stored in database) or fallback to env
+      const geminiApiKey = apiKey || Deno.env.get('GEMINI_API_KEY');
       
       if (!geminiApiKey) {
         return new Response(JSON.stringify({ 
@@ -30,6 +30,8 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+
+      console.log('Testing Gemini API with key:', geminiApiKey.substring(0, 10) + '...');
 
       // Using gemini-2.5-pro - stable model with good performance
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiApiKey}`, {
@@ -84,10 +86,11 @@ serve(async (req) => {
 
       const data = await response.json();
       
-      if (!data.candidates || !data.candidates[0]) {
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        console.error('Invalid Gemini response structure:', JSON.stringify(data));
         return new Response(JSON.stringify({ 
           success: false, 
-          error: 'Resposta inválida da API do Gemini' 
+          error: 'Resposta inválida da API do Gemini. Verifique se a chave da API está correta.' 
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -102,8 +105,8 @@ serve(async (req) => {
       });
 
     } else if (provider === 'openai') {
-      // Use the API key passed from frontend (from database)
-      const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+      // Use the API key from request (stored in database) or fallback to env
+      const openaiApiKey = apiKey || Deno.env.get('OPENAI_API_KEY');
       
       if (!openaiApiKey) {
         return new Response(JSON.stringify({ 
@@ -113,6 +116,8 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+
+      console.log('Testing OpenAI API with key:', openaiApiKey.substring(0, 10) + '...');
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -143,10 +148,11 @@ serve(async (req) => {
 
       const data = await response.json();
       
-      if (!data.choices || !data.choices[0]) {
+      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+        console.error('Invalid OpenAI response structure:', JSON.stringify(data));
         return new Response(JSON.stringify({ 
           success: false, 
-          error: 'Resposta inválida da API da OpenAI' 
+          error: 'Resposta inválida da API da OpenAI. Verifique se a chave da API está correta.' 
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
