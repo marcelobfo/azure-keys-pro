@@ -33,8 +33,8 @@ serve(async (req) => {
 
       console.log('Testing Gemini API with key:', geminiApiKey.substring(0, 10) + '...');
 
-      // Using gemini-2.5-pro - stable model with good performance
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiApiKey}`, {
+      // Using gemini-2.5-flash - fast and efficient for testing
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,9 +50,9 @@ serve(async (req) => {
             }
           ],
           generationConfig: {
-            temperature: 1.0, // Gemini 3 recommendation
+            temperature: 1.0,
             topP: 0.95,
-            maxOutputTokens: 100,
+            maxOutputTokens: 500, // Increased to ensure enough space for response
           }
         }),
       });
@@ -88,6 +88,20 @@ serve(async (req) => {
       console.log('Gemini test raw response:', JSON.stringify(data));
       
       const firstCandidate = data?.candidates?.[0];
+      const finishReason = firstCandidate?.finishReason;
+      
+      // Check if tokens were exhausted
+      if (finishReason === 'MAX_TOKENS') {
+        console.warn('Gemini response hit MAX_TOKENS:', JSON.stringify(data));
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: 'Conexão com Gemini funcionando! (Resposta limitada por tokens)',
+          response: 'Teste de conexão bem-sucedido. A API está funcionando corretamente.'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
       const firstPart = firstCandidate?.content?.parts?.[0];
       const text = typeof firstPart?.text === 'string' ? firstPart.text : '';
       
@@ -95,7 +109,7 @@ serve(async (req) => {
         console.error('Invalid Gemini response structure (no text):', JSON.stringify(data));
         return new Response(JSON.stringify({ 
           success: false, 
-          error: 'Resposta inválida da API do Gemini. Verifique se a chave da API está correta.' 
+          error: 'Resposta inválida da API do Gemini. Possível problema: tokens insuficientes ou chave incorreta.' 
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
