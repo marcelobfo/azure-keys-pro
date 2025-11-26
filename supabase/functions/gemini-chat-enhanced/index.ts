@@ -94,10 +94,10 @@ serve(async (req) => {
     // Initialize Gemini AI with enhanced context
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({
-      model: aiParams?.provider_model || "gemini-2.0-flash-exp",
+      model: aiParams?.provider_model || "gemini-2.5-pro",
       generationConfig: {
-        temperature: aiParams?.temperature || 0.7,
-        topP: aiParams?.top_p || 0.9,
+        temperature: aiParams?.temperature || 1.0, // Gemini 3 recommendation
+        topP: aiParams?.top_p || 0.95,
         maxOutputTokens: aiParams?.max_tokens || 800,
       },
       systemInstruction: systemInstruction

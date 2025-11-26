@@ -797,7 +797,7 @@ export type Database = {
           created_at: string | null
           details: Json | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           resource_id: string | null
           resource_type: string | null
           success: boolean | null
@@ -809,7 +809,7 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           resource_type?: string | null
           success?: boolean | null
@@ -821,7 +821,7 @@ export type Database = {
           created_at?: string | null
           details?: Json | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource_id?: string | null
           resource_type?: string | null
           success?: boolean | null
@@ -1026,14 +1026,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_expired_tokens: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      generate_clean_slug: {
-        Args: { input_text: string }
-        Returns: string
-      }
+      cleanup_expired_tokens: { Args: never; Returns: undefined }
+      generate_clean_slug: { Args: { input_text: string }; Returns: string }
       generate_property_code: {
         Args: { property_type: string }
         Returns: string
@@ -1047,16 +1041,10 @@ export type Database = {
         }
         Returns: string
       }
-      generate_protocol_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_secure_token: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_protocol_number: { Args: never; Returns: string }
+      generate_secure_token: { Args: never; Returns: string }
       get_public_chat_config: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           active: boolean
           ai_chat_enabled: boolean
@@ -1077,26 +1065,14 @@ export type Database = {
           whatsapp_number: string
         }[]
       }
-      get_site_context_for_ai: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      get_user_email: {
-        Args: { user_id: string }
-        Returns: string
-      }
-      hash_token: {
-        Args: { token: string }
-        Returns: string
-      }
+      get_site_context_for_ai: { Args: never; Returns: Json }
+      get_user_email: { Args: { user_id: string }; Returns: string }
+      hash_token: { Args: { token: string }; Returns: string }
       increment_property_views: {
         Args: { property_id: string }
         Returns: undefined
       }
-      is_business_hours: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_business_hours: { Args: never; Returns: boolean }
       search_properties_for_ai: {
         Args: {
           city_filter?: string
@@ -1109,10 +1085,7 @@ export type Database = {
         }
         Returns: Json
       }
-      verify_token: {
-        Args: { hash: string; token: string }
-        Returns: boolean
-      }
+      verify_token: { Args: { hash: string; token: string }; Returns: boolean }
     }
     Enums: {
       user_role: "user" | "corretor" | "admin"
