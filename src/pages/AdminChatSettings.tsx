@@ -182,6 +182,34 @@ const AdminChatSettings = () => {
                 </div>
 
                 <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-sm font-semibold">Configurações do WhatsApp</h3>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="whatsapp-enabled"
+                      checked={config.whatsapp_enabled || false}
+                      onCheckedChange={(checked) => handleConfigChange('whatsapp_enabled', checked)}
+                    />
+                    <Label htmlFor="whatsapp-enabled">Ativar Botão Flutuante do WhatsApp</Label>
+                  </div>
+
+                  {config.whatsapp_enabled && (
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp-number">Número do WhatsApp *</Label>
+                      <Input
+                        id="whatsapp-number"
+                        value={config.whatsapp_number || ''}
+                        onChange={(e) => handleConfigChange('whatsapp_number', e.target.value)}
+                        placeholder="5511999999999"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Digite o número completo com código do país e DDD (ex: 5511999999999)
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4 border-t pt-4">
                   <h3 className="text-sm font-semibold">Chaves de API</h3>
                   
                   <div className="space-y-2">
