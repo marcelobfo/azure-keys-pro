@@ -21,9 +21,26 @@ serve(async (req) => {
     const { message, context, sessionId, ...aiParams } = await req.json();
     console.log('Gemini Chat Enhanced - Received request:', { message, sessionId });
 
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    // Try to get API key from database first, fallback to env
+    let geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    
+    try {
+      const { data: config } = await supabase
+        .from('chat_configurations')
+        .select('gemini_api_key')
+        .eq('active', true)
+        .single();
+      
+      if (config?.gemini_api_key) {
+        geminiApiKey = config.gemini_api_key;
+        console.log('Using Gemini API key from database');
+      }
+    } catch (error) {
+      console.warn('Could not fetch API key from database, using env variable:', error);
+    }
+    
     if (!geminiApiKey) {
-      throw new Error('GEMINI_API_KEY not configured');
+      throw new Error('API key do Gemini não configurada. Configure em Admin > Configurações do Chat');
     }
 
     // Get site context and search for relevant properties  
