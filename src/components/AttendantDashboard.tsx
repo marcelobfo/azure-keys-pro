@@ -329,6 +329,39 @@ const AttendantDashboard = () => {
     }
   };
 
+  const handleReleaseToAI = async () => {
+    if (!activeSession) return;
+
+    try {
+      const { error } = await supabase
+        .from('chat_sessions')
+        .update({ 
+          attendant_id: null,
+          status: 'waiting' // Volta para waiting para AI assumir
+        })
+        .eq('id', activeSession);
+
+      if (error) throw error;
+
+      setActiveSession(null);
+      setActiveSessionInfo(null);
+      
+      await fetchChatSessions();
+      
+      toast({
+        title: 'Chat liberado para AI',
+        description: 'A IA voltou a atender este cliente automaticamente.',
+      });
+    } catch (error) {
+      console.error('Erro ao liberar chat para AI:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível liberar o chat para AI.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'waiting':
@@ -684,6 +717,16 @@ const AttendantDashboard = () => {
                     </Button>
                   )}
                   <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleReleaseToAI}
+                    title="Liberar chat para IA"
+                    className="flex items-center gap-1"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Liberar para IA
+                  </Button>
+                  <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleEndSession(sessionForView.id)}
@@ -843,18 +886,27 @@ const AttendantDashboard = () => {
                        )}
                      </div>
                    </div>
-                   <div className="flex items-center gap-2">
-                     {getStatusBadge(sessionForView.status)}
-                     <Button
-                       size="sm"
-                       variant="outline"
-                       onClick={() => handleEndSession(sessionForView.id)}
-                     >
-                       <CheckCircle className="h-4 w-4 mr-1" />
-                       Finalizar
-                     </Button>
-                   </div>
-                </div>
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(sessionForView.status)}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleReleaseToAI}
+                        className="flex items-center gap-1"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        IA
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEndSession(sessionForView.id)}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Finalizar
+                      </Button>
+                    </div>
+                 </div>
               </SheetHeader>
 
               <div className="flex-1 flex flex-col min-h-0">
