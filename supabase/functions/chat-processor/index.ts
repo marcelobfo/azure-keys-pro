@@ -7,6 +7,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Função para buscar histórico de mensagens da sessão
+const getChatHistory = async (supabase: any, sessionId: string, limit: number = 20) => {
+  const { data: messages } = await supabase
+    .from('chat_messages')
+    .select('message, sender_type, created_at')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: true })
+    .limit(limit);
+  
+  return messages || [];
+};
+
 serve(async (req) => {
   console.log('Chat processor - Request received:', req.method);
   
@@ -205,12 +217,16 @@ serve(async (req) => {
                 initialMessage: leadData.message
               };
 
+              // Buscar histórico de mensagens (vazio para primeira mensagem)
+              const chatHistory = await getChatHistory(supabase, sessionResult.id, 20);
+
               // Sempre usar gemini-chat-enhanced para ter acesso completo aos imóveis
               const { data: response, error: aiError } = await supabase.functions.invoke('gemini-chat-enhanced', {
                 body: {
                   message: leadData.message,
                   context: context,
                   sessionId: sessionResult.id,
+                  chatHistory: chatHistory,
                   systemInstruction: systemInstruction,
                   temperature: chatConfig.temperature,
                   topP: chatConfig.top_p,
@@ -384,12 +400,16 @@ serve(async (req) => {
                 initialMessage: sessionWithLead?.leads?.message
               };
 
+              // Buscar histórico de mensagens anteriores
+              const chatHistory = await getChatHistory(supabase, sessionId, 20);
+
               // Sempre usar gemini-chat-enhanced para ter acesso completo aos imóveis
               const { data: response, error: aiError } = await supabase.functions.invoke('gemini-chat-enhanced', {
                 body: {
                   message: message,
                   context: context,
                   sessionId: sessionId,
+                  chatHistory: chatHistory,
                   systemInstruction: systemInstruction,
                   temperature: chatConfig.temperature,
                   topP: chatConfig.top_p,
