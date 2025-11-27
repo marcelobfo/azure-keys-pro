@@ -18,8 +18,8 @@ serve(async (req) => {
   }
 
   try {
-    const { message, context, sessionId, systemInstruction, temperature, topP, maxOutputTokens, model, ...otherParams } = await req.json();
-    console.log('Gemini Chat Enhanced - Received request:', { message, sessionId, temperature, topP, maxOutputTokens, model });
+    const { message, context, sessionId, chatHistory, systemInstruction, temperature, topP, maxOutputTokens, model, ...otherParams } = await req.json();
+    console.log('Gemini Chat Enhanced - Received request:', { message, sessionId, chatHistory: chatHistory?.length || 0, temperature, topP, maxOutputTokens, model });
 
     // Try to get API key from database first, fallback to env
     let geminiApiKey = Deno.env.get('GEMINI_API_KEY');
@@ -105,6 +105,13 @@ serve(async (req) => {
       memory: sessionMemory
     });
 
+    // Extrair nome do cliente para o histórico
+    const clientName = context?.clientName || 'Cliente';
+
+    // Converter histórico para formato Gemini
+    const geminiHistory = convertToGeminiHistory(chatHistory || [], clientName);
+    console.log('Chat history loaded:', geminiHistory.length, 'messages');
+
     // Build system instruction  
     const finalSystemInstruction = systemInstruction || buildSystemInstruction(enhancedContext);
 
@@ -120,7 +127,15 @@ serve(async (req) => {
       systemInstruction: finalSystemInstruction
     });
 
-    const result = await modelInstance.generateContent(message);
+    console.log('Generating AI response with chat history...');
+    
+    // Usar startChat com histórico para manter contexto
+    const chat = modelInstance.startChat({
+      history: geminiHistory
+    });
+
+    // Enviar mensagem atual e obter resposta
+    const result = await chat.sendMessage(message);
     const aiResponse = result.response.text();
     console.log('Gemini response generated:', aiResponse.substring(0, 100) + '...');
 
@@ -167,6 +182,16 @@ serve(async (req) => {
     });
   }
 });
+
+// Função para converter histórico para formato Gemini
+function convertToGeminiHistory(chatHistory: any[], clientName: string): any[] {
+  if (!chatHistory || chatHistory.length === 0) return [];
+  
+  return chatHistory.map(msg => ({
+    role: msg.sender_type === 'lead' ? 'user' : 'model',
+    parts: [{ text: msg.message }]
+  }));
+}
 
 function extractSearchTerms(message: string) {
   const lowerMessage = message.toLowerCase();
