@@ -195,7 +195,15 @@ serve(async (req) => {
                 - Consulte sempre a tabela properties para trazer imóveis reais da base de dados
                 - Quando o cliente pedir por imóveis, traga resultados da base de dados com id, título, descrição, preço, localização, tipo e status`
               ) + knowledgeContext;
-              const context = `Cliente ${leadData.name} iniciou um chat sobre: ${leadData.subject}. ${systemInstruction}`;
+              
+              // Passar contexto estruturado com dados do cliente
+              const context = {
+                clientName: leadData.name,
+                clientEmail: leadData.email,
+                clientPhone: leadData.phone,
+                subject: leadData.subject,
+                initialMessage: leadData.message
+              };
 
               // Sempre usar gemini-chat-enhanced para ter acesso completo aos imóveis
               const { data: response, error: aiError } = await supabase.functions.invoke('gemini-chat-enhanced', {
@@ -342,6 +350,17 @@ serve(async (req) => {
                 }
               }
 
+              // Buscar dados do lead pela sessão
+              const { data: sessionWithLead } = await supabase
+                .from('chat_sessions')
+                .select(`
+                  lead_id,
+                  subject,
+                  leads!inner(name, email, phone, message)
+                `)
+                .eq('id', sessionId)
+                .single();
+
               // Preparar contexto completo com regras rigorosas
               const systemInstruction = (chatConfig.system_instruction || 
                 `Você é uma IA de atendimento imobiliário autônoma da imobiliária premium Maresia Litoral.
@@ -356,11 +375,20 @@ serve(async (req) => {
                 - Quando o cliente pedir por imóveis, traga resultados da base de dados com id, título, descrição, preço, localização, tipo e status`
               ) + knowledgeContext;
 
+              // Passar contexto estruturado com dados completos do cliente
+              const context = {
+                clientName: sessionWithLead?.leads?.name,
+                clientEmail: sessionWithLead?.leads?.email,
+                clientPhone: sessionWithLead?.leads?.phone,
+                subject: sessionWithLead?.subject,
+                initialMessage: sessionWithLead?.leads?.message
+              };
+
               // Sempre usar gemini-chat-enhanced para ter acesso completo aos imóveis
               const { data: response, error: aiError } = await supabase.functions.invoke('gemini-chat-enhanced', {
                 body: {
                   message: message,
-                  context: {},
+                  context: context,
                   sessionId: sessionId,
                   systemInstruction: systemInstruction,
                   temperature: chatConfig.temperature,
