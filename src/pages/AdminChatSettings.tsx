@@ -16,6 +16,7 @@ import { Save } from 'lucide-react';
 import AIParametersSettings from '@/components/AIParametersSettings';
 import KnowledgeBaseManager from '@/components/KnowledgeBaseManager';
 import ApiKeyTester from '@/components/ApiKeyTester';
+import { EvolutionApiSettings } from '@/components/EvolutionApiSettings';
 
 const AdminChatSettings = () => {
   const [config, setConfig] = useState<any>({});
@@ -118,9 +119,11 @@ const AdminChatSettings = () => {
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general">Geral</TabsTrigger>
             <TabsTrigger value="ai-params">Parâmetros IA</TabsTrigger>
+            <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+            <TabsTrigger value="evolution">Evolution API</TabsTrigger>
             <TabsTrigger value="knowledge-base">Base de Conhecimento</TabsTrigger>
             <TabsTrigger value="responses">Respostas</TabsTrigger>
           </TabsList>
@@ -181,33 +184,6 @@ const AdminChatSettings = () => {
                   </p>
                 </div>
 
-                <div className="space-y-4 border-t pt-4">
-                  <h3 className="text-sm font-semibold">Configurações do WhatsApp</h3>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="whatsapp-enabled"
-                      checked={config.whatsapp_enabled || false}
-                      onCheckedChange={(checked) => handleConfigChange('whatsapp_enabled', checked)}
-                    />
-                    <Label htmlFor="whatsapp-enabled">Ativar Botão Flutuante do WhatsApp</Label>
-                  </div>
-
-                  {config.whatsapp_enabled && (
-                    <div className="space-y-2">
-                      <Label htmlFor="whatsapp-number">Número do WhatsApp *</Label>
-                      <Input
-                        id="whatsapp-number"
-                        value={config.whatsapp_number || ''}
-                        onChange={(e) => handleConfigChange('whatsapp_number', e.target.value)}
-                        placeholder="5511999999999"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Digite o número completo com código do país e DDD (ex: 5511999999999)
-                      </p>
-                    </div>
-                  )}
-                </div>
 
                 <div className="space-y-4 border-t pt-4">
                   <h3 className="text-sm font-semibold">Chaves de API</h3>
@@ -258,6 +234,70 @@ const AdminChatSettings = () => {
 
           <TabsContent value="ai-params">
             <AIParametersSettings
+              config={config}
+              onConfigChange={handleConfigChange}
+            />
+          </TabsContent>
+
+          <TabsContent value="whatsapp" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Configurações do Botão WhatsApp</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="whatsapp-enabled"
+                    checked={config.whatsapp_enabled || false}
+                    onCheckedChange={(checked) => handleConfigChange('whatsapp_enabled', checked)}
+                  />
+                  <Label htmlFor="whatsapp-enabled">Ativar Botão Flutuante do WhatsApp</Label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp_number">Número do WhatsApp</Label>
+                  <Input
+                    id="whatsapp_number"
+                    placeholder="5511999999999"
+                    value={config.whatsapp_number || ''}
+                    onChange={(e) => handleConfigChange('whatsapp_number', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp_position">Posição do Botão</Label>
+                  <Select
+                    value={config.whatsapp_position || 'left'}
+                    onValueChange={(value) => handleConfigChange('whatsapp_position', value)}
+                  >
+                    <SelectTrigger id="whatsapp_position">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="left">Esquerda</SelectItem>
+                      <SelectItem value="right">Direita</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp_icon_url">URL do Ícone Customizado</Label>
+                  <Input
+                    id="whatsapp_icon_url"
+                    placeholder="https://exemplo.com/icone.webp"
+                    value={config.whatsapp_icon_url || ''}
+                    onChange={(e) => handleConfigChange('whatsapp_icon_url', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Deixe em branco para usar o ícone padrão
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="evolution" className="space-y-4">
+            <EvolutionApiSettings 
               config={config}
               onConfigChange={handleConfigChange}
             />

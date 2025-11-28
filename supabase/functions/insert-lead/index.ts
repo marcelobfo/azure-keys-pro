@@ -62,6 +62,13 @@ serve(async (req) => {
 
     console.log('Lead inserido com sucesso:', data);
 
+    // Enviar notificação WhatsApp (não bloquear resposta se falhar)
+    if (data) {
+      supabase.functions.invoke('whatsapp-notification', {
+        body: { leadData: data }
+      }).catch(err => console.error('Erro ao enviar notificação WhatsApp:', err));
+    }
+
     return new Response(
       JSON.stringify({ data, success: true }),
       {
