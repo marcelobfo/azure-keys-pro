@@ -49,9 +49,9 @@ const Header = () => {
         setLightLogoUrl(settings.header_logo_light || settings.footer_logo || null);
         setDarkLogoUrl(settings.header_logo_dark || settings.footer_logo || null);
         
-        // Configurar altura da logo (padrão: 40px)
-        const size = settings.logo_size_header ? parseInt(settings.logo_size_header) : 40;
-        setLogoHeight(size > 20 && size < 200 ? size : 40); // Limitar entre 20-200px
+        // Configurar altura da logo (padrão: 50px)
+        const size = settings.logo_size_header ? parseInt(settings.logo_size_header) : 50;
+        setLogoHeight(size > 20 && size <= 300 ? size : 50); // Limitar entre 20-300px
       }
     }
     fetchLogos();
@@ -101,20 +101,20 @@ const Header = () => {
   return (
     <header className="bg-white dark:bg-slate-900 shadow-sm border-b border-gray-200 dark:border-slate-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            {currentLogo ? (
-              <img
-                src={currentLogo}
-                alt="Logo"
-                style={{ height: `${logoHeight}px` }}
-                className="w-auto object-contain rounded-lg bg-white dark:bg-transparent"
-                onError={e => {
-                  (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
-                }}
-              />
-            ) : (
+      <div className="flex justify-between items-center h-auto min-h-[70px] py-4">
+        {/* Logo */}
+        <Link to="/" className="flex items-center space-x-2">
+          {currentLogo ? (
+            <img
+              src={currentLogo}
+              alt="Logo"
+              style={{ height: `${logoHeight}px`, maxHeight: '80px' }}
+              className="w-auto object-contain"
+              onError={e => {
+                (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
+              }}
+            />
+          ) : (
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Home className="w-5 h-5 text-white" />
               </div>

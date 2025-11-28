@@ -37,9 +37,9 @@ import Sitemap from './pages/Sitemap';
 import Atendimento from '@/pages/Atendimento';
 import AttendantChat from '@/pages/AttendantChat';
 import AdminProtocols from '@/pages/AdminProtocols';
-import LiveChat from '@/components/LiveChat';
 import SEOUpdater from '@/components/SEOUpdater';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
+import { useEffect } from 'react';
 
 // Create QueryClient outside component to prevent recreation
 const queryClient = new QueryClient({
@@ -57,6 +57,17 @@ function App() {
   console.log('[App] React.useEffect:', React.useEffect);
   console.log('[App] React.useState:', React.useState);
   
+  // Bloquear clique direito nas imagens
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).tagName === 'IMG') {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('contextmenu', handleContextMenu);
+    return () => document.removeEventListener('contextmenu', handleContextMenu);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -124,7 +135,6 @@ function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Router>
-            <LiveChat />
             <Toaster />
           </ThemeProvider>
         </LanguageProvider>
