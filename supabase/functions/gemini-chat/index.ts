@@ -107,11 +107,12 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro no Gemini chat:', error);
     
     // Improve error messages
-    let errorMessage = error.message || 'Erro desconhecido';
+    const err = error as Error;
+    let errorMessage = err.message || 'Erro desconhecido';
     if (errorMessage.includes('quota') || errorMessage.includes('RESOURCE_EXHAUSTED')) {
       errorMessage = 'Quota do Gemini excedida. Verifique seus limites em https://ai.google.dev/usage';
     } else if (errorMessage.includes('API key')) {
@@ -121,7 +122,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: errorMessage,
-        details: error.toString()
+        details: String(error)
       }),
       { 
         status: 500, 

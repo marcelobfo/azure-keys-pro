@@ -219,7 +219,7 @@ function extractSearchTerms(message: string) {
   const foundCity = cities.find(city => lowerMessage.includes(city));
   
   // Price detection - improved patterns
-  let minPrice = null, maxPrice = null;
+  let minPrice: number | null = null, maxPrice: number | null = null;
   const pricePatterns = [
     /(\d+(?:\.\d+)?)\s*(?:mil|k)/gi,
     /(\d+(?:\.\d+)?)\s*(?:milhão|milhões|mi)/gi,

@@ -124,19 +124,20 @@ serve(async (req) => {
     return new Response(JSON.stringify({ response: aiResponse }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in ai-chat function:', error);
     
     let errorMessage = 'Desculpe, estou com dificuldades técnicas. Pode tentar novamente em alguns minutos?';
+    const err = error as Error;
     
-    if (error.message?.includes('API key')) {
+    if (err.message?.includes('API key')) {
       errorMessage = 'Erro de configuração da API. Entre em contato com o administrador do sistema.';
-    } else if (error.message?.includes('quota')) {
+    } else if (err.message?.includes('quota')) {
       errorMessage = 'O serviço está temporariamente indisponível devido a limites de uso. Tente novamente mais tarde.';
     }
     
     return new Response(JSON.stringify({ 
-      error: error.message || 'Erro interno do servidor',
+      error: err.message || 'Erro interno do servidor',
       response: errorMessage + ' Para urgências, entre em contato diretamente pelo WhatsApp: (11) 99999-9999'
     }), {
       status: 500,

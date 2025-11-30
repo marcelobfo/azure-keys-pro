@@ -392,12 +392,13 @@ serve(async (req) => {
               ) + knowledgeContext;
 
               // Passar contexto estruturado com dados completos do cliente
+              const leadData = sessionWithLead?.leads as { name?: string; email?: string; phone?: string; message?: string } | undefined;
               const context = {
-                clientName: sessionWithLead?.leads?.name,
-                clientEmail: sessionWithLead?.leads?.email,
-                clientPhone: sessionWithLead?.leads?.phone,
+                clientName: leadData?.name,
+                clientEmail: leadData?.email,
+                clientPhone: leadData?.phone,
                 subject: sessionWithLead?.subject,
-                initialMessage: sessionWithLead?.leads?.message
+                initialMessage: leadData?.message
               };
 
               // Buscar histórico de mensagens anteriores
@@ -497,10 +498,10 @@ serve(async (req) => {
         );
     }
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Erro no chat processor:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
