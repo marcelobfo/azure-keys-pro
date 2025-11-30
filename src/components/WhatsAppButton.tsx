@@ -11,15 +11,30 @@ const WhatsAppButton = () => {
     const fetchSettings = async () => {
       const { data } = await supabase
         .from('chat_configurations')
-        .select('whatsapp_enabled, whatsapp_number, whatsapp_position, whatsapp_icon_url')
+        .select('whatsapp_enabled, whatsapp_number')
         .eq('active', true)
         .maybeSingle();
 
       if (data) {
         setIsEnabled(data.whatsapp_enabled || false);
         setWhatsappNumber(data.whatsapp_number || '');
-        setPosition(data.whatsapp_position || 'left');
-        setCustomIcon(data.whatsapp_icon_url || '');
+      }
+      
+      // Buscar campos extras via raw query (colunas podem não existir ainda)
+      try {
+        const { data: extraData } = await supabase
+          .from('chat_configurations')
+          .select('*')
+          .eq('active', true)
+          .maybeSingle();
+        
+        if (extraData) {
+          const extras = extraData as Record<string, unknown>;
+          if (extras.whatsapp_position) setPosition(extras.whatsapp_position as 'left' | 'right');
+          if (extras.whatsapp_icon_url) setCustomIcon(extras.whatsapp_icon_url as string);
+        }
+      } catch (e) {
+        console.log('Extra WhatsApp fields not available yet');
       }
     };
 
