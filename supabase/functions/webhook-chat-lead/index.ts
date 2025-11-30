@@ -93,7 +93,7 @@ serve(async (req) => {
               data: {
                 webhook_id: webhook.id,
                 webhook_name: webhook.name,
-                error: webhookError.message,
+                error: (webhookError as Error).message,
                 success: false
               }
             });
@@ -114,11 +114,11 @@ serve(async (req) => {
     return new Response(JSON.stringify(webhookResponse), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error processing chat lead:', error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message 
+      error: (error as Error).message 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

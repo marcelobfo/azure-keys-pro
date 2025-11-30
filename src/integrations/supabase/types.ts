@@ -208,6 +208,9 @@ export type Database = {
           company: string
           created_at: string | null
           custom_responses: Json | null
+          evolution_api_key: string | null
+          evolution_api_url: string | null
+          evolution_instance: string | null
           gemini_api_key: string | null
           id: string
           knowledge_base_enabled: boolean | null
@@ -220,7 +223,10 @@ export type Database = {
           updated_at: string | null
           welcome_message: string | null
           whatsapp_enabled: boolean | null
+          whatsapp_icon_url: string | null
+          whatsapp_notification_number: string | null
           whatsapp_number: string | null
+          whatsapp_position: string | null
         }
         Insert: {
           active?: boolean | null
@@ -230,6 +236,9 @@ export type Database = {
           company: string
           created_at?: string | null
           custom_responses?: Json | null
+          evolution_api_key?: string | null
+          evolution_api_url?: string | null
+          evolution_instance?: string | null
           gemini_api_key?: string | null
           id?: string
           knowledge_base_enabled?: boolean | null
@@ -242,7 +251,10 @@ export type Database = {
           updated_at?: string | null
           welcome_message?: string | null
           whatsapp_enabled?: boolean | null
+          whatsapp_icon_url?: string | null
+          whatsapp_notification_number?: string | null
           whatsapp_number?: string | null
+          whatsapp_position?: string | null
         }
         Update: {
           active?: boolean | null
@@ -252,6 +264,9 @@ export type Database = {
           company?: string
           created_at?: string | null
           custom_responses?: Json | null
+          evolution_api_key?: string | null
+          evolution_api_url?: string | null
+          evolution_instance?: string | null
           gemini_api_key?: string | null
           id?: string
           knowledge_base_enabled?: boolean | null
@@ -264,7 +279,10 @@ export type Database = {
           updated_at?: string | null
           welcome_message?: string | null
           whatsapp_enabled?: boolean | null
+          whatsapp_icon_url?: string | null
+          whatsapp_notification_number?: string | null
           whatsapp_number?: string | null
+          whatsapp_position?: string | null
         }
         Relationships: []
       }
