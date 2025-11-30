@@ -27,7 +27,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   const { profile } = useProfile();
   const { unreadCount } = useNotifications();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleSignOut = async () => {
     await signOut();
@@ -86,11 +86,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex w-full">
-      {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-        lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 
+      {/* Sidebar - Always visible on desktop */}
+      <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+        lg:translate-x-0 fixed lg:relative inset-y-0 left-0 z-50 w-64 
         bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 
-        transition-transform duration-300 ease-in-out`}>
+        transition-transform duration-300 ease-in-out flex flex-col flex-shrink-0`}>
         
         {/* Logo */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
@@ -130,20 +130,25 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2 overflow-y-auto flex-1">
           {menuItems.map((item) => (
             <Link
               key={item.href}
               to={item.href}
               className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => {
+                // Only close sidebar on mobile
+                if (window.innerWidth < 1024) {
+                  setSidebarOpen(false);
+                }
+              }}
             >
               <item.icon className="w-5 h-5" />
               <span>{item.label}</span>
             </Link>
           ))}
         </nav>
-      </div>
+      </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen w-full">

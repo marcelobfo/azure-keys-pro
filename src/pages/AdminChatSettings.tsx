@@ -30,9 +30,12 @@ const AdminChatSettings = () => {
         .from('chat_configurations')
         .select('*')
         .eq('active', true)
-        .single();
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
+        console.error('Error fetching chat config:', error);
         throw error;
       }
       
@@ -50,21 +53,30 @@ const AdminChatSettings = () => {
   // Save configuration mutation
   const saveConfigMutation = useMutation({
     mutationFn: async (configData: any) => {
+      // Remove id from configData to avoid conflicts
+      const { id, ...dataWithoutId } = configData;
+      
       if (chatConfig?.id) {
         // Update existing configuration
         const { data, error } = await supabase
           .from('chat_configurations')
-          .update(configData)
+          .update(dataWithoutId)
           .eq('id', chatConfig.id)
           .select()
           .single();
         if (error) throw error;
         return data;
       } else {
-        // Create new configuration
+        // Create new configuration - first deactivate any existing
+        await supabase
+          .from('chat_configurations')
+          .update({ active: false })
+          .eq('active', true);
+          
+        // Then create new one
         const { data, error } = await supabase
           .from('chat_configurations')
-          .insert({ ...configData, active: true })
+          .insert({ ...dataWithoutId, active: true })
           .select()
           .single();
         if (error) throw error;
