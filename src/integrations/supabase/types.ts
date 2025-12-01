@@ -1050,6 +1050,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      authorize: {
+        Args: { required_role: Database["public"]["Enums"]["user_role"] }
+        Returns: boolean
+      }
+      authorize_any: {
+        Args: { required_roles: Database["public"]["Enums"]["user_role"][] }
+        Returns: boolean
+      }
       cleanup_expired_tokens: { Args: never; Returns: undefined }
       generate_clean_slug: { Args: { input_text: string }; Returns: string }
       generate_property_code: {
