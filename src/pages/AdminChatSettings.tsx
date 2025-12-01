@@ -313,6 +313,27 @@ const AdminChatSettings = () => {
               config={config}
               onConfigChange={handleConfigChange}
             />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Mensagem de Boas-vindas ao Lead</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp_lead_welcome_message">Mensagem personalizada enviada ao lead via WhatsApp</Label>
+                  <Textarea
+                    id="whatsapp_lead_welcome_message"
+                    value={config.whatsapp_lead_welcome_message || ''}
+                    onChange={(e) => handleConfigChange('whatsapp_lead_welcome_message', e.target.value)}
+                    placeholder="Olá {name}! Recebemos seu interesse..."
+                    rows={6}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Variáveis disponíveis: {'{name}'}, {'{email}'}, {'{phone}'}, {'{company}'}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="knowledge-base">
