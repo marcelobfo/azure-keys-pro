@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.message-status]
 verify_jwt = false
+
+[functions.whatsapp-notification]
+verify_jwt = false

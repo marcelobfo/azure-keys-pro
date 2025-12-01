@@ -158,7 +158,7 @@ const VisitsManagement = () => {
     return tomorrow.toDateString() === visitDate;
   };
 
-  const dashboardRole = profile?.role === 'super_admin' ? 'admin' : (profile?.role || 'user');
+  const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
 
   if (loading) {
     return (

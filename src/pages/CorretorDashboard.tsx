@@ -96,7 +96,7 @@ const CorretorDashboard = () => {
   if (!profile || !hasRole('corretor')) {
     return <Navigate to="/dashboard" replace />;
   }
-  const dashboardRole = profile.role === 'super_admin' ? 'admin' : profile.role;
+  const dashboardRole = profile.role === 'master' ? 'admin' : profile.role;
 
   return (
     <DashboardLayout title="Dashboard do Corretor" userRole={dashboardRole}>

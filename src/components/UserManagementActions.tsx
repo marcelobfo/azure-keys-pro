@@ -31,7 +31,7 @@ interface UserManagementActionsProps {
   user?: User;
 }
 
-type UserRole = 'user' | 'corretor' | 'admin';
+type UserRole = 'user' | 'corretor' | 'admin' | 'master';
 
 export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdded }) => {
   const { toast } = useToast();
@@ -174,6 +174,7 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
                 <SelectItem value="user">Usuário</SelectItem>
                 <SelectItem value="corretor">Corretor</SelectItem>
                 <SelectItem value="admin">Administrador</SelectItem>
+                <SelectItem value="master">Master (Acesso Total)</SelectItem>
               </SelectContent>
             </Select>
           </div>
