@@ -48,7 +48,7 @@ serve(async (req) => {
 
     const { data: config, error: configError } = await supabase
       .from('chat_configurations')
-      .select('evolution_api_url, evolution_api_key, evolution_instance, whatsapp_notification_number, company')
+      .select('evolution_api_url, evolution_api_key, evolution_instance, whatsapp_notification_number, company, whatsapp_lead_welcome_message')
       .eq('active', true)
       .order('updated_at', { ascending: false })
       .limit(1)
@@ -132,13 +132,22 @@ serve(async (req) => {
     const leadPhone = formatPhoneNumber(leadData.phone);
     
     if (leadPhone) {
-      const leadMessage = `Olá ${leadData.name}! 👋
+      // Use custom message or default
+      const defaultMessage = `Olá {name}! 👋
 
 Recebemos seu interesse em nossos imóveis!
 
 Um de nossos corretores especializados entrará em contato em breve para ajudá-lo a encontrar o imóvel ideal.
 
-Obrigado por escolher a *${companyName}*! 🏠`;
+Obrigado por nos escolher! 🏠`;
+
+      // Replace placeholders in the message
+      const messageTemplate = config.whatsapp_lead_welcome_message || defaultMessage;
+      const leadMessage = messageTemplate
+        .replace(/\{name\}/gi, leadData.name || 'Cliente')
+        .replace(/\{email\}/gi, leadData.email || '')
+        .replace(/\{phone\}/gi, leadData.phone || '')
+        .replace(/\{company\}/gi, companyName);
 
       console.log('Sending welcome message to lead:', leadPhone);
 

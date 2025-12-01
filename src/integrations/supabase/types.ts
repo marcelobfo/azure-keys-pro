@@ -224,6 +224,7 @@ export type Database = {
           welcome_message: string | null
           whatsapp_enabled: boolean | null
           whatsapp_icon_url: string | null
+          whatsapp_lead_welcome_message: string | null
           whatsapp_notification_number: string | null
           whatsapp_number: string | null
           whatsapp_position: string | null
@@ -252,6 +253,7 @@ export type Database = {
           welcome_message?: string | null
           whatsapp_enabled?: boolean | null
           whatsapp_icon_url?: string | null
+          whatsapp_lead_welcome_message?: string | null
           whatsapp_notification_number?: string | null
           whatsapp_number?: string | null
           whatsapp_position?: string | null
@@ -280,6 +282,7 @@ export type Database = {
           welcome_message?: string | null
           whatsapp_enabled?: boolean | null
           whatsapp_icon_url?: string | null
+          whatsapp_lead_welcome_message?: string | null
           whatsapp_notification_number?: string | null
           whatsapp_number?: string | null
           whatsapp_position?: string | null
