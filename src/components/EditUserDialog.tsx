@@ -27,7 +27,7 @@ interface EditUserDialogProps {
   onUserUpdated: () => void;
 }
 
-type UserRole = 'user' | 'corretor' | 'admin';
+type UserRole = 'user' | 'corretor' | 'admin' | 'master';
 
 export const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, onUserUpdated }) => {
   const { toast } = useToast();
@@ -143,6 +143,7 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, onUserUpda
                 <SelectItem value="user">Usuário</SelectItem>
                 <SelectItem value="corretor">Corretor</SelectItem>
                 <SelectItem value="admin">Administrador</SelectItem>
+                <SelectItem value="master">Master (Acesso Total)</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -17,7 +17,7 @@ import NotificationDropdown from './NotificationDropdown';
 interface DashboardLayoutProps {
   children: React.ReactNode;
   title: string;
-  userRole: 'user' | 'corretor' | 'admin';
+  userRole: 'user' | 'corretor' | 'admin' | 'master';
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, userRole }) => {

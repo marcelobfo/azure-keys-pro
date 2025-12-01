@@ -8,7 +8,7 @@ export interface UserProfile {
   id: string;
   email: string | null;
   full_name: string | null;
-  role: 'user' | 'corretor' | 'admin' | 'super_admin';
+  role: 'user' | 'corretor' | 'admin' | 'master';
   phone: string | null;
   avatar_url: string | null;
   bio: string | null;
@@ -53,6 +53,7 @@ export const useProfile = () => {
     } else {
       const typedProfile: UserProfile = {
         ...data,
+        role: data.role as UserProfile['role'],
         notification_preferences: typeof data.notification_preferences === 'object' && data.notification_preferences !== null
           ? data.notification_preferences as UserProfile['notification_preferences']
           : { email: true, push: true, property_alerts: true }
@@ -101,6 +102,7 @@ export const useProfile = () => {
     } else {
       const typedProfile: UserProfile = {
         ...data,
+        role: data.role as UserProfile['role'],
         notification_preferences: typeof data.notification_preferences === 'object' && data.notification_preferences !== null
           ? data.notification_preferences as UserProfile['notification_preferences']
           : { email: true, push: true, property_alerts: true }
@@ -114,10 +116,10 @@ export const useProfile = () => {
     }
   };
 
-  const hasRole = (requiredRole: 'user' | 'corretor' | 'admin' | 'super_admin') => {
+  const hasRole = (requiredRole: 'user' | 'corretor' | 'admin' | 'master') => {
     if (!profile) return false;
     
-    const roleHierarchy = { user: 0, corretor: 1, admin: 2, super_admin: 3 };
+    const roleHierarchy = { user: 0, corretor: 1, admin: 2, master: 3 };
     return roleHierarchy[profile.role] >= roleHierarchy[requiredRole];
   };
 

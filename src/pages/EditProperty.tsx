@@ -278,7 +278,7 @@ const EditProperty = () => {
   };
 
   if (loading) {
-    const dashboardRole = profile?.role === 'super_admin' ? 'admin' : (profile?.role || 'user');
+    const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
     return (
       <DashboardLayout title="Editar Imóvel" userRole={dashboardRole}>
         <div className="flex items-center justify-center h-64">
@@ -291,7 +291,7 @@ const EditProperty = () => {
     );
   }
 
-  const dashboardRole = profile?.role === 'super_admin' ? 'admin' : (profile?.role || 'user');
+  const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
 
   return (
     <DashboardLayout title="Editar Imóvel" userRole={dashboardRole}>
