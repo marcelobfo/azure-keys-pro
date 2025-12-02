@@ -9,7 +9,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
 
 const AdminDashboard = () => {
-  const { profile, loading } = useProfile();
+  const { profile, loading, hasRole } = useProfile();
   const navigate = useNavigate();
 
   // States for counts
@@ -87,7 +87,7 @@ const AdminDashboard = () => {
     );
   }
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || !hasRole('admin')) {
     return <Navigate to="/dashboard" replace />;
   }
 

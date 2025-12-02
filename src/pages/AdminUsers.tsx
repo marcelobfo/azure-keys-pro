@@ -28,7 +28,7 @@ interface User {
 }
 
 const AdminUsers = () => {
-  const { profile, loading } = useProfile();
+  const { profile, loading, hasRole } = useProfile();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -125,7 +125,7 @@ const AdminUsers = () => {
     );
   }
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || !hasRole('admin')) {
     return <Navigate to="/dashboard" replace />;
   }
 

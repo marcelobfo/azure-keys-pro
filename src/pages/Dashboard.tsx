@@ -32,6 +32,7 @@ const Dashboard = () => {
   // Render dashboard based on user role
   switch (profile?.role) {
     case 'admin':
+    case 'master':
       return <AdminDashboard />;
     case 'corretor':
       return <CorretorDashboard />;

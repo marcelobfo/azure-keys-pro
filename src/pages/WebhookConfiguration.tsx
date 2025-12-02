@@ -38,7 +38,7 @@ const AVAILABLE_EVENTS = [
 ];
 
 const WebhookConfiguration = () => {
-  const { profile, loading } = useProfile();
+  const { profile, loading, hasRole } = useProfile();
   const { toast } = useToast();
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -57,10 +57,10 @@ const WebhookConfiguration = () => {
   });
 
   useEffect(() => {
-    if (profile?.role === 'admin') {
+    if (hasRole('admin')) {
       fetchWebhooks();
     }
-  }, [profile]);
+  }, [profile, hasRole]);
 
   const fetchWebhooks = async () => {
     try {
@@ -275,7 +275,7 @@ const WebhookConfiguration = () => {
     );
   }
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || !hasRole('admin')) {
     return <Navigate to="/dashboard" replace />;
   }
 
