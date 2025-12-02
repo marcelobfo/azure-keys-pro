@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Eye, Edit, Trash2, MapPin, Bed, Bath, Square } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, MapPin, Bed, Bath, Square, LayoutGrid, List } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +41,7 @@ const ManageProperties = () => {
   const { toast } = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     if (user) {
@@ -157,15 +160,25 @@ const ManageProperties = () => {
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
             <h2 className="text-2xl font-bold">Meus Imóveis</h2>
             <p className="text-muted-foreground">Gerencie todos os seus imóveis cadastrados</p>
           </div>
-          <Button onClick={() => navigate('/create-property')}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Imóvel
-          </Button>
+          <div className="flex items-center gap-3">
+            <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'grid' | 'list')}>
+              <ToggleGroupItem value="grid" aria-label="Visualização em grade">
+                <LayoutGrid className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="list" aria-label="Visualização em lista">
+                <List className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <Button onClick={() => navigate('/create-property')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Imóvel
+            </Button>
+          </div>
         </div>
 
         <PropertiesBulkActions
@@ -207,7 +220,7 @@ const ManageProperties = () => {
           </Card>
         </div>
 
-        {/* Properties Grid */}
+        {/* Properties */}
         {properties.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
@@ -223,7 +236,7 @@ const ManageProperties = () => {
               </Button>
             </CardContent>
           </Card>
-        ) : (
+        ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {properties.map((property) => (
               <Card key={property.id} className="overflow-hidden">
@@ -292,6 +305,68 @@ const ManageProperties = () => {
               </Card>
             ))}
           </div>
+        ) : (
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-16">Imagem</TableHead>
+                  <TableHead>Título</TableHead>
+                  <TableHead>Preço</TableHead>
+                  <TableHead className="hidden md:table-cell">Localização</TableHead>
+                  <TableHead className="hidden lg:table-cell">Quartos</TableHead>
+                  <TableHead className="hidden lg:table-cell">Área</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {properties.map((property) => (
+                  <TableRow key={property.id}>
+                    <TableCell>
+                      <img
+                        src={property.images?.[0] || '/placeholder.svg'}
+                        alt={property.title}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium max-w-[200px] truncate">{property.title}</TableCell>
+                    <TableCell className="font-bold text-blue-600">
+                      {property.price > 0
+                        ? `R$ ${property.price.toLocaleString('pt-BR')}`
+                        : '-'}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">{property.location}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{property.bedrooms || 0}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{property.area || 0}m²</TableCell>
+                    <TableCell>{getStatusBadge(property.status)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate(`/property/${property.id}`)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate(`/edit-property/${property.id}`)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteProperty(property.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
         )}
       </div>
     </Layout>
