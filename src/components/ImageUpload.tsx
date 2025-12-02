@@ -1,11 +1,26 @@
-
 import React, { useState } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Upload, X, ImageIcon } from 'lucide-react';
+import { Upload, ImageIcon, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import SortableImageItem from './SortableImageItem';
 
 interface ImageUploadProps {
   images: string[];
@@ -15,6 +30,17 @@ interface ImageUploadProps {
 const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange }) => {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const uploadImage = async (file: File) => {
     const fileExt = file.name.split('.').pop();
@@ -60,7 +86,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange }) => {
       });
     } finally {
       setUploading(false);
-      // Reset input
       if (event.target) {
         event.target.value = '';
       }
@@ -72,12 +97,36 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange }) => {
     onChange(newImages);
   };
 
+  const setFeaturedImage = (index: number) => {
+    if (index === 0) return;
+    const newImages = [...images];
+    const [movedImage] = newImages.splice(index, 1);
+    newImages.unshift(movedImage);
+    onChange(newImages);
+    toast({
+      title: "Imagem destacada",
+      description: "A imagem foi definida como destaque do imóvel.",
+    });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = images.findIndex((img) => img === active.id);
+      const newIndex = images.findIndex((img) => img === over.id);
+      
+      const newImages = arrayMove(images, oldIndex, newIndex);
+      onChange(newImages);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div>
         <Label>Imagens do Imóvel</Label>
-        <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
+        <div className="mt-2 border-2 border-dashed border-border rounded-lg p-6 text-center bg-muted/30">
+          <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
           <div className="mt-4">
             <Label htmlFor="image-upload" className="cursor-pointer">
               <Button type="button" disabled={uploading} asChild>
@@ -97,30 +146,42 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange }) => {
               className="hidden"
             />
           </div>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-muted-foreground">
             Formatos aceitos: JPG, PNG, WebP
           </p>
         </div>
       </div>
 
       {images.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {images.map((image, index) => (
-            <div key={index} className="relative">
-              <img
-                src={image}
-                alt={`Preview ${index + 1}`}
-                className="w-full h-32 object-cover rounded-lg"
-              />
-              <button
-                type="button"
-                onClick={() => removeImage(index)}
-                className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+            <Info className="w-4 h-4 flex-shrink-0" />
+            <span>
+              Arraste as imagens para reordenar. A primeira imagem será a capa do imóvel.
+            </span>
+          </div>
+          
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={images} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {images.map((image, index) => (
+                  <SortableImageItem
+                    key={image}
+                    id={image}
+                    image={image}
+                    index={index}
+                    isFirst={index === 0}
+                    onRemove={() => removeImage(index)}
+                    onSetFeatured={() => setFeaturedImage(index)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
       )}
     </div>
