@@ -54,17 +54,11 @@ const ManageProperties = () => {
 
   const fetchProperties = async () => {
     try {
-      // Admin e Master veem todos os imóveis, outros usuários veem apenas os seus
-      let query = supabase
+      // RLS cuida do filtro de permissões automaticamente
+      const { data, error } = await supabase
         .from('properties')
         .select('*')
         .order('created_at', { ascending: false });
-      
-      if (!hasRole('admin')) {
-        query = query.eq('user_id', user?.id);
-      }
-      
-      const { data, error } = await query;
 
       if (error) {
         throw error;
