@@ -37,6 +37,7 @@ import Sitemap from './pages/Sitemap';
 import Atendimento from '@/pages/Atendimento';
 import AttendantChat from '@/pages/AttendantChat';
 import AdminProtocols from '@/pages/AdminProtocols';
+import CommissionsPanel from '@/pages/CommissionsPanel';
 import SEOUpdater from '@/components/SEOUpdater';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
 import { useEffect } from 'react';
@@ -115,6 +116,7 @@ function App() {
                 <Route path="/admin/chat-settings" element={<AdminChatSettings />} />
                 <Route path="/admin/protocols" element={<AdminProtocols />} />
                 <Route path="/analytics" element={<Analytics />} />
+                <Route path="/commissions" element={<CommissionsPanel />} />
 
                 {/* Corretor Routes */}
                 <Route path="/corretor/*" element={<CorretorDashboard />} />
