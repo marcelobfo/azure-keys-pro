@@ -37,17 +37,19 @@ serve(async (req) => {
     });
 
     if (userError) {
-      // Handle specific error cases
+      console.log('User creation error:', userError);
+      
+      // Handle specific error cases - return 200 with error in body for proper SDK handling
       if (userError.message?.includes('already been registered') || (userError as any).code === 'email_exists') {
         return new Response(
           JSON.stringify({ 
-            error: 'Este email já está cadastrado no sistema',
+            error: 'Este email já está cadastrado no sistema. Tente com outro email.',
             success: false,
             code: 'email_exists'
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 409, // Conflict
+            status: 200, // Return 200 so SDK passes body correctly
           }
         );
       }
@@ -60,7 +62,7 @@ serve(async (req) => {
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
+          status: 200, // Return 200 so SDK passes body correctly
         }
       );
     }
