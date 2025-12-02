@@ -1144,6 +1144,10 @@ export type Database = {
         Returns: boolean
       }
       can_access_property: { Args: { prop_user_id: string }; Returns: boolean }
+      can_access_visit: {
+        Args: { visit_property_id: string }
+        Returns: boolean
+      }
       cleanup_expired_tokens: { Args: never; Returns: undefined }
       generate_clean_slug: { Args: { input_text: string }; Returns: string }
       generate_property_code: {
