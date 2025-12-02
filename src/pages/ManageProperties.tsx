@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Eye, Edit, Trash2, MapPin, Bed, Bath, Square, LayoutGrid, List } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, MapPin, Bed, Bath, Square, LayoutGrid, List, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
@@ -32,6 +33,7 @@ interface Property {
   is_near_beach: boolean;
   is_development: boolean;
   accepts_exchange: boolean;
+  property_code: string | null;
 }
 
 const ManageProperties = () => {
@@ -42,6 +44,7 @@ const ManageProperties = () => {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -156,11 +159,24 @@ const ManageProperties = () => {
 
   const activeProperties = properties.filter(p => ['available', 'active', 'ativo'].includes(p.status?.toLowerCase()));
 
+  // Filtrar propriedades pela busca
+  const filteredProperties = properties.filter(p => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      p.title?.toLowerCase().includes(query) ||
+      p.location?.toLowerCase().includes(query) ||
+      p.city?.toLowerCase().includes(query) ||
+      p.property_type?.toLowerCase().includes(query) ||
+      p.property_code?.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-bold">Meus Imóveis</h2>
             <p className="text-muted-foreground">Gerencie todos os seus imóveis cadastrados</p>
@@ -179,6 +195,17 @@ const ManageProperties = () => {
               Adicionar Imóvel
             </Button>
           </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por título, código, localização, tipo..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 max-w-md"
+          />
         </div>
 
         <PropertiesBulkActions
@@ -221,7 +248,17 @@ const ManageProperties = () => {
         </div>
 
         {/* Properties */}
-        {properties.length === 0 ? (
+        {filteredProperties.length === 0 && searchQuery ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Nenhum imóvel encontrado</h3>
+              <p className="text-muted-foreground">
+                Não encontramos imóveis para "{searchQuery}"
+              </p>
+            </CardContent>
+          </Card>
+        ) : properties.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -238,7 +275,7 @@ const ManageProperties = () => {
           </Card>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {properties.map((property) => (
+            {filteredProperties.map((property) => (
               <Card key={property.id} className="overflow-hidden">
                 <div className="relative">
                   <img
@@ -321,7 +358,7 @@ const ManageProperties = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {properties.map((property) => (
+                {filteredProperties.map((property) => (
                   <TableRow key={property.id}>
                     <TableCell>
                       <img
