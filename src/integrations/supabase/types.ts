@@ -451,6 +451,83 @@ export type Database = {
           },
         ]
       }
+      commissions: {
+        Row: {
+          commission_rate: number
+          commission_value: number | null
+          corretor_id: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          payment_date: string | null
+          property_id: string | null
+          sale_date: string
+          sale_price: number
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          commission_rate?: number
+          commission_value?: number | null
+          corretor_id: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          property_id?: string | null
+          sale_date?: string
+          sale_price: number
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          commission_rate?: number
+          commission_value?: number | null
+          corretor_id?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          property_id?: string | null
+          sale_date?: string
+          sale_price?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commissions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      corretor_commission_settings: {
+        Row: {
+          corretor_id: string
+          created_at: string | null
+          default_rate: number
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          corretor_id: string
+          created_at?: string | null
+          default_rate?: number
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          corretor_id?: string
+          created_at?: string | null
+          default_rate?: number
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string | null

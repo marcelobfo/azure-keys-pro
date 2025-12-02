@@ -38,7 +38,7 @@ interface Property {
 
 const ManageProperties = () => {
   const { user } = useAuth();
-  const { hasRole } = useProfile();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
@@ -47,18 +47,23 @@ const ManageProperties = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    if (user) {
+    if (user && profile) {
       fetchProperties();
     }
-  }, [user]);
+  }, [user, profile]);
 
   const fetchProperties = async () => {
     try {
-      // RLS cuida do filtro de permissões automaticamente
-      const { data, error } = await supabase
+      let query = supabase
         .from('properties')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
+
+      // Corretor só vê seus próprios imóveis
+      if (profile?.role === 'corretor') {
+        query = query.eq('user_id', user?.id);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         throw error;
