@@ -10,7 +10,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Eye, Users, Heart, Calendar, MessageSquare, TrendingUp } from 'lucide-react';
 
 const Analytics = () => {
-  const { profile, loading } = useProfile();
+  const { profile, loading, hasRole } = useProfile();
   const { summary, loading: analyticsLoading, fetchAnalytics, fetchTopProperties } = useAnalyticsDashboard();
   const [timeRange, setTimeRange] = useState('30');
   const [topProperties, setTopProperties] = useState<any[]>([]);
@@ -33,7 +33,7 @@ const Analytics = () => {
     );
   }
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || !hasRole('admin')) {
     return <Navigate to="/dashboard" replace />;
   }
 

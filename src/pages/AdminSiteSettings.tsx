@@ -254,7 +254,7 @@ const ANALYTICS_TOGGLES = [
 ];
 
 const AdminSiteSettings = () => {
-  const { profile, loading } = useProfile();
+  const { profile, loading, hasRole } = useProfile();
   const { toast } = useToast();
 
   const [values, setValues] = useState<Record<string, string>>({});
@@ -262,7 +262,7 @@ const AdminSiteSettings = () => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!profile || profile.role !== 'admin') return;
+    if (!profile || !hasRole('admin')) return;
 
     async function fetchSettings() {
       const keys = ALL_FIELDS.map(s => s.key).concat(['home_layout']).concat(ANALYTICS_TOGGLES.map(t => t.key));
@@ -361,7 +361,7 @@ const AdminSiteSettings = () => {
       </DashboardLayout>
     );
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || !hasRole('admin')) {
     return (
       <DashboardLayout title="Configurações do Sistema" userRole="user">
         <div className="flex items-center justify-center h-64">

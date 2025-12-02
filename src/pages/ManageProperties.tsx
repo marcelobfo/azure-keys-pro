@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import Layout from '@/components/Layout';
 import PropertiesBulkActions from '@/components/PropertiesBulkActions';
 
@@ -33,6 +34,7 @@ interface Property {
 
 const ManageProperties = () => {
   const { user } = useAuth();
+  const { hasRole } = useProfile();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
@@ -46,11 +48,17 @@ const ManageProperties = () => {
 
   const fetchProperties = async () => {
     try {
-      const { data, error } = await supabase
+      // Admin e Master veem todos os imóveis, outros usuários veem apenas os seus
+      let query = supabase
         .from('properties')
         .select('*')
-        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
+      
+      if (!hasRole('admin')) {
+        query = query.eq('user_id', user?.id);
+      }
+      
+      const { data, error } = await query;
 
       if (error) {
         throw error;
