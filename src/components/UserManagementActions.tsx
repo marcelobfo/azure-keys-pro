@@ -61,37 +61,14 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
         }
       });
 
-      // Handle edge function errors (including non-2xx status codes)
       if (error) {
         console.error('Supabase function error:', error);
-        // Try to parse error context for specific error codes
-        const errorContext = (error as any)?.context;
-        if (errorContext) {
-          try {
-            const errorBody = typeof errorContext === 'string' ? JSON.parse(errorContext) : errorContext;
-            if (errorBody?.code === 'email_exists') {
-              throw new Error('Este email já está cadastrado no sistema. Tente com outro email.');
-            }
-            if (errorBody?.error) {
-              throw new Error(errorBody.error);
-            }
-          } catch (parseError) {
-            // If parsing fails, check error message
-          }
-        }
-        // Check error message for email exists pattern
-        if (error.message?.includes('email_exists') || error.message?.includes('409')) {
-          throw new Error('Este email já está cadastrado no sistema. Tente com outro email.');
-        }
         throw new Error('Erro na comunicação com o servidor');
       }
 
+      // Check for errors in response body (edge function returns 200 with error details)
       if (!data?.success) {
-        // Handle specific error cases from response body
-        if (data?.code === 'email_exists') {
-          throw new Error('Este email já está cadastrado no sistema. Tente com outro email.');
-        }
-        throw new Error(data?.error || 'Erro desconhecido');
+        throw new Error(data?.error || 'Erro ao criar usuário');
       }
 
       toast({
