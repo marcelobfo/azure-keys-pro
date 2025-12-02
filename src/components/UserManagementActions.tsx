@@ -50,14 +50,15 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
     setLoading(true);
 
     try {
-      // Call the create-user edge function
-      const { data, error } = await supabase.functions.invoke('create-user', {
+      // Use sync-user function - handles both new users and existing auth users without profile
+      const { data, error } = await supabase.functions.invoke('sync-user', {
         body: {
           email: formData.email,
           password: formData.password,
           full_name: formData.full_name,
           role: formData.role,
-          phone: formData.phone || null
+          phone: formData.phone || null,
+          force_sync: true
         }
       });
 
@@ -66,14 +67,17 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
         throw new Error('Erro na comunicação com o servidor');
       }
 
-      // Check for errors in response body (edge function returns 200 with error details)
       if (!data?.success) {
         throw new Error(data?.error || 'Erro ao criar usuário');
       }
 
+      const message = data.synced 
+        ? 'Usuário sincronizado com sucesso.' 
+        : 'Usuário criado com sucesso.';
+
       toast({
-        title: "Usuário criado!",
-        description: "Usuário foi criado com sucesso.",
+        title: data.synced ? "Usuário sincronizado!" : "Usuário criado!",
+        description: message,
       });
 
       setFormData({
@@ -88,17 +92,9 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
 
     } catch (error: any) {
       console.error('Erro ao criar usuário:', error);
-      let errorMessage = error.message || 'Erro desconhecido';
-      
-      // Handle different error types
-      if (error.message?.includes('already been registered') || 
-          error.message?.includes('email já está cadastrado')) {
-        errorMessage = 'Este email já está cadastrado no sistema. Tente com outro email.';
-      }
-      
       toast({
         title: "Erro",
-        description: errorMessage,
+        description: error.message || 'Erro desconhecido',
         variant: "destructive",
       });
     } finally {
