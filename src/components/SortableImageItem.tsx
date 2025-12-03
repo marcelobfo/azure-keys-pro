@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, X, Star } from 'lucide-react';
+import { GripVertical, X, Star, ZoomIn } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface SortableImageItemProps {
@@ -11,6 +11,7 @@ interface SortableImageItemProps {
   isFirst: boolean;
   onRemove: () => void;
   onSetFeatured: () => void;
+  onPreview: () => void;
 }
 
 const SortableImageItem: React.FC<SortableImageItemProps> = ({
@@ -20,6 +21,7 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
   isFirst,
   onRemove,
   onSetFeatured,
+  onPreview,
 }) => {
   const {
     attributes,
@@ -72,6 +74,18 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
         className="w-full h-32 object-cover"
       />
 
+      {/* Zoom Overlay - appears on hover */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onPreview();
+        }}
+        className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+      >
+        <ZoomIn className="w-8 h-8 text-white" />
+      </button>
+
       {/* Bottom Actions Bar */}
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
         {/* Drag Handle */}
@@ -89,7 +103,10 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={onSetFeatured}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSetFeatured();
+            }}
             className="h-7 px-2 text-xs text-white hover:text-primary hover:bg-background/40"
           >
             <Star className="w-3 h-3 mr-1" />
@@ -97,13 +114,6 @@ const SortableImageItem: React.FC<SortableImageItemProps> = ({
           </Button>
         )}
       </div>
-
-      {/* Drag Overlay when not hovering */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="absolute inset-0 cursor-grab active:cursor-grabbing group-hover:hidden"
-      />
     </div>
   );
 };

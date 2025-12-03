@@ -21,6 +21,7 @@ import { Upload, ImageIcon, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import SortableImageItem from './SortableImageItem';
+import ImagePreviewDialog from './ImagePreviewDialog';
 
 interface ImageUploadProps {
   images: string[];
@@ -30,6 +31,15 @@ interface ImageUploadProps {
 const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange }) => {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+
+  const openPreview = (index: number) => setPreviewIndex(index);
+  const closePreview = () => setPreviewIndex(null);
+  const navigatePreview = (index: number) => {
+    if (index >= 0 && index < images.length) {
+      setPreviewIndex(index);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -177,6 +187,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange }) => {
                     isFirst={index === 0}
                     onRemove={() => removeImage(index)}
                     onSetFeatured={() => setFeaturedImage(index)}
+                    onPreview={() => openPreview(index)}
                   />
                 ))}
               </div>
@@ -184,6 +195,15 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange }) => {
           </DndContext>
         </div>
       )}
+
+      {/* Image Preview Dialog */}
+      <ImagePreviewDialog
+        images={images}
+        currentIndex={previewIndex ?? 0}
+        isOpen={previewIndex !== null}
+        onClose={closePreview}
+        onNavigate={navigatePreview}
+      />
     </div>
   );
 };
