@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import SortableImageItem from './SortableImageItem';
 import ImagePreviewDialog from './ImagePreviewDialog';
+import { compressImage, formatFileSize } from '@/utils/imageCompression';
 
 interface ImageUploadProps {
   images: string[];
@@ -78,14 +79,29 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ images, onChange }) => {
 
     setUploading(true);
     try {
-      const uploadPromises = Array.from(files).map(uploadImage);
+      // Compress all images first
+      const compressionResults = await Promise.all(
+        Array.from(files).map(file => compressImage(file))
+      );
+
+      // Calculate total savings
+      const totalOriginal = compressionResults.reduce((sum, r) => sum + r.originalSize, 0);
+      const totalCompressed = compressionResults.reduce((sum, r) => sum + r.compressedSize, 0);
+      const totalSavings = Math.round((1 - totalCompressed / totalOriginal) * 100);
+
+      // Upload compressed files
+      const uploadPromises = compressionResults.map(result => uploadImage(result.file));
       const uploadedUrls = await Promise.all(uploadPromises);
       
       onChange([...images, ...uploadedUrls]);
       
+      const savingsText = totalSavings > 0 
+        ? ` Economia de ${totalSavings}% (${formatFileSize(totalOriginal - totalCompressed)})`
+        : '';
+      
       toast({
         title: "Sucesso!",
-        description: `${uploadedUrls.length} imagem(ns) enviada(s) com sucesso!`,
+        description: `${uploadedUrls.length} imagem(ns) enviada(s).${savingsText}`,
       });
     } catch (error: any) {
       console.error('Erro ao fazer upload:', error);
