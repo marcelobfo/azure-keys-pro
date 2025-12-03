@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Eye, Edit, Trash2, MapPin, Bed, Bath, Square, LayoutGrid, List, Search } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, MapPin, Bed, Toilet, Square, LayoutGrid, List, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -306,7 +306,7 @@ const ManageProperties = () => {
                       {property.bedrooms || 0}
                     </div>
                     <div className="flex items-center">
-                      <Bath className="h-4 w-4 mr-1" />
+                      <Toilet className="h-4 w-4 mr-1" />
                       {property.bathrooms || 0}
                     </div>
                     <div className="flex items-center">

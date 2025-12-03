@@ -42,7 +42,7 @@ const PropertiesBulkActions: React.FC<PropertiesBulkActionsProps> = ({
       Cidade: property.city,
       'Área (m²)': property.area || '',
       Quartos: property.bedrooms || '',
-      Banheiros: property.bathrooms || '',
+      Lavabo: property.bathrooms || '',
       Status: property.status,
       'Criado em': new Date(property.created_at).toLocaleDateString('pt-BR')
     }));
@@ -127,7 +127,7 @@ const PropertiesBulkActions: React.FC<PropertiesBulkActionsProps> = ({
         Cidade: 'Florianópolis',
         'Área (m²)': 85,
         Quartos: 3,
-        Banheiros: 2,
+        Lavabo: 2,
         Descrição: 'Apartamento com vista para o mar...',
         Status: 'active'
       }

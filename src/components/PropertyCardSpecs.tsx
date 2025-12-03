@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Bed, Bath, Square, Users, Home } from 'lucide-react';
+import { Bed, Toilet, Square, Users, Home } from 'lucide-react';
 
 interface FeaturedProperty {
   area: number;
@@ -34,9 +33,9 @@ const PropertyCardSpecs: React.FC<PropertyCardSpecsProps> = ({ property }) => {
       
       <div className="flex items-center justify-center bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
         <div className="text-center">
-          <Bath className="w-6 h-6 text-purple-600 mx-auto mb-1" />
+          <Toilet className="w-6 h-6 text-purple-600 mx-auto mb-1" />
           <div className="text-sm font-semibold text-gray-900 dark:text-white">{property.bathrooms}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Banheiros</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">Lavabo</div>
         </div>
       </div>
       

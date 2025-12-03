@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, MapPin, Bed, Bath, Square } from 'lucide-react';
+import { Heart, MapPin, Bed, Toilet, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -149,7 +149,7 @@ const Favorites = () => {
                       {property.bedrooms}
                     </span>
                     <span className="flex items-center">
-                      <Bath className="w-4 h-4 mr-1" />
+                      <Toilet className="w-4 h-4 mr-1" />
                       {property.bathrooms}
                     </span>
                   </div>
