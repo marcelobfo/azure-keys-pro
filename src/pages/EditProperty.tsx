@@ -52,6 +52,7 @@ const EditProperty = () => {
     images: [] as string[],
     features: [] as string[],
     tags: [] as string[],
+    status: 'active',
     is_featured: false,
     is_beachfront: false,
     is_near_beach: false,
@@ -116,6 +117,7 @@ const EditProperty = () => {
           images: Array.isArray(data.images) ? data.images : [],
           features: features.filter(f => !['Piscina', 'Academia', 'Playground', 'Churrasqueira', 'Salão de Festas', 'Portaria 24h', 'Elevador', 'Jardim', 'Varanda', 'Sacada', 'Lavabo', 'Mobiliado', 'Ar Condicionado', 'Energia Solar'].includes(f)),
           tags: Array.isArray(data.tags) ? data.tags : [],
+          status: data.status ?? 'active',
           is_featured: Boolean(data.is_featured),
           is_beachfront: Boolean(data.is_beachfront),
           is_near_beach: Boolean(data.is_near_beach),
@@ -195,8 +197,7 @@ const EditProperty = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (status: 'draft' | 'active') => {
     setIsLoading(true);
 
     try {
@@ -256,14 +257,17 @@ const EditProperty = () => {
           is_near_beach: formData.is_near_beach,
           is_development: formData.is_development,
           accepts_exchange: formData.accepts_exchange,
+          status: status,
         })
         .eq('id', id);
 
       if (error) throw error;
 
       toast({
-        title: "Imóvel atualizado com sucesso!",
-        description: "As alterações foram salvas.",
+        title: "Sucesso",
+        description: status === 'draft' 
+          ? "Imóvel salvo como rascunho!" 
+          : "Imóvel publicado com sucesso!",
       });
       navigate('/manage-properties');
     } catch (error) {
@@ -307,7 +311,7 @@ const EditProperty = () => {
           <h1 className="text-2xl font-bold">Editar Imóvel</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form className="space-y-6">
           {/* Informações Básicas */}
           <Card>
             <CardHeader>
@@ -937,8 +941,20 @@ const EditProperty = () => {
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+            <Button 
+              type="button" 
+              variant="secondary" 
+              disabled={isLoading}
+              onClick={() => handleSubmit('draft')}
+            >
+              {isLoading ? 'Salvando...' : 'Salvar Rascunho'}
+            </Button>
+            <Button 
+              type="button" 
+              disabled={isLoading}
+              onClick={() => handleSubmit('active')}
+            >
+              {isLoading ? 'Publicando...' : 'Publicar'}
             </Button>
           </div>
         </form>
