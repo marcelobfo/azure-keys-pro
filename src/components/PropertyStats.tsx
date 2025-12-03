@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bed, Bath, Square, DoorOpen } from 'lucide-react';
+import { Bed, Toilet, Square, DoorOpen } from 'lucide-react';
 
 interface PropertyStatsProps {
   bedrooms: number;
@@ -21,10 +21,10 @@ const PropertyStats: React.FC<PropertyStatsProps> = ({ bedrooms, bathrooms, area
       </div>
       <div className="text-center p-3 md:p-4 bg-white dark:bg-slate-700 rounded-xl shadow-md border border-gray-100 dark:border-slate-600">
         <div className="flex flex-col md:flex-row items-center justify-center mb-2">
-          <Bath className="w-5 h-5 md:w-6 md:h-6 md:mr-2 text-blue-600 mb-1 md:mb-0" />
+          <Toilet className="w-5 h-5 md:w-6 md:h-6 md:mr-2 text-blue-600 mb-1 md:mb-0" />
           <span className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white">{bathrooms}</span>
         </div>
-        <span className="text-xs md:text-sm text-gray-600 dark:text-gray-300 font-medium">Banheiros</span>
+        <span className="text-xs md:text-sm text-gray-600 dark:text-gray-300 font-medium">Lavabo</span>
       </div>
       <div className="text-center p-3 md:p-4 bg-white dark:bg-slate-700 rounded-xl shadow-md border border-gray-100 dark:border-slate-600">
         <div className="flex flex-col md:flex-row items-center justify-center mb-2">

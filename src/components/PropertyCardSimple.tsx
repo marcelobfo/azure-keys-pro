@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, MapPin, Bed, Bath, Square } from 'lucide-react';
+import { Heart, MapPin, Bed, Toilet, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFavorites } from '@/hooks/useFavorites';
 import PropertyCardTags from './PropertyCardTags';
@@ -116,7 +116,7 @@ const PropertyCardSimple: React.FC<PropertyCardSimpleProps> = ({ property }) => 
             {property.bedrooms}
           </span>
           <span className="flex items-center">
-            <Bath className="w-4 h-4 mr-1" />
+            <Toilet className="w-4 h-4 mr-1" />
             {property.bathrooms}
           </span>
         </div>

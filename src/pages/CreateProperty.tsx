@@ -437,7 +437,7 @@ const CreateProperty = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="bathrooms">Banheiros</Label>
+                  <Label htmlFor="bathrooms">Lavabo</Label>
                   <Input
                     id="bathrooms"
                     type="number"
