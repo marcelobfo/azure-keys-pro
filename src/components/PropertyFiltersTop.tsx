@@ -220,7 +220,7 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
 
             {/* Bathrooms */}
             <div>
-              <label className="block text-sm font-medium mb-1">Lavabo</label>
+              <label className="block text-sm font-medium mb-1">Banheiros</label>
               <Select value={filters.bathrooms || 'any'} onValueChange={(value) => updateFilter('bathrooms', value === 'any' ? '' : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Qualquer" />

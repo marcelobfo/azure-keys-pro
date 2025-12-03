@@ -219,7 +219,7 @@ const PropertyFilters: React.FC<PropertyFiltersProps> = ({
               {/* Bathrooms */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  🚽 Lavabo (mín)
+                  🚽 Banheiros (mín)
                 </label>
                 <Select value={filters.bathrooms} onValueChange={(value) => updateFilter('bathrooms', value)}>
                   <SelectTrigger>

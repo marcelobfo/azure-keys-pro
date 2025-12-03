@@ -530,7 +530,7 @@ const EditProperty = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="bathrooms">Lavabo</Label>
+                  <Label htmlFor="bathrooms">Banheiros</Label>
                   <Input
                     id="bathrooms"
                     type="number"
