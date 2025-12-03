@@ -119,8 +119,7 @@ const CreateProperty = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (status: 'draft' | 'active') => {
     if (!user) {
       toast({
         title: "Erro",
@@ -186,14 +185,16 @@ const CreateProperty = () => {
           is_development: formData.is_development,
           accepts_exchange: formData.accepts_exchange,
           user_id: user.id,
-          status: 'active',
+          status: status,
         });
 
       if (error) throw error;
 
       toast({
         title: "Sucesso",
-        description: "Propriedade criada com sucesso!",
+        description: status === 'draft' 
+          ? "Imóvel salvo como rascunho!" 
+          : "Imóvel publicado com sucesso!",
       });
 
       navigate('/manage-properties');
@@ -217,7 +218,7 @@ const CreateProperty = () => {
           <p className="text-muted-foreground">Preencha as informações completas da propriedade</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form className="space-y-6">
           {/* Informações Básicas */}
           <Card>
             <CardHeader>
@@ -853,8 +854,20 @@ const CreateProperty = () => {
             <Button type="button" variant="outline" onClick={() => navigate('/manage-properties')}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Salvando...' : 'Criar Propriedade'}
+            <Button 
+              type="button" 
+              variant="secondary" 
+              disabled={loading}
+              onClick={() => handleSubmit('draft')}
+            >
+              {loading ? 'Salvando...' : 'Salvar Rascunho'}
+            </Button>
+            <Button 
+              type="button" 
+              disabled={loading}
+              onClick={() => handleSubmit('active')}
+            >
+              {loading ? 'Publicando...' : 'Publicar'}
             </Button>
           </div>
         </form>
