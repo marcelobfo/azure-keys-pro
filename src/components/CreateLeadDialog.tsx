@@ -60,7 +60,7 @@ const CreateLeadDialog: React.FC<CreateLeadDialogProps> = ({ onLeadCreated }) =>
           email: formData.email.trim().toLowerCase(),
           phone: formData.phone.trim() || null,
           message: formData.message.trim() || null,
-          property_id: formData.property_id || null,
+          property_id: formData.property_id === 'none' || !formData.property_id ? null : formData.property_id,
           status: formData.status
         });
 
@@ -132,14 +132,14 @@ const CreateLeadDialog: React.FC<CreateLeadDialogProps> = ({ onLeadCreated }) =>
           <div className="space-y-2">
             <Label htmlFor="property">Imóvel de Interesse</Label>
             <Select
-              value={formData.property_id}
-              onValueChange={(value) => setFormData({ ...formData, property_id: value })}
+              value={formData.property_id || 'none'}
+              onValueChange={(value) => setFormData({ ...formData, property_id: value === 'none' ? '' : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um imóvel (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="none">Nenhum</SelectItem>
                 {properties.map((property) => (
                   <SelectItem key={property.id} value={property.id}>
                     {property.title}
