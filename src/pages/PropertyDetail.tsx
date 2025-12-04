@@ -9,6 +9,7 @@ import Layout from '@/components/Layout';
 import PropertyImageGallery from '@/components/PropertyImageGallery';
 import PropertyMainInfo from '@/components/PropertyMainInfo';
 import PropertySidebar from '@/components/PropertySidebar';
+import PropertyConfidentialInfo from '@/components/PropertyConfidentialInfo';
 import Breadcrumb from '@/components/Breadcrumb';
 import { useSEO, generatePropertySEO } from '@/hooks/useSEO';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -37,6 +38,11 @@ interface Property {
   is_near_beach?: boolean;
   is_development?: boolean;
   tags?: string[];
+  hide_address?: boolean;
+  negotiation_notes?: string;
+  accepts_exchange?: boolean;
+  broker_name?: string;
+  broker_creci?: string;
 }
 
 const PropertyDetail = () => {
@@ -191,6 +197,14 @@ const PropertyDetail = () => {
               title={property.title}
             />
             <PropertyMainInfo property={property} />
+            
+            {/* Informações confidenciais para corretores/admin */}
+            <PropertyConfidentialInfo
+              negotiationNotes={property.negotiation_notes}
+              acceptsExchange={property.accepts_exchange}
+              brokerName={property.broker_name}
+              brokerCreci={property.broker_creci}
+            />
           </div>
 
           <PropertySidebar property={property} />

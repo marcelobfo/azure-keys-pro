@@ -73,6 +73,7 @@ const EditProperty = () => {
     has_air_conditioning: false,
     has_solar_energy: false,
     accepts_exchange: false,
+    hide_address: false,
   });
 
   useEffect(() => {
@@ -138,6 +139,7 @@ const EditProperty = () => {
           has_air_conditioning: features.includes('Ar Condicionado'),
           has_solar_energy: features.includes('Energia Solar'),
           accepts_exchange: Boolean(data.accepts_exchange),
+          hide_address: Boolean(data.hide_address),
         });
       } catch (error) {
         toast({
@@ -257,6 +259,7 @@ const EditProperty = () => {
           is_near_beach: formData.is_near_beach,
           is_development: formData.is_development,
           accepts_exchange: formData.accepts_exchange,
+          hide_address: formData.hide_address,
           status: status,
         })
         .eq('id', id);
@@ -410,6 +413,17 @@ const EditProperty = () => {
                     placeholder="Ex: Próximo ao shopping"
                   />
                 </div>
+              </div>
+              
+              <div className="flex items-center space-x-2 pt-2">
+                <Checkbox
+                  id="hide_address"
+                  checked={formData.hide_address}
+                  onCheckedChange={(checked) => setFormData({...formData, hide_address: !!checked})}
+                />
+                <Label htmlFor="hide_address" className="text-sm font-normal cursor-pointer">
+                  Ocultar endereço completo (mostrar apenas cidade/bairro para visitantes)
+                </Label>
               </div>
             </CardContent>
           </Card>
