@@ -122,8 +122,8 @@ export const useInstagramShare = () => {
       // Gerar caption otimizada para Instagram
       const caption = generateInstagramCaption(property);
 
-      // Gerar URL do imóvel
-      const propertyUrl = `${window.location.origin}/imovel/${property.slug || property.id}`;
+      // Gerar URL do imóvel usando Edge Function para meta tags corretas
+      const propertyUrl = `https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/og-meta?slug=${property.slug || property.id}`;
 
       setShareData({
         imageUrl,
