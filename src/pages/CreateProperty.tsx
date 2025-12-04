@@ -57,6 +57,7 @@ const CreateProperty = () => {
     is_near_beach: false,
     is_development: false,
     accepts_exchange: false,
+    hide_address: false,
     // Facilidades/Comodidades
     has_pool: false,
     has_gym: false,
@@ -184,6 +185,7 @@ const CreateProperty = () => {
           is_near_beach: formData.is_near_beach,
           is_development: formData.is_development,
           accepts_exchange: formData.accepts_exchange,
+          hide_address: formData.hide_address,
           user_id: user.id,
           status: status,
         });
@@ -317,6 +319,17 @@ const CreateProperty = () => {
                     placeholder="Ex: Próximo ao shopping"
                   />
                 </div>
+              </div>
+              
+              <div className="flex items-center space-x-2 pt-2">
+                <Checkbox
+                  id="hide_address"
+                  checked={formData.hide_address}
+                  onCheckedChange={(checked) => setFormData({...formData, hide_address: !!checked})}
+                />
+                <Label htmlFor="hide_address" className="text-sm font-normal cursor-pointer">
+                  Ocultar endereço completo (mostrar apenas cidade/bairro para visitantes)
+                </Label>
               </div>
             </CardContent>
           </Card>

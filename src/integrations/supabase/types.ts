@@ -729,6 +729,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           features: string[] | null
+          hide_address: boolean | null
           id: string
           images: string[] | null
           infra: Json | null
@@ -773,6 +774,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           features?: string[] | null
+          hide_address?: boolean | null
           id?: string
           images?: string[] | null
           infra?: Json | null
@@ -817,6 +819,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           features?: string[] | null
+          hide_address?: boolean | null
           id?: string
           images?: string[] | null
           infra?: Json | null

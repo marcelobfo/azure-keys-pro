@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, EyeOff } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import PropertyStats from './PropertyStats';
@@ -9,6 +9,7 @@ import PropertyFeatures from './PropertyFeatures';
 import PropertyTag from './PropertyTag';
 import SimilarProperties from './SimilarProperties';
 import { formatCurrency } from '@/utils/priceUtils';
+import { useProfile } from '@/hooks/useProfile';
 
 interface Property {
   id: string;
@@ -30,6 +31,7 @@ interface Property {
   tags?: string[];
   property_code?: string;
   images: string[];
+  hide_address?: boolean;
 }
 
 interface PropertyMainInfoProps {
@@ -37,6 +39,23 @@ interface PropertyMainInfoProps {
 }
 
 const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
+  const { profile } = useProfile();
+  
+  // Verificar se o usuário é corretor, admin ou master
+  const isAuthorized = profile && ['corretor', 'admin', 'master'].includes(profile.role);
+  
+  // Se hide_address estiver ativo e o usuário não for autorizado, mostrar apenas cidade
+  const shouldHideAddress = property.hide_address && !isAuthorized;
+  
+  // Extrair apenas o bairro/região da localização (primeira parte antes da vírgula ou o próprio valor)
+  const getSimplifiedLocation = () => {
+    if (!property.location) return property.city;
+    const parts = property.location.split(',');
+    // Pegar a última parte que geralmente é o bairro
+    const neighborhood = parts.length > 1 ? parts[parts.length - 1].trim() : parts[0].trim();
+    return `${neighborhood}, ${property.city}`;
+  };
+
   const formatDescription = (description: string) => {
     return description.split('\n').map((line, index) => (
       <React.Fragment key={index}>
@@ -59,7 +78,15 @@ const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
             </div>
             <div className="flex items-center text-gray-600 dark:text-gray-300 mb-3">
               <MapPin className="w-4 h-4 md:w-5 md:h-5 mr-2 text-blue-600" />
-              <span className="text-base md:text-lg">{property.location}, {property.city}</span>
+              <span className="text-base md:text-lg">
+                {shouldHideAddress ? getSimplifiedLocation() : `${property.location}, ${property.city}`}
+              </span>
+              {shouldHideAddress && (
+                <span className="ml-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                  <EyeOff className="w-3 h-3 mr-1" />
+                  Endereço oculto
+                </span>
+              )}
             </div>
           </div>
           <div className="flex flex-col md:flex-row gap-2 md:gap-3 items-start md:items-center">
