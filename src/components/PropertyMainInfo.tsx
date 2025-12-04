@@ -47,6 +47,9 @@ const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
   // Se hide_address estiver ativo e o usuário não for autorizado, mostrar apenas cidade
   const shouldHideAddress = property.hide_address && !isAuthorized;
   
+  // Mostrar indicador "Endereço oculto" sempre que a propriedade estiver marcada (para admin saber que está configurado)
+  const showHiddenIndicator = property.hide_address === true;
+  
   // Extrair apenas o bairro/região da localização (primeira parte antes da vírgula ou o próprio valor)
   const getSimplifiedLocation = () => {
     if (!property.location) return property.city;
@@ -81,10 +84,10 @@ const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
               <span className="text-base md:text-lg">
                 {shouldHideAddress ? getSimplifiedLocation() : `${property.location}, ${property.city}`}
               </span>
-              {shouldHideAddress && (
-                <span className="ml-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
+              {showHiddenIndicator && (
+                <span className="ml-2 flex items-center text-sm text-amber-600 dark:text-amber-400">
                   <EyeOff className="w-3 h-3 mr-1" />
-                  Endereço oculto
+                  {isAuthorized ? 'Oculto para visitantes' : 'Endereço oculto'}
                 </span>
               )}
             </div>

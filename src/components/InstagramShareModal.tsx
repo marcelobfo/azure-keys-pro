@@ -23,6 +23,7 @@ interface Property {
   area?: number;
   images?: string[];
   slug?: string;
+  hide_address?: boolean;
 }
 
 interface InstagramShareModalProps {

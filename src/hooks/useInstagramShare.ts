@@ -14,6 +14,7 @@ interface Property {
   area?: number;
   images?: string[];
   slug?: string;
+  hide_address?: boolean;
 }
 
 export const useInstagramShare = () => {
@@ -106,10 +107,11 @@ export const useInstagramShare = () => {
       const detailsText = details.join(' • ');
       ctx.fillText(detailsText, 540, property.images?.length ? 900 : 400);
 
-      // Localização
+      // Localização (ocultar endereço se marcado)
       ctx.font = '28px Arial';
       ctx.fillStyle = '#E0E0E0';
-      ctx.fillText(`${property.location}, ${property.city}`, 540, property.images?.length ? 940 : 440);
+      const displayLocation = property.hide_address ? property.city : `${property.location}, ${property.city}`;
+      ctx.fillText(displayLocation, 540, property.images?.length ? 940 : 440);
 
       // Logo/Marca no canto inferior
       ctx.font = 'bold 24px Arial';
@@ -178,13 +180,16 @@ export const useInstagramShare = () => {
     if (property.bathrooms) details.push(`🚿 ${property.bathrooms} banheiros`);
     if (property.area) details.push(`📐 ${property.area}m²`);
 
+    // Localização (ocultar endereço se marcado)
+    const displayLocation = property.hide_address ? property.city : `${property.location}, ${property.city}`;
+
     return `🏡 ${property.title}
 
 💰 ${price}
 
 ${details.join('\n')}
 
-📍 ${property.location}, ${property.city}
+📍 ${displayLocation}
 
 ✨ Imóvel incrível esperando por você!
 
