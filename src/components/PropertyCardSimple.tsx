@@ -13,6 +13,7 @@ interface Property {
   price: number;
   rental_price?: number;
   location: string;
+  city?: string;
   area: number;
   bedrooms: number;
   bathrooms: number;
@@ -26,6 +27,7 @@ interface Property {
   is_featured?: boolean;
   accepts_exchange?: boolean;
   property_code?: string;
+  hide_address?: boolean;
 }
 
 interface PropertyCardSimpleProps {
@@ -103,7 +105,9 @@ const PropertyCardSimple: React.FC<PropertyCardSimpleProps> = ({ property }) => 
         </h3>
         <p className="text-gray-600 dark:text-gray-300 mb-4 flex items-center">
           <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-          <span className="truncate">{property.location}</span>
+          <span className="truncate">
+            {property.hide_address && property.city ? property.city : property.location}
+          </span>
         </p>
         
         <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 mb-4">

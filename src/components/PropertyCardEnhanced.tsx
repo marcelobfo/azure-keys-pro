@@ -26,6 +26,7 @@ interface FeaturedProperty {
   is_beachfront?: boolean;
   is_near_beach?: boolean;
   is_development?: boolean;
+  hide_address?: boolean;
 }
 
 interface PropertyCardEnhancedProps {

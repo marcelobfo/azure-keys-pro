@@ -7,6 +7,7 @@ import { formatCurrency } from '../utils/priceUtils';
 interface FeaturedProperty {
   title: string;
   location: string;
+  city?: string;
   area: number;
   bedrooms: number;
   bathrooms: number;
@@ -15,6 +16,7 @@ interface FeaturedProperty {
   price: number;
   rental_price?: number;
   purpose?: string;
+  hide_address?: boolean;
 }
 
 interface PropertyCardContentProps {
@@ -56,7 +58,9 @@ const PropertyCardContent: React.FC<PropertyCardContentProps> = ({ property }) =
       
       <p className="text-gray-600 dark:text-gray-300 mb-4 flex items-center">
         <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-        <span className="truncate">{property.location}</span>
+        <span className="truncate">
+          {property.hide_address && property.city ? property.city : property.location}
+        </span>
       </p>
       
       {/* Características com ícones em destaque */}

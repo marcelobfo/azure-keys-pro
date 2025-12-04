@@ -20,6 +20,7 @@ interface FeaturedProperty {
   tags?: string[];
   property_code?: string;
   features?: string[];
+  hide_address?: boolean;
 }
 
 interface SiteSettings {
@@ -155,6 +156,7 @@ export const useHomeData = () => {
             is_beachfront: Boolean(p.is_beachfront),
             is_near_beach: Boolean(p.is_near_beach),
             is_development: Boolean(p.is_development),
+            hide_address: Boolean(p.hide_address),
           };
         });
       };
