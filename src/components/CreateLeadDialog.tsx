@@ -7,10 +7,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useProfile } from '@/hooks/useProfile';
 
 interface Property {
   id: string;
   title: string;
+}
+
+interface Corretor {
+  id: string;
+  full_name: string;
 }
 
 interface CreateLeadDialogProps {
@@ -21,32 +27,52 @@ const CreateLeadDialog: React.FC<CreateLeadDialogProps> = ({ onLeadCreated }) =>
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [corretores, setCorretores] = useState<Corretor[]>([]);
+  const { profile } = useProfile();
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     message: '',
     property_id: '',
-    status: 'new'
+    status: 'new',
+    assigned_to: ''
   });
 
+  const isAdminOrMaster = profile?.role === 'admin' || profile?.role === 'master';
+
   useEffect(() => {
-    const fetchProperties = async () => {
-      const { data } = await supabase
+    const fetchData = async () => {
+      // Buscar propriedades
+      const { data: propertiesData } = await supabase
         .from('properties')
         .select('id, title')
         .eq('status', 'active')
         .order('title');
       
-      if (data) {
-        setProperties(data);
+      if (propertiesData) {
+        setProperties(propertiesData);
+      }
+
+      // Buscar corretores (apenas para admin/master)
+      if (isAdminOrMaster) {
+        const { data: corretoresData } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('role', ['corretor', 'admin'])
+          .order('full_name');
+        
+        if (corretoresData) {
+          setCorretores(corretoresData);
+        }
       }
     };
 
     if (open) {
-      fetchProperties();
+      fetchData();
     }
-  }, [open]);
+  }, [open, isAdminOrMaster]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +87,8 @@ const CreateLeadDialog: React.FC<CreateLeadDialogProps> = ({ onLeadCreated }) =>
           phone: formData.phone.trim() || null,
           message: formData.message.trim() || null,
           property_id: formData.property_id === 'none' || !formData.property_id ? null : formData.property_id,
-          status: formData.status
+          status: formData.status,
+          assigned_to: formData.assigned_to === 'none' || !formData.assigned_to ? null : formData.assigned_to
         });
 
       if (error) throw error;
@@ -72,7 +99,8 @@ const CreateLeadDialog: React.FC<CreateLeadDialogProps> = ({ onLeadCreated }) =>
         phone: '',
         message: '',
         property_id: '',
-        status: 'new'
+        status: 'new',
+        assigned_to: ''
       });
       setOpen(false);
       onLeadCreated();
@@ -148,6 +176,28 @@ const CreateLeadDialog: React.FC<CreateLeadDialogProps> = ({ onLeadCreated }) =>
               </SelectContent>
             </Select>
           </div>
+
+          {isAdminOrMaster && (
+            <div className="space-y-2">
+              <Label htmlFor="assigned_to">Corretor Responsável</Label>
+              <Select
+                value={formData.assigned_to || 'none'}
+                onValueChange={(value) => setFormData({ ...formData, assigned_to: value === 'none' ? '' : value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um corretor (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {corretores.map((corretor) => (
+                    <SelectItem key={corretor.id} value={corretor.id}>
+                      {corretor.full_name || 'Sem nome'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>

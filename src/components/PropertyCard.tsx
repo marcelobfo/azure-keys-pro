@@ -15,6 +15,7 @@ interface Property {
   title: string;
   price: number;
   location: string;
+  city?: string;
   area: number;
   bedrooms: number;
   bathrooms: number;
@@ -26,6 +27,7 @@ interface Property {
   is_development?: boolean;
   is_featured?: boolean;
   accepts_exchange?: boolean;
+  hide_address?: boolean;
 }
 
 interface PropertyCardProps {
@@ -90,7 +92,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
         </h3>
         <p className="text-gray-600 dark:text-gray-300 mb-4 flex items-center">
           <MapPin className="w-4 h-4 mr-1" />
-          {property.location}
+          {property.hide_address && property.city ? property.city : property.location}
         </p>
         
         <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400 mb-4">

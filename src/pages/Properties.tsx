@@ -15,6 +15,7 @@ interface Property {
   price: number;
   rental_price?: number;
   location: string;
+  city?: string;
   area: number;
   bedrooms: number;
   bathrooms: number;
@@ -28,6 +29,7 @@ interface Property {
   is_featured?: boolean;
   accepts_exchange?: boolean;
   property_code?: string;
+  hide_address?: boolean;
 }
 
 const PropertiesPage = () => {
@@ -60,6 +62,7 @@ const PropertiesPage = () => {
         price: property.price,
         rental_price: property.rental_price,
         location: property.location,
+        city: property.city || '',
         area: property.area || 0,
         bedrooms: property.bedrooms || 0,
         bathrooms: property.bathrooms || 0,
@@ -72,7 +75,8 @@ const PropertiesPage = () => {
         is_development: property.is_development || false,
         is_featured: property.is_featured || false,
         accepts_exchange: property.accepts_exchange || false,
-        property_code: property.property_code
+        property_code: property.property_code,
+        hide_address: property.hide_address || false
       })) || [];
 
       setProperties(formattedProperties);
