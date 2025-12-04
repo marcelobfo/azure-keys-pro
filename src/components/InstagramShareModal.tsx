@@ -92,25 +92,6 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
                 </div>
               </div>
 
-              {/* Link do Imóvel */}
-              <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">Link do Imóvel</h3>
-                <div className="bg-white dark:bg-slate-700 p-3 rounded border flex items-center justify-between gap-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-300 truncate flex-1">
-                    {shareData.propertyUrl}
-                  </span>
-                  <Button
-                    onClick={copyPropertyLink}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-1 shrink-0"
-                  >
-                    <Link className="w-4 h-4" />
-                    Copiar
-                  </Button>
-                </div>
-              </div>
-
               {/* Preview da Caption */}
               <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
                 <h3 className="font-semibold mb-3">Texto do Post</h3>
