@@ -12,6 +12,7 @@ import { useLeads, Lead } from '@/hooks/useLeads';
 import Layout from '@/components/Layout';
 import EditLeadDialog from '@/components/EditLeadDialog';
 import LeadsBulkActions from '@/components/LeadsBulkActions';
+import CreateLeadDialog from '@/components/CreateLeadDialog';
 
 const LeadsManagement = () => {
   const { user } = useAuth();
@@ -132,13 +133,16 @@ const LeadsManagement = () => {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Gerenciar Leads
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-2">
-            Gerencie todos os leads e oportunidades
-          </p>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Gerenciar Leads
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-2">
+              Gerencie todos os leads e oportunidades
+            </p>
+          </div>
+          <CreateLeadDialog onLeadCreated={fetchLeads} />
         </div>
 
         <LeadsBulkActions
