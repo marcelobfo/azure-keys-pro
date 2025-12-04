@@ -13,16 +13,20 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import Layout from '@/components/Layout';
+import { useProfile } from '@/hooks/useProfile';
+import DashboardLayout from '@/components/DashboardLayout';
 import ImageUpload from '@/components/ImageUpload';
 
 const CreateProperty = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { profile } = useProfile();
   const [loading, setLoading] = useState(false);
   const [currentTag, setCurrentTag] = useState('');
   const [currentFeature, setCurrentFeature] = useState('');
+  
+  const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
 
   const [formData, setFormData] = useState({
     title: '',
@@ -213,7 +217,7 @@ const CreateProperty = () => {
   };
 
   return (
-    <Layout>
+    <DashboardLayout title="Cadastrar Imóvel" userRole={dashboardRole}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold">Cadastrar Nova Propriedade</h2>
@@ -885,7 +889,7 @@ const CreateProperty = () => {
           </div>
         </form>
       </div>
-    </Layout>
+    </DashboardLayout>
   );
 };
 

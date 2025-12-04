@@ -8,19 +8,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Phone, Mail, Calendar, MessageSquare, Search, Filter, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import { useLeads, Lead } from '@/hooks/useLeads';
-import Layout from '@/components/Layout';
+import DashboardLayout from '@/components/DashboardLayout';
 import EditLeadDialog from '@/components/EditLeadDialog';
 import LeadsBulkActions from '@/components/LeadsBulkActions';
 import CreateLeadDialog from '@/components/CreateLeadDialog';
 
 const LeadsManagement = () => {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const { toast } = useToast();
   const { leads, loading, updateLeadStatus, updateLead, deleteLead, fetchLeads } = useLeads();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+  
+  const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
 
   const handleDeleteLead = async (leadId: string) => {
     if (window.confirm('Tem certeza que deseja excluir este lead?')) {
@@ -122,16 +126,16 @@ const LeadsManagement = () => {
 
   if (loading) {
     return (
-      <Layout>
+      <DashboardLayout title="Gerenciar Leads" userRole={dashboardRole}>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
-      </Layout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <Layout>
+    <DashboardLayout title="Gerenciar Leads" userRole={dashboardRole}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -327,7 +331,7 @@ const LeadsManagement = () => {
           )}
         </div>
       </div>
-    </Layout>
+    </DashboardLayout>
   );
 };
 

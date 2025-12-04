@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import Layout from '@/components/Layout';
+import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import { Navigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, Plus, Trash2 } from 'lucide-react';
@@ -13,6 +14,7 @@ import { usePropertyAlerts } from '@/hooks/usePropertyAlerts';
 
 const Alerts = () => {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const { toast } = useToast();
 
   // Hook de alertas dinâmicos
@@ -22,6 +24,8 @@ const Alerts = () => {
     deleteAlert: deletePropAlert,
     loading: alertsLoading
   } = usePropertyAlerts();
+  
+  const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
 
   const [newAlert, setNewAlert] = useState({
     property_type: '',
@@ -67,7 +71,7 @@ const Alerts = () => {
   };
 
   return (
-    <Layout>
+    <DashboardLayout title="Alertas de Imóveis" userRole={dashboardRole}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -222,7 +226,7 @@ const Alerts = () => {
           </Card>
         </div>
       </div>
-    </Layout>
+    </DashboardLayout>
   );
 };
 
