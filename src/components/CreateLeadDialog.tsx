@@ -83,7 +83,7 @@ const CreateLeadDialog: React.FC<CreateLeadDialogProps> = ({ onLeadCreated }) =>
         .from('leads')
         .insert({
           name: formData.name.trim(),
-          email: formData.email.trim().toLowerCase(),
+          email: formData.email.trim().toLowerCase() || null,
           phone: formData.phone.trim() || null,
           message: formData.message.trim() || null,
           property_id: formData.property_id === 'none' || !formData.property_id ? null : formData.property_id,
@@ -136,14 +136,13 @@ const CreateLeadDialog: React.FC<CreateLeadDialogProps> = ({ onLeadCreated }) =>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email *</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="email@exemplo.com"
-              required
             />
           </div>
 

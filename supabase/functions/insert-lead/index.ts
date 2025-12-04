@@ -24,10 +24,10 @@ serve(async (req) => {
     );
 
     // Validate required fields
-    if (!name || !email) {
-      console.log('Erro: Campos obrigatórios não fornecidos');
+    if (!name) {
+      console.log('Erro: Nome é obrigatório');
       return new Response(
-        JSON.stringify({ error: 'Nome e email são obrigatórios' }),
+        JSON.stringify({ error: 'Nome é obrigatório' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -40,7 +40,7 @@ serve(async (req) => {
       .from('leads')
       .insert({
         name: name.trim(),
-        email: email.trim().toLowerCase(),
+        email: email?.trim().toLowerCase() || null,
         phone: phone?.trim() || null,
         message: message?.trim() || null,
         property_id: property_id || null,
