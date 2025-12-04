@@ -15,6 +15,7 @@ interface Property {
   bathrooms?: number;
   area?: number;
   images?: string[];
+  slug?: string;
 }
 
 interface ShareButtonProps {
