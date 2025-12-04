@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
-import Layout from '@/components/Layout';
+import DashboardLayout from '@/components/DashboardLayout';
 import PropertiesBulkActions from '@/components/PropertiesBulkActions';
 
 interface Property {
@@ -146,13 +146,15 @@ const ManageProperties = () => {
     return badges;
   };
 
+  const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
+
   if (loading) {
     return (
-      <Layout>
+      <DashboardLayout title="Meus Imóveis" userRole={dashboardRole}>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
-      </Layout>
+      </DashboardLayout>
     );
   }
 
@@ -172,7 +174,7 @@ const ManageProperties = () => {
   });
 
   return (
-    <Layout>
+    <DashboardLayout title="Meus Imóveis" userRole={dashboardRole}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -405,7 +407,7 @@ const ManageProperties = () => {
           </Card>
         )}
       </div>
-    </Layout>
+    </DashboardLayout>
   );
 };
 

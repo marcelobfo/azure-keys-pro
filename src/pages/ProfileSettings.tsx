@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import Layout from '@/components/Layout';
+import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,18 +38,20 @@ const ProfileSettings = () => {
     }
   };
 
+  const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
+
   if (loading) {
     return (
-      <Layout>
+      <DashboardLayout title="Configurações do Perfil" userRole={dashboardRole}>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
-      </Layout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <Layout>
+    <DashboardLayout title="Configurações do Perfil" userRole={dashboardRole}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -130,7 +132,7 @@ const ProfileSettings = () => {
           </div>
         </form>
       </div>
-    </Layout>
+    </DashboardLayout>
   );
 };
 

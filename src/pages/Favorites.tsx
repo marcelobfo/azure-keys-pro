@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import Layout from '@/components/Layout';
+import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Heart, MapPin, Bed, Toilet, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,8 +22,11 @@ interface FavoriteProperty {
 
 const Favorites = () => {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const [favoriteProperties, setFavoriteProperties] = useState<FavoriteProperty[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
 
   useEffect(() => {
     if (user) {
@@ -83,16 +87,16 @@ const Favorites = () => {
 
   if (loading) {
     return (
-      <Layout>
+      <DashboardLayout title="Meus Favoritos" userRole={dashboardRole}>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
-      </Layout>
+      </DashboardLayout>
     );
   }
 
   return (
-    <Layout>
+    <DashboardLayout title="Meus Favoritos" userRole={dashboardRole}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
@@ -163,7 +167,7 @@ const Favorites = () => {
           </div>
         )}
       </div>
-    </Layout>
+    </DashboardLayout>
   );
 };
 
