@@ -13,6 +13,7 @@ interface Property {
   bathrooms?: number;
   area?: number;
   images?: string[];
+  slug?: string;
 }
 
 export const useInstagramShare = () => {
@@ -20,6 +21,7 @@ export const useInstagramShare = () => {
   const [shareData, setShareData] = useState<{
     imageUrl: string;
     caption: string;
+    propertyUrl: string;
   } | null>(null);
   const { toast } = useToast();
 
@@ -120,9 +122,13 @@ export const useInstagramShare = () => {
       // Gerar caption otimizada para Instagram
       const caption = generateInstagramCaption(property);
 
+      // Gerar URL do imóvel
+      const propertyUrl = `${window.location.origin}/imovel/${property.slug || property.id}`;
+
       setShareData({
         imageUrl,
-        caption
+        caption,
+        propertyUrl
       });
 
       toast({
@@ -250,10 +256,29 @@ ${details.join('\n')}
     }
   };
 
+  const copyPropertyLink = async () => {
+    if (!shareData) return;
+
+    try {
+      await navigator.clipboard.writeText(shareData.propertyUrl);
+      toast({
+        title: "Link copiado!",
+        description: "Link do imóvel copiado para a área de transferência",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível copiar o link",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     generateShareContent,
     downloadImage,
     copyCaption,
+    copyPropertyLink,
     shareViaWebAPI,
     shareData,
     isGenerating,

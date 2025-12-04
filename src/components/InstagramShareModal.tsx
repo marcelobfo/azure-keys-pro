@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Download, Copy, Share2 } from 'lucide-react';
+import { Download, Copy, Share2, Link } from 'lucide-react';
 import { useInstagramShare } from '@/hooks/useInstagramShare';
 
 interface Property {
@@ -22,6 +22,7 @@ interface Property {
   bathrooms?: number;
   area?: number;
   images?: string[];
+  slug?: string;
 }
 
 interface InstagramShareModalProps {
@@ -39,6 +40,7 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
     generateShareContent, 
     downloadImage, 
     copyCaption, 
+    copyPropertyLink,
     shareViaWebAPI,
     shareData, 
     isGenerating,
@@ -79,7 +81,7 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
           ) : shareData ? (
             <>
               {/* Preview da Imagem */}
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
                 <h3 className="font-semibold mb-3">Imagem para Instagram</h3>
                 <div className="aspect-square max-w-sm mx-auto">
                   <img
@@ -90,18 +92,46 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
                 </div>
               </div>
 
+              {/* Link do Imóvel */}
+              <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
+                <h3 className="font-semibold mb-3">Link do Imóvel</h3>
+                <div className="bg-white dark:bg-slate-700 p-3 rounded border flex items-center justify-between gap-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-300 truncate flex-1">
+                    {shareData.propertyUrl}
+                  </span>
+                  <Button
+                    onClick={copyPropertyLink}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1 shrink-0"
+                  >
+                    <Link className="w-4 h-4" />
+                    Copiar
+                  </Button>
+                </div>
+              </div>
+
               {/* Preview da Caption */}
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
                 <h3 className="font-semibold mb-3">Texto do Post</h3>
-                <div className="bg-white p-4 rounded border max-h-60 overflow-y-auto">
-                  <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans">
+                <div className="bg-white dark:bg-slate-700 p-4 rounded border max-h-60 overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300 font-sans">
                     {shareData.caption}
                   </pre>
                 </div>
               </div>
 
               {/* Botões de Ação */}
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+                <Button
+                  onClick={copyPropertyLink}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Link className="w-4 h-4" />
+                  Copiar Link
+                </Button>
+
                 <Button
                   onClick={() => shareViaWebAPI()}
                   className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
@@ -129,7 +159,7 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
                 </Button>
               </div>
 
-              <div className="text-sm text-gray-500 bg-blue-50 p-3 rounded">
+              <div className="text-sm text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
                 💡 <strong>Dica:</strong> Baixe a imagem e copie o texto, depois cole no Instagram para um post perfeito!
               </div>
             </>
