@@ -24,10 +24,6 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  console.log('[AuthProvider] mount. React version:', React.version);
-  console.log('[AuthProvider] React.useState:', React.useState);
-  console.log('[AuthProvider] React.useEffect:', React.useEffect);
-
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
