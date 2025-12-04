@@ -1,16 +1,14 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 const SEOUpdater = () => {
   const { settings, loading } = useSiteSettings();
-  const location = useLocation();
 
   useEffect(() => {
     if (loading) return;
 
     // Não sobrescrever SEO em páginas específicas que têm seu próprio SEO
-    const isSpecificPage = location.pathname.startsWith('/imovel/');
+    const isSpecificPage = window.location.pathname.startsWith('/imovel/');
     
     if (!isSpecificPage) {
       // Atualizar título da página
@@ -92,7 +90,7 @@ const SEOUpdater = () => {
         }
       }
     }
-  }, [settings, loading, location.pathname]);
+  }, [settings, loading]);
 
   return null;
 };
