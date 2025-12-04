@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/share/:slug",
+      "destination": "https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/og-meta?slug=:slug"
+    },
+    {
+      "source": "/((?!api|share).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
