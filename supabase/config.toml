@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.whatsapp-notification]
 verify_jwt = false
+
+[functions.og-meta]
+verify_jwt = false
