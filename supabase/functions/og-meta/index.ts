@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       : `${property.property_type} em ${property.location}, ${property.city}. ${specs.join(', ')}. ${formattedPrice}`
 
     // URL do imóvel (redireciona para a SPA)
-    const spaUrl = `https://maresia-litoral.lovable.app/imovel/${slug}`
+    const spaUrl = `https://maresialitoral.com.br/imovel/${slug}`
     
     // Imagem (usar primeira imagem do imóvel ou logo do site)
     const ogImage = property.images && property.images.length > 0 
