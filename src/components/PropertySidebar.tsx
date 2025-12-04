@@ -23,6 +23,8 @@ interface Property {
   area?: number;
   images?: string[];
   property_code?: string;
+  slug?: string;
+  hide_address?: boolean;
 }
 
 interface PropertySidebarProps {
