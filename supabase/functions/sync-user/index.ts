@@ -23,9 +23,19 @@ serve(async (req) => {
       }
     );
 
-    const { email, password, full_name, role, phone, force_sync } = await req.json();
+    const { email, password, full_name, role, phone, force_sync, tenant_id, app_role } = await req.json();
 
-    console.log('Sync user request:', { email, full_name, role, force_sync });
+    console.log('Sync user request:', { email, full_name, role, force_sync, tenant_id, app_role });
+
+    // Validate app_role if provided - never allow super_admin via API
+    const validAppRoles = ['user', 'corretor', 'admin'];
+    if (app_role && !validAppRoles.includes(app_role)) {
+      console.error('Invalid app_role:', app_role);
+      return new Response(
+        JSON.stringify({ error: 'Role inválida', success: false }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
 
     // Check if user exists in auth.users
     const { data: listData, error: listError } = await supabaseClient.auth.admin.listUsers();
@@ -60,16 +70,22 @@ serve(async (req) => {
         console.log('Password updated successfully');
       }
 
-      // Upsert profile
+      // Upsert profile with tenant_id if provided
+      const profileData: any = {
+        id: existingUser.id,
+        email,
+        full_name,
+        role,
+        phone: phone || null
+      };
+      
+      if (tenant_id) {
+        profileData.tenant_id = tenant_id;
+      }
+
       const { error: profileError } = await supabaseClient
         .from('profiles')
-        .upsert({
-          id: existingUser.id,
-          email,
-          full_name,
-          role,
-          phone: phone || null
-        }, { onConflict: 'id' });
+        .upsert(profileData, { onConflict: 'id' });
 
       if (profileError) {
         console.error('Error upserting profile:', profileError);
@@ -77,6 +93,50 @@ serve(async (req) => {
           JSON.stringify({ error: 'Erro ao atualizar perfil', success: false }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
+      }
+
+      // Create/update user_roles if tenant_id and app_role are provided
+      if (tenant_id && app_role) {
+        // First check if a role already exists for this user in this tenant
+        const { data: existingRole, error: roleCheckError } = await supabaseClient
+          .from('user_roles')
+          .select('id')
+          .eq('user_id', existingUser.id)
+          .eq('tenant_id', tenant_id)
+          .single();
+
+        if (roleCheckError && roleCheckError.code !== 'PGRST116') {
+          console.error('Error checking existing role:', roleCheckError);
+        }
+
+        if (existingRole) {
+          // Update existing role
+          const { error: roleUpdateError } = await supabaseClient
+            .from('user_roles')
+            .update({ role: app_role })
+            .eq('id', existingRole.id);
+
+          if (roleUpdateError) {
+            console.error('Error updating user role:', roleUpdateError);
+          } else {
+            console.log('User role updated successfully');
+          }
+        } else {
+          // Create new role
+          const { error: roleInsertError } = await supabaseClient
+            .from('user_roles')
+            .insert({
+              user_id: existingUser.id,
+              role: app_role,
+              tenant_id: tenant_id
+            });
+
+          if (roleInsertError) {
+            console.error('Error creating user role:', roleInsertError);
+          } else {
+            console.log('User role created successfully');
+          }
+        }
       }
 
       console.log('Profile upserted successfully');
@@ -110,19 +170,42 @@ serve(async (req) => {
       );
     }
 
-    // Create profile
+    // Create profile with tenant_id if provided
+    const newProfileData: any = {
+      id: newUser.user.id,
+      email,
+      full_name,
+      role,
+      phone: phone || null
+    };
+    
+    if (tenant_id) {
+      newProfileData.tenant_id = tenant_id;
+    }
+
     const { error: profileError } = await supabaseClient
       .from('profiles')
-      .upsert({
-        id: newUser.user.id,
-        email,
-        full_name,
-        role,
-        phone: phone || null
-      });
+      .upsert(newProfileData);
 
     if (profileError) {
       console.error('Error creating profile:', profileError);
+    }
+
+    // Create user_roles if tenant_id and app_role are provided
+    if (tenant_id && app_role) {
+      const { error: roleError } = await supabaseClient
+        .from('user_roles')
+        .insert({
+          user_id: newUser.user.id,
+          role: app_role,
+          tenant_id: tenant_id
+        });
+
+      if (roleError) {
+        console.error('Error creating user role:', roleError);
+      } else {
+        console.log('User role created successfully for new user');
+      }
     }
 
     return new Response(

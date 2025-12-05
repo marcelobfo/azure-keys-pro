@@ -16,8 +16,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { 
   Building2, Plus, Edit, Trash2, Users, Settings, 
-  MessageSquare, Store, DollarSign, Phone, Loader2 
+  MessageSquare, Store, DollarSign, Phone, Loader2, UserMinus 
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import AddTenantUserDialog from '@/components/AddTenantUserDialog';
 
 interface Tenant {
   id: string;
@@ -307,6 +315,54 @@ const AdminTenants: React.FC = () => {
     setIsUsersOpen(true);
   };
 
+  const handleRemoveUserFromTenant = async (userRoleId: string, userName: string) => {
+    if (!confirm(`Tem certeza que deseja remover ${userName} deste tenant?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('id', userRoleId);
+
+      if (error) throw error;
+
+      toast({ title: 'Usuário removido do tenant!' });
+      if (selectedTenant) {
+        fetchTenantUsers(selectedTenant.id);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao remover usuário',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleChangeUserRole = async (userRoleId: string, newRole: 'user' | 'corretor' | 'admin') => {
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: newRole })
+        .eq('id', userRoleId);
+
+      if (error) throw error;
+
+      toast({ title: 'Função atualizada!' });
+      if (selectedTenant) {
+        fetchTenantUsers(selectedTenant.id);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao atualizar função',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (rolesLoading || loading) {
     return (
       <DashboardLayout title="Administração de Tenants" userRole="admin">
@@ -544,17 +600,27 @@ const AdminTenants: React.FC = () => {
 
         {/* Users Dialog */}
         <Dialog open={isUsersOpen} onOpenChange={setIsUsersOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>Usuários - {selectedTenant?.name}</DialogTitle>
             </DialogHeader>
             <div className="py-4">
+              <div className="flex justify-end mb-4">
+                {selectedTenant && (
+                  <AddTenantUserDialog
+                    tenantId={selectedTenant.id}
+                    tenantName={selectedTenant.name}
+                    onUserAdded={() => fetchTenantUsers(selectedTenant.id)}
+                  />
+                )}
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
+                    <TableHead>Função</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -563,15 +629,39 @@ const AdminTenants: React.FC = () => {
                       <TableCell>{userRole.profiles?.full_name || '-'}</TableCell>
                       <TableCell>{userRole.profiles?.email || '-'}</TableCell>
                       <TableCell>
-                        <Badge variant={userRole.role === 'admin' ? 'destructive' : 'secondary'}>
-                          {userRole.role}
-                        </Badge>
+                        <Select
+                          value={userRole.role}
+                          onValueChange={(value) => handleChangeUserRole(userRole.id, value as 'user' | 'corretor' | 'admin')}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">Usuário</SelectItem>
+                            <SelectItem value="corretor">Corretor</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveUserFromTenant(
+                            userRole.id,
+                            userRole.profiles?.full_name || 'este usuário'
+                          )}
+                          title="Remover do tenant"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <UserMinus className="w-4 h-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
                   {tenantUsers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                         Nenhum usuário neste tenant
                       </TableCell>
                     </TableRow>
