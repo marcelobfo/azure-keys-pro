@@ -15,7 +15,11 @@ import { useRoles } from '@/hooks/useRoles';
 import { useTenantFeatures } from '@/hooks/useTenantFeatures';
 import { useNotifications } from '@/hooks/useNotifications';
 import NotificationDropdown from './NotificationDropdown';
+import TenantSelector from './TenantSelector';
+import { useTenant } from '@/hooks/useTenant';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -31,6 +35,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   const { isSuperAdmin, isAdmin, isCorretor } = useRoles();
   const { hasFeature } = useTenantFeatures();
   const { unreadCount } = useNotifications();
+  const { selectedTenant, isGlobalView } = useTenant();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -255,6 +260,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
             </div>
 
             <div className="flex items-center space-x-4">
+              {/* Tenant Selector for Super Admin */}
+              <TenantSelector />
+
               {/* Home Button */}
               <Button
                 variant="outline"
@@ -313,6 +321,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
         {/* Page Content */}
         <main className="flex-1 p-6 bg-gray-50 dark:bg-slate-900 overflow-auto">
           <div className="max-w-7xl mx-auto">
+            {/* Tenant Context Indicator */}
+            {isSuperAdmin && (selectedTenant || isGlobalView) && (
+              <Alert className="mb-4 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <AlertDescription className="text-amber-800 dark:text-amber-200">
+                  {isGlobalView ? (
+                    <>Visualizando: <strong>Todos os Tenants</strong> (visão global)</>
+                  ) : (
+                    <>Visualizando como: <strong>{selectedTenant?.name}</strong></>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
             {children}
           </div>
         </main>

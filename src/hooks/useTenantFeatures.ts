@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
+import { useRoles } from '@/hooks/useRoles';
+import { useTenantContext } from '@/contexts/TenantContext';
 
 export interface TenantFeatures {
   id: string;
@@ -19,17 +21,29 @@ export interface TenantFeatures {
 
 export const useTenantFeatures = () => {
   const { profile } = useProfile();
+  const { isSuperAdmin } = useRoles();
+  const { selectedTenantId, isGlobalView } = useTenantContext();
   const [features, setFeatures] = useState<TenantFeatures | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Determine which tenant ID to use
+  const effectiveTenantId = isSuperAdmin ? selectedTenantId : profile?.tenant_id;
+
   useEffect(() => {
-    if (profile?.tenant_id) {
-      fetchTenantFeatures(profile.tenant_id);
+    // Super admin in global view - return all features enabled
+    if (isSuperAdmin && isGlobalView) {
+      setFeatures(null);
+      setLoading(false);
+      return;
+    }
+
+    if (effectiveTenantId) {
+      fetchTenantFeatures(effectiveTenantId);
     } else {
       setFeatures(null);
       setLoading(false);
     }
-  }, [profile?.tenant_id]);
+  }, [effectiveTenantId, isSuperAdmin, isGlobalView]);
 
   const fetchTenantFeatures = async (tenantId: string) => {
     try {
@@ -67,11 +81,15 @@ export const useTenantFeatures = () => {
   };
 
   const hasFeature = (feature: keyof Omit<TenantFeatures, 'id' | 'tenant_id' | 'created_at' | 'updated_at' | 'max_users' | 'max_properties'>): boolean => {
+    // Super admin in global view has all features enabled
+    if (isSuperAdmin && isGlobalView) return true;
     if (!features) return true; // Default to enabled if no features set
     return features[feature] ?? true;
   };
 
   const getLimit = (limit: 'max_users' | 'max_properties'): number => {
+    // Super admin in global view has no limits
+    if (isSuperAdmin && isGlobalView) return Infinity;
     if (!features) return 100; // Default limit
     return features[limit] ?? 100;
   };
@@ -81,6 +99,8 @@ export const useTenantFeatures = () => {
     loading,
     hasFeature,
     getLimit,
-    refetch: () => profile?.tenant_id && fetchTenantFeatures(profile.tenant_id),
+    effectiveTenantId,
+    isGlobalView: isSuperAdmin && isGlobalView,
+    refetch: () => effectiveTenantId && fetchTenantFeatures(effectiveTenantId),
   };
 };
