@@ -23,3 +23,15 @@ verify_jwt = false
 
 [functions.og-meta]
 verify_jwt = false
+
+[functions.olx-oauth-start]
+verify_jwt = false
+
+[functions.olx-oauth-callback]
+verify_jwt = false
+
+[functions.olx-publish-property]
+verify_jwt = false
+
+[functions.olx-delete-property]
+verify_jwt = false

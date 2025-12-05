@@ -667,6 +667,72 @@ export type Database = {
         }
         Relationships: []
       }
+      olx_integration: {
+        Row: {
+          access_token: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          scope: string | null
+          token_type: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      olx_settings: {
+        Row: {
+          auto_publish: boolean | null
+          client_id: string
+          client_secret: string
+          created_at: string | null
+          default_phone: string | null
+          id: number
+          redirect_uri: string
+          updated_at: string | null
+        }
+        Insert: {
+          auto_publish?: boolean | null
+          client_id: string
+          client_secret: string
+          created_at?: string | null
+          default_phone?: string | null
+          id?: number
+          redirect_uri: string
+          updated_at?: string | null
+        }
+        Update: {
+          auto_publish?: boolean | null
+          client_id?: string
+          client_secret?: string
+          created_at?: string | null
+          default_phone?: string | null
+          id?: number
+          redirect_uri?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -729,6 +795,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           features: string[] | null
+          garage_spaces: number | null
           hide_address: boolean | null
           id: string
           images: string[] | null
@@ -742,6 +809,10 @@ export type Database = {
           location: string
           longitude: number | null
           negotiation_notes: string | null
+          olx_ad_id: string | null
+          olx_error_message: string | null
+          olx_last_sync: string | null
+          olx_status: string | null
           price: number
           property_code: string | null
           property_type: string
@@ -760,6 +831,7 @@ export type Database = {
           video_url: string | null
           view_count: number | null
           virtual_tour_url: string | null
+          zipcode: string | null
         }
         Insert: {
           accepts_exchange?: boolean | null
@@ -774,6 +846,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           features?: string[] | null
+          garage_spaces?: number | null
           hide_address?: boolean | null
           id?: string
           images?: string[] | null
@@ -787,6 +860,10 @@ export type Database = {
           location: string
           longitude?: number | null
           negotiation_notes?: string | null
+          olx_ad_id?: string | null
+          olx_error_message?: string | null
+          olx_last_sync?: string | null
+          olx_status?: string | null
           price: number
           property_code?: string | null
           property_type: string
@@ -805,6 +882,7 @@ export type Database = {
           video_url?: string | null
           view_count?: number | null
           virtual_tour_url?: string | null
+          zipcode?: string | null
         }
         Update: {
           accepts_exchange?: boolean | null
@@ -819,6 +897,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           features?: string[] | null
+          garage_spaces?: number | null
           hide_address?: boolean | null
           id?: string
           images?: string[] | null
@@ -832,6 +911,10 @@ export type Database = {
           location?: string
           longitude?: number | null
           negotiation_notes?: string | null
+          olx_ad_id?: string | null
+          olx_error_message?: string | null
+          olx_last_sync?: string | null
+          olx_status?: string | null
           price?: number
           property_code?: string | null
           property_type?: string
@@ -850,6 +933,7 @@ export type Database = {
           video_url?: string | null
           view_count?: number | null
           virtual_tour_url?: string | null
+          zipcode?: string | null
         }
         Relationships: []
       }
