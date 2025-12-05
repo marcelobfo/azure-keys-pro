@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Home, User, Settings, LogOut, Bell, Moon, Sun, 
   Menu, X, Heart, MessageSquare, Calendar,
-  BarChart3, Users, Building, FileText, ChevronLeft, ChevronRight, DollarSign
+  BarChart3, Users, Building, FileText, ChevronLeft, ChevronRight, DollarSign, Store
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -78,6 +78,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
         { icon: DollarSign, label: 'Comissões', href: '/commissions' },
         { icon: FileText, label: 'Protocolos', href: '/admin/protocols' },
         { icon: BarChart3, label: 'Analytics', href: '/analytics' },
+        { icon: Store, label: 'Integração OLX', href: '/admin/olx-settings' },
         { icon: Settings, label: 'Configurações', href: '/admin/site-settings' }
       );
     }

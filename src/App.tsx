@@ -38,6 +38,8 @@ import Atendimento from '@/pages/Atendimento';
 import AttendantChat from '@/pages/AttendantChat';
 import AdminProtocols from '@/pages/AdminProtocols';
 import CommissionsPanel from '@/pages/CommissionsPanel';
+import AdminOLXSettings from '@/pages/AdminOLXSettings';
+import OLXCallback from '@/pages/OLXCallback';
 import SEOUpdater from '@/components/SEOUpdater';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
 import { useEffect } from 'react';
@@ -117,6 +119,8 @@ function App() {
                 <Route path="/admin/protocols" element={<AdminProtocols />} />
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/commissions" element={<CommissionsPanel />} />
+                <Route path="/admin/olx-settings" element={<AdminOLXSettings />} />
+                <Route path="/olx-callback" element={<OLXCallback />} />
 
                 {/* Corretor Routes */}
                 <Route path="/corretor/*" element={<CorretorDashboard />} />
