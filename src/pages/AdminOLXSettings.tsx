@@ -20,6 +20,7 @@ interface OLXSettings {
   redirect_uri: string;
   default_phone: string;
   auto_publish: boolean;
+  tenant_id?: string;
 }
 
 interface OLXIntegration {
@@ -27,6 +28,7 @@ interface OLXIntegration {
   access_token: string;
   is_active: boolean;
   updated_at: string;
+  tenant_id?: string;
 }
 
 const AdminOLXSettings = () => {
@@ -34,6 +36,9 @@ const AdminOLXSettings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
+  
+  // Get tenant_id from profile
+  const tenantId = profile?.tenant_id;
 
   const [settings, setSettings] = useState<OLXSettings>({
     client_id: '',
@@ -48,17 +53,22 @@ const AdminOLXSettings = () => {
   const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
-    fetchSettings();
-    fetchIntegration();
-  }, [user]);
+    if (user) {
+      fetchSettings();
+      fetchIntegration();
+    }
+  }, [user, tenantId]);
 
   const fetchSettings = async () => {
     try {
-      const { data, error } = await supabase
-        .from('olx_settings')
-        .select('*')
-        .limit(1)
-        .maybeSingle();
+      let query = supabase.from('olx_settings').select('*');
+      
+      // Filter by tenant_id if available
+      if (tenantId) {
+        query = query.eq('tenant_id', tenantId);
+      }
+      
+      const { data, error } = await query.limit(1).maybeSingle();
 
       if (data) {
         setSettings({
@@ -68,6 +78,7 @@ const AdminOLXSettings = () => {
           redirect_uri: data.redirect_uri || window.location.origin + '/olx-callback',
           default_phone: data.default_phone || '',
           auto_publish: data.auto_publish || false,
+          tenant_id: data.tenant_id,
         });
       }
     } catch (error) {
@@ -81,12 +92,18 @@ const AdminOLXSettings = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('olx_integration')
         .select('*')
         .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
+        .eq('is_active', true);
+      
+      // Also filter by tenant if available
+      if (tenantId) {
+        query = query.eq('tenant_id', tenantId);
+      }
+      
+      const { data, error } = await query.maybeSingle();
 
       if (data) {
         setIntegration(data);
@@ -108,29 +125,26 @@ const AdminOLXSettings = () => {
 
     setSaving(true);
     try {
+      const settingsData = {
+        client_id: settings.client_id,
+        client_secret: settings.client_secret,
+        redirect_uri: settings.redirect_uri,
+        default_phone: settings.default_phone,
+        auto_publish: settings.auto_publish,
+        tenant_id: tenantId || null,
+      };
+
       if (settings.id) {
         const { error } = await supabase
           .from('olx_settings')
-          .update({
-            client_id: settings.client_id,
-            client_secret: settings.client_secret,
-            redirect_uri: settings.redirect_uri,
-            default_phone: settings.default_phone,
-            auto_publish: settings.auto_publish,
-          })
+          .update(settingsData)
           .eq('id', settings.id);
 
         if (error) throw error;
       } else {
         const { data, error } = await supabase
           .from('olx_settings')
-          .insert({
-            client_id: settings.client_id,
-            client_secret: settings.client_secret,
-            redirect_uri: settings.redirect_uri,
-            default_phone: settings.default_phone,
-            auto_publish: settings.auto_publish,
-          })
+          .insert(settingsData)
           .select()
           .single();
 
@@ -166,7 +180,10 @@ const AdminOLXSettings = () => {
 
     setConnecting(true);
     try {
-      const { data, error } = await supabase.functions.invoke('olx-oauth-start');
+      // Pass tenant_id to the OAuth start function
+      const { data, error } = await supabase.functions.invoke('olx-oauth-start', {
+        body: { tenant_id: tenantId }
+      });
 
       if (error) throw error;
 
@@ -314,7 +331,8 @@ const AdminOLXSettings = () => {
                 placeholder="https://seusite.com/olx-callback"
               />
               <p className="text-xs text-muted-foreground">
-                Esta URL deve estar cadastrada na OLX como URI de redirecionamento
+                Esta URL deve estar cadastrada na OLX como URI de redirecionamento.
+                Para multi-tenant, use a URL centralizada do Supabase.
               </p>
             </div>
 
@@ -371,6 +389,10 @@ const AdminOLXSettings = () => {
             </ol>
             <div className="bg-muted p-3 rounded-md">
               <strong>Importante:</strong> A OLX exige um plano profissional para empresas para usar a API de integração de anúncios.
+            </div>
+            <div className="bg-muted p-3 rounded-md">
+              <strong>Multi-tenant:</strong> Cada imobiliária pode configurar suas próprias credenciais OLX. 
+              As configurações são isoladas por tenant.
             </div>
           </CardContent>
         </Card>

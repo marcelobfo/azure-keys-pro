@@ -26,19 +26,31 @@ const OLXCallback = () => {
     }
 
     if (code && user) {
-      processCallback(code);
+      // Extract tenant_id from state if present
+      let tenantId = null;
+      if (state) {
+        try {
+          const stateData = JSON.parse(atob(state));
+          tenantId = stateData.tenant_id;
+          console.log('Decoded state:', stateData);
+        } catch (e) {
+          console.error('Error decoding state:', e);
+        }
+      }
+      processCallback(code, tenantId);
     } else if (!user) {
       setStatus('error');
       setMessage('Você precisa estar logado para completar a integração');
     }
   }, [searchParams, user]);
 
-  const processCallback = async (code: string) => {
+  const processCallback = async (code: string, tenantId: string | null) => {
     try {
       const { data, error } = await supabase.functions.invoke('olx-oauth-callback', {
         body: {
           code,
           user_id: user?.id,
+          tenant_id: tenantId,
         },
       });
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -31,8 +32,12 @@ const OLXPublishButton = ({
   onStatusChange 
 }: OLXPublishButtonProps) => {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const [publishing, setPublishing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  // Get tenant_id from profile
+  const tenantId = profile?.tenant_id;
 
   const handlePublish = async () => {
     if (!user) {
@@ -50,7 +55,8 @@ const OLXPublishButton = ({
         body: {
           property_id: propertyId,
           user_id: user.id,
-          operation: olxStatus === 'published' ? 'insert' : 'insert', // insert também serve para edição
+          tenant_id: tenantId,
+          operation: olxStatus === 'published' ? 'insert' : 'insert',
         },
       });
 
@@ -91,6 +97,7 @@ const OLXPublishButton = ({
         body: {
           property_id: propertyId,
           user_id: user.id,
+          tenant_id: tenantId,
         },
       });
 

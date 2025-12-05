@@ -12,16 +12,20 @@ serve(async (req) => {
   }
 
   try {
+    const { tenant_id } = await req.json();
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Buscar configurações da OLX
-    const { data: settings, error: settingsError } = await supabase
-      .from('olx_settings')
-      .select('*')
-      .limit(1)
-      .single();
+    // Buscar configurações da OLX para o tenant específico
+    let query = supabase.from('olx_settings').select('*');
+    
+    if (tenant_id) {
+      query = query.eq('tenant_id', tenant_id);
+    }
+    
+    const { data: settings, error: settingsError } = await query.limit(1).single();
 
     if (settingsError || !settings) {
       console.error('OLX settings not found:', settingsError);
@@ -33,7 +37,13 @@ serve(async (req) => {
 
     const { client_id, redirect_uri } = settings;
     const scope = 'autoupload basic_user_info';
-    const state = crypto.randomUUID();
+    
+    // Criar state com tenant_id para identificação no callback
+    const stateData = {
+      tenant_id: tenant_id || null,
+      nonce: crypto.randomUUID()
+    };
+    const state = btoa(JSON.stringify(stateData));
 
     // Construir URL de autorização
     const authUrl = new URL('https://auth.olx.com.br/oauth');
@@ -43,7 +53,8 @@ serve(async (req) => {
     authUrl.searchParams.set('redirect_uri', redirect_uri);
     authUrl.searchParams.set('state', state);
 
-    console.log('Generated OAuth URL:', authUrl.toString());
+    console.log('Generated OAuth URL for tenant:', tenant_id);
+    console.log('State:', state);
 
     return new Response(
       JSON.stringify({ 
