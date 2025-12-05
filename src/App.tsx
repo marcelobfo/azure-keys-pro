@@ -23,6 +23,7 @@ import NotFound from '@/pages/NotFound';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { TenantProvider } from '@/contexts/TenantContext';
 import { Toaster } from '@/components/ui/toaster';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ScheduleVisit from '@/pages/ScheduleVisit';
@@ -75,11 +76,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <LanguageProvider>
-          <ThemeProvider>
-            <SEOUpdater />
-            <AnalyticsTracker />
-            <Router>
+        <TenantProvider>
+          <LanguageProvider>
+            <ThemeProvider>
+              <SEOUpdater />
+              <AnalyticsTracker />
+              <Router>
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Index />} />
@@ -142,10 +144,11 @@ function App() {
                 {/* 404 Route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </Router>
-            <Toaster />
-          </ThemeProvider>
-        </LanguageProvider>
+              </Router>
+              <Toaster />
+            </ThemeProvider>
+          </LanguageProvider>
+        </TenantProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
