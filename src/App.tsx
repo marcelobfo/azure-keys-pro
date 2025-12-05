@@ -40,6 +40,7 @@ import AdminProtocols from '@/pages/AdminProtocols';
 import CommissionsPanel from '@/pages/CommissionsPanel';
 import AdminOLXSettings from '@/pages/AdminOLXSettings';
 import OLXCallback from '@/pages/OLXCallback';
+import AdminTenants from '@/pages/AdminTenants';
 import SEOUpdater from '@/components/SEOUpdater';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
 import { useEffect } from 'react';
@@ -120,6 +121,7 @@ function App() {
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/commissions" element={<CommissionsPanel />} />
                 <Route path="/admin/olx-settings" element={<AdminOLXSettings />} />
+                <Route path="/admin/tenants" element={<AdminTenants />} />
                 <Route path="/olx-callback" element={<OLXCallback />} />
 
                 {/* Corretor Routes */}

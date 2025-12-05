@@ -1132,6 +1132,59 @@ export type Database = {
           },
         ]
       }
+      tenant_features: {
+        Row: {
+          chat_enabled: boolean | null
+          commissions_enabled: boolean | null
+          created_at: string | null
+          evolution_enabled: boolean | null
+          id: string
+          leads_enabled: boolean | null
+          max_properties: number | null
+          max_users: number | null
+          olx_enabled: boolean | null
+          tenant_id: string
+          updated_at: string | null
+          whatsapp_enabled: boolean | null
+        }
+        Insert: {
+          chat_enabled?: boolean | null
+          commissions_enabled?: boolean | null
+          created_at?: string | null
+          evolution_enabled?: boolean | null
+          id?: string
+          leads_enabled?: boolean | null
+          max_properties?: number | null
+          max_users?: number | null
+          olx_enabled?: boolean | null
+          tenant_id: string
+          updated_at?: string | null
+          whatsapp_enabled?: boolean | null
+        }
+        Update: {
+          chat_enabled?: boolean | null
+          commissions_enabled?: boolean | null
+          created_at?: string | null
+          evolution_enabled?: boolean | null
+          id?: string
+          leads_enabled?: boolean | null
+          max_properties?: number | null
+          max_users?: number | null
+          olx_enabled?: boolean | null
+          tenant_id?: string
+          updated_at?: string | null
+          whatsapp_enabled?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_features_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string | null
@@ -1161,6 +1214,38 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          tenant_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       visits: {
         Row: {
@@ -1340,12 +1425,28 @@ export type Database = {
       get_site_context_for_ai: { Args: never; Returns: Json }
       get_user_email: { Args: { user_id: string }; Returns: string }
       get_user_tenant_id: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role_in_tenant: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _tenant_id: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
       hash_token: { Args: { token: string }; Returns: string }
       increment_property_views: {
         Args: { property_id: string }
         Returns: undefined
       }
       is_business_hours: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
       search_properties_for_ai: {
         Args: {
           city_filter?: string
@@ -1361,6 +1462,7 @@ export type Database = {
       verify_token: { Args: { hash: string; token: string }; Returns: boolean }
     }
     Enums: {
+      app_role: "user" | "corretor" | "admin" | "super_admin"
       user_role: "user" | "corretor" | "admin" | "master"
     }
     CompositeTypes: {
@@ -1489,6 +1591,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["user", "corretor", "admin", "super_admin"],
       user_role: ["user", "corretor", "admin", "master"],
     },
   },

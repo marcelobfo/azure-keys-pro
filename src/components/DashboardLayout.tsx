@@ -5,12 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Home, User, Settings, LogOut, Bell, Moon, Sun, 
   Menu, X, Heart, MessageSquare, Calendar,
-  BarChart3, Users, Building, FileText, ChevronLeft, ChevronRight, DollarSign, Store
+  BarChart3, Users, Building, Building2, FileText, ChevronLeft, ChevronRight, DollarSign, Store, Shield
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
+import { useRoles } from '@/hooks/useRoles';
+import { useTenantFeatures } from '@/hooks/useTenantFeatures';
 import { useNotifications } from '@/hooks/useNotifications';
 import NotificationDropdown from './NotificationDropdown';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -26,6 +28,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   const { language, setLanguage } = useLanguage();
   const { signOut } = useAuth();
   const { profile } = useProfile();
+  const { isSuperAdmin, isAdmin, isCorretor } = useRoles();
+  const { hasFeature } = useTenantFeatures();
   const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -41,17 +45,21 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   };
 
   const getRoleLabel = (role: string) => {
+    if (isSuperAdmin) return 'Super Admin';
     switch (role) {
       case 'admin': return 'Admin';
       case 'corretor': return 'Corretor';
+      case 'master': return 'Super Admin';
       default: return 'Usuário';
     }
   };
 
   const getRoleBadgeVariant = (role: string) => {
+    if (isSuperAdmin) return 'default' as const;
     switch (role) {
       case 'admin': return 'destructive' as const;
       case 'corretor': return 'default' as const;
+      case 'master': return 'default' as const;
       default: return 'secondary' as const;
     }
   };
@@ -64,23 +72,48 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
       { icon: User, label: 'Perfil', href: '/profile' },
     ];
 
-    if (userRole === 'corretor' || userRole === 'admin') {
+    // Items for corretor and admin
+    if (isCorretor || userRole === 'corretor' || userRole === 'admin') {
       baseItems.splice(1, 0, 
         { icon: Building, label: 'Meus Imóveis', href: '/manage-properties' },
-        { icon: MessageSquare, label: 'Leads', href: '/leads-management' },
-        { icon: Calendar, label: 'Visitas', href: '/visits-management' }
       );
+      
+      if (hasFeature('leads_enabled')) {
+        baseItems.splice(2, 0, { icon: MessageSquare, label: 'Leads', href: '/leads-management' });
+      }
+      
+      baseItems.splice(3, 0, { icon: Calendar, label: 'Visitas', href: '/visits-management' });
     }
 
-    if (userRole === 'admin' || userRole === 'master') {
+    // Items for admin
+    if (isAdmin || userRole === 'admin' || userRole === 'master') {
       baseItems.splice(-1, 0,
         { icon: Users, label: 'Usuários', href: '/admin/users' },
-        { icon: DollarSign, label: 'Comissões', href: '/commissions' },
+      );
+
+      if (hasFeature('commissions_enabled')) {
+        baseItems.splice(-1, 0, { icon: DollarSign, label: 'Comissões', href: '/commissions' });
+      }
+
+      baseItems.splice(-1, 0,
         { icon: FileText, label: 'Protocolos', href: '/admin/protocols' },
         { icon: BarChart3, label: 'Analytics', href: '/analytics' },
-        { icon: Store, label: 'Integração OLX', href: '/admin/olx-settings' },
-        { icon: Settings, label: 'Configurações', href: '/admin/site-settings' }
       );
+
+      if (hasFeature('olx_enabled')) {
+        baseItems.splice(-1, 0, { icon: Store, label: 'Integração OLX', href: '/admin/olx-settings' });
+      }
+
+      if (hasFeature('chat_enabled')) {
+        baseItems.splice(-1, 0, { icon: MessageSquare, label: 'Chat', href: '/admin/chat-settings' });
+      }
+
+      baseItems.splice(-1, 0, { icon: Settings, label: 'Configurações', href: '/admin/site-settings' });
+    }
+
+    // Items ONLY for super_admin
+    if (isSuperAdmin) {
+      baseItems.splice(-1, 0, { icon: Building2, label: 'Tenants', href: '/admin/tenants' });
     }
 
     return baseItems;
