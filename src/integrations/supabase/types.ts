@@ -674,6 +674,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           scope: string | null
+          tenant_id: string | null
           token_type: string | null
           updated_at: string | null
           user_id: string
@@ -684,6 +685,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           scope?: string | null
+          tenant_id?: string | null
           token_type?: string | null
           updated_at?: string | null
           user_id: string
@@ -694,11 +696,20 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           scope?: string | null
+          tenant_id?: string | null
           token_type?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "olx_integration_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       olx_settings: {
         Row: {
@@ -709,6 +720,7 @@ export type Database = {
           default_phone: string | null
           id: number
           redirect_uri: string
+          tenant_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -719,6 +731,7 @@ export type Database = {
           default_phone?: string | null
           id?: number
           redirect_uri: string
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -729,9 +742,18 @@ export type Database = {
           default_phone?: string | null
           id?: number
           redirect_uri?: string
+          tenant_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "olx_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -746,6 +768,7 @@ export type Database = {
           phone: string | null
           role: Database["public"]["Enums"]["user_role"] | null
           social_links: Json | null
+          tenant_id: string | null
           updated_at: string | null
           website: string | null
         }
@@ -761,6 +784,7 @@ export type Database = {
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           social_links?: Json | null
+          tenant_id?: string | null
           updated_at?: string | null
           website?: string | null
         }
@@ -776,10 +800,19 @@ export type Database = {
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           social_links?: Json | null
+          tenant_id?: string | null
           updated_at?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       properties: {
         Row: {
@@ -1099,6 +1132,36 @@ export type Database = {
           },
         ]
       }
+      tenants: {
+        Row: {
+          created_at: string | null
+          domain: string | null
+          id: string
+          name: string
+          settings: Json | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          domain?: string | null
+          id?: string
+          name: string
+          settings?: Json | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          domain?: string | null
+          id?: string
+          name?: string
+          settings?: Json | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       visits: {
         Row: {
           client_email: string
@@ -1276,6 +1339,7 @@ export type Database = {
       }
       get_site_context_for_ai: { Args: never; Returns: Json }
       get_user_email: { Args: { user_id: string }; Returns: string }
+      get_user_tenant_id: { Args: never; Returns: string }
       hash_token: { Args: { token: string }; Returns: string }
       increment_property_views: {
         Args: { property_id: string }

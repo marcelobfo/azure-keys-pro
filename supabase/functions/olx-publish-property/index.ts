@@ -83,7 +83,7 @@ serve(async (req) => {
   }
 
   try {
-    const { property_id, user_id, operation = 'insert' } = await req.json();
+    const { property_id, user_id, tenant_id, operation = 'insert' } = await req.json();
 
     if (!property_id || !user_id) {
       return new Response(
@@ -96,13 +96,18 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Buscar token de acesso do usuário
-    const { data: integration, error: integrationError } = await supabase
+    // Buscar token de acesso do usuário (filtrar por tenant se disponível)
+    let integrationQuery = supabase
       .from('olx_integration')
       .select('*')
       .eq('user_id', user_id)
-      .eq('is_active', true)
-      .single();
+      .eq('is_active', true);
+    
+    if (tenant_id) {
+      integrationQuery = integrationQuery.eq('tenant_id', tenant_id);
+    }
+    
+    const { data: integration, error: integrationError } = await integrationQuery.single();
 
     if (integrationError || !integration) {
       console.error('OLX integration not found:', integrationError);
@@ -112,12 +117,14 @@ serve(async (req) => {
       );
     }
 
-    // Buscar configurações da OLX para telefone padrão
-    const { data: settings } = await supabase
-      .from('olx_settings')
-      .select('default_phone')
-      .limit(1)
-      .single();
+    // Buscar configurações da OLX para telefone padrão (filtrar por tenant se disponível)
+    let settingsQuery = supabase.from('olx_settings').select('default_phone');
+    
+    if (tenant_id) {
+      settingsQuery = settingsQuery.eq('tenant_id', tenant_id);
+    }
+    
+    const { data: settings } = await settingsQuery.limit(1).single();
 
     // Buscar dados do imóvel
     const { data: property, error: propertyError } = await supabase

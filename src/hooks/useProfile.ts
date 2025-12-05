@@ -20,6 +20,7 @@ export interface UserProfile {
     push: boolean;
     property_alerts: boolean;
   };
+  tenant_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -54,6 +55,7 @@ export const useProfile = () => {
       const typedProfile: UserProfile = {
         ...data,
         role: data.role as UserProfile['role'],
+        tenant_id: (data as any).tenant_id || null,
         notification_preferences: typeof data.notification_preferences === 'object' && data.notification_preferences !== null
           ? data.notification_preferences as UserProfile['notification_preferences']
           : { email: true, push: true, property_alerts: true }
@@ -103,6 +105,7 @@ export const useProfile = () => {
       const typedProfile: UserProfile = {
         ...data,
         role: data.role as UserProfile['role'],
+        tenant_id: (data as any).tenant_id || null,
         notification_preferences: typeof data.notification_preferences === 'object' && data.notification_preferences !== null
           ? data.notification_preferences as UserProfile['notification_preferences']
           : { email: true, push: true, property_alerts: true }

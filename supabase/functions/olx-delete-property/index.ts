@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { property_id, user_id } = await req.json();
+    const { property_id, user_id, tenant_id } = await req.json();
 
     if (!property_id || !user_id) {
       return new Response(
@@ -25,13 +25,18 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Buscar token de acesso do usuário
-    const { data: integration, error: integrationError } = await supabase
+    // Buscar token de acesso do usuário (filtrar por tenant se disponível)
+    let integrationQuery = supabase
       .from('olx_integration')
       .select('*')
       .eq('user_id', user_id)
-      .eq('is_active', true)
-      .single();
+      .eq('is_active', true);
+    
+    if (tenant_id) {
+      integrationQuery = integrationQuery.eq('tenant_id', tenant_id);
+    }
+    
+    const { data: integration, error: integrationError } = await integrationQuery.single();
 
     if (integrationError || !integration) {
       return new Response(
