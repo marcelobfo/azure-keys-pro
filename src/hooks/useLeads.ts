@@ -1,7 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useTenantContext } from '@/contexts/TenantContext';
+import { useRoles } from '@/hooks/useRoles';
 
 export interface Lead {
   id: string;
@@ -14,6 +15,7 @@ export interface Lead {
   assigned_to: string | null;
   created_at: string;
   updated_at: string | null;
+  tenant_id?: string | null;
   properties?: {
     title: string;
   };
@@ -23,11 +25,14 @@ export const useLeads = () => {
   const { toast } = useToast();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const { selectedTenantId, isGlobalView } = useTenantContext();
+  const { isSuperAdmin } = useRoles();
 
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      let query = supabase
         .from('leads')
         .select(`
           *,
@@ -36,6 +41,15 @@ export const useLeads = () => {
           )
         `)
         .order('created_at', { ascending: false });
+
+      // Super admin com tenant selecionado filtra por tenant
+      // Super admin em visão global vê todos
+      // Usuários normais são filtrados automaticamente pelo RLS
+      if (isSuperAdmin && selectedTenantId && !isGlobalView) {
+        query = query.eq('tenant_id', selectedTenantId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         throw error;
@@ -183,9 +197,55 @@ export const useLeads = () => {
     }
   };
 
+  const createLead = async (leadData: Partial<Lead>) => {
+    try {
+      // Adiciona tenant_id se super admin tem tenant selecionado
+      const insertData: any = {
+        name: leadData.name || '',
+        email: leadData.email,
+        phone: leadData.phone,
+        message: leadData.message,
+        property_id: leadData.property_id,
+        status: leadData.status || 'new',
+        assigned_to: leadData.assigned_to,
+      };
+
+      if (selectedTenantId) {
+        insertData.tenant_id = selectedTenantId;
+      }
+
+      const { data, error } = await supabase
+        .from('leads')
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      await fetchLeads();
+
+      toast({
+        title: "Sucesso",
+        description: "Lead criado com sucesso",
+      });
+
+      return data;
+    } catch (error: any) {
+      console.error('Erro ao criar lead:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar lead",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   useEffect(() => {
     fetchLeads();
-  }, []);
+  }, [selectedTenantId, isGlobalView]);
 
   return {
     leads,
@@ -195,6 +255,7 @@ export const useLeads = () => {
     updateLead,
     deleteLead,
     assignLead,
+    createLead,
     refetch: fetchLeads
   };
 };
