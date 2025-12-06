@@ -188,6 +188,32 @@ const AdminTenants: React.FC = () => {
         tenant_id: data.id,
       });
 
+      // Create clean chat configuration for the tenant
+      await supabase.from('chat_configurations').insert({
+        tenant_id: data.id,
+        company: formData.name,
+        active: true,
+        ai_chat_enabled: false,
+        whatsapp_enabled: false,
+        welcome_message: 'Olá! Como posso ajudá-lo hoje?',
+        system_instruction: '',
+        api_provider: 'gemini',
+      });
+
+      // Create clean site settings for the tenant
+      const defaultSettings = [
+        { key: 'company_name', value: formData.name, tenant_id: data.id },
+        { key: 'company_description', value: '', tenant_id: data.id },
+        { key: 'phone', value: '', tenant_id: data.id },
+        { key: 'email', value: '', tenant_id: data.id },
+        { key: 'address', value: '', tenant_id: data.id },
+        { key: 'logo_url', value: '', tenant_id: data.id },
+        { key: 'hero_title', value: 'Encontre seu imóvel ideal', tenant_id: data.id },
+        { key: 'hero_subtitle', value: 'Os melhores imóveis da região', tenant_id: data.id },
+      ];
+
+      await supabase.from('site_settings').insert(defaultSettings);
+
       toast({ title: 'Imobiliária criada com sucesso!' });
       setIsFormOpen(false);
       setFormData({ name: '', slug: '', domain: '' });
