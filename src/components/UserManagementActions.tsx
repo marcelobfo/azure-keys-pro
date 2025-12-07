@@ -1,15 +1,16 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { UserPlus, Edit, Trash2 } from 'lucide-react';
+import { UserPlus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import EditUserDialog from './EditUserDialog';
+import { useRoles } from '@/hooks/useRoles';
+import { useTenant } from '@/hooks/useTenant';
 
 interface User {
   id: string;
@@ -35,6 +36,8 @@ type UserRole = 'user' | 'corretor' | 'admin' | 'master';
 
 export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdded }) => {
   const { toast } = useToast();
+  const { isSuperAdmin } = useRoles();
+  const { allTenants, selectedTenantId } = useTenant();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -42,24 +45,51 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
     password: '',
     full_name: '',
     role: 'user' as UserRole,
-    phone: ''
+    phone: '',
+    tenant_id: ''
   });
+
+  // Quando abrir o dialog, pré-selecionar o tenant atual se houver
+  useEffect(() => {
+    if (open && selectedTenantId && !formData.tenant_id) {
+      setFormData(prev => ({ ...prev, tenant_id: selectedTenantId }));
+    }
+  }, [open, selectedTenantId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // Use sync-user function - handles both new users and existing auth users without profile
+      // Validar que super admin selecionou um tenant
+      if (isSuperAdmin && !formData.tenant_id) {
+        throw new Error('Selecione uma imobiliária para o usuário');
+      }
+
+      const payload: any = {
+        email: formData.email,
+        password: formData.password,
+        full_name: formData.full_name,
+        role: formData.role, // role para profiles.role (user_role enum)
+        phone: formData.phone || null,
+        force_sync: true
+      };
+
+      // Adicionar tenant_id e app_role se super admin selecionou
+      if (isSuperAdmin && formData.tenant_id) {
+        payload.tenant_id = formData.tenant_id;
+        // Mapear role para app_role (user_roles.role)
+        const appRoleMap: Record<string, string> = {
+          'user': 'user',
+          'corretor': 'corretor', 
+          'admin': 'admin',
+          'master': 'admin' // master vai como admin no app_role
+        };
+        payload.app_role = appRoleMap[formData.role] || 'user';
+      }
+
       const { data, error } = await supabase.functions.invoke('sync-user', {
-        body: {
-          email: formData.email,
-          password: formData.password,
-          full_name: formData.full_name,
-          role: formData.role,
-          phone: formData.phone || null,
-          force_sync: true
-        }
+        body: payload
       });
 
       if (error) {
@@ -85,7 +115,8 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
         password: '',
         full_name: '',
         role: 'user' as UserRole,
-        phone: ''
+        phone: '',
+        tenant_id: ''
       });
       setOpen(false);
       onUserAdded();
@@ -119,6 +150,28 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
           <DialogTitle>Adicionar Novo Usuário</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Seletor de Tenant - apenas para super admin */}
+          {isSuperAdmin && (
+            <div>
+              <Label htmlFor="tenant_id">Imobiliária *</Label>
+              <Select 
+                value={formData.tenant_id} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, tenant_id: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a imobiliária" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allTenants.map((tenant) => (
+                    <SelectItem key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
           <div>
             <Label htmlFor="full_name">Nome Completo</Label>
             <Input
@@ -167,7 +220,9 @@ export const AddUserDialog: React.FC<{ onUserAdded: () => void }> = ({ onUserAdd
                 <SelectItem value="user">Usuário</SelectItem>
                 <SelectItem value="corretor">Corretor</SelectItem>
                 <SelectItem value="admin">Administrador</SelectItem>
-                <SelectItem value="master">Master (Acesso Total)</SelectItem>
+                {isSuperAdmin && (
+                  <SelectItem value="master">Master (Acesso Total)</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -257,7 +312,7 @@ export const DeleteUserDialog: React.FC<{ userId: string; userName: string; onUs
           <AlertDialogAction
             onClick={handleDelete}
             disabled={loading}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-destructive hover:bg-destructive/90"
           >
             {loading ? 'Excluindo...' : 'Excluir'}
           </AlertDialogAction>
