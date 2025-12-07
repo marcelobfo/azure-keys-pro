@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
+import { useTenantContext } from '@/contexts/TenantContext';
+import { useRoles } from '@/hooks/useRoles';
 import DashboardLayout from '@/components/DashboardLayout';
 import PropertiesBulkActions from '@/components/PropertiesBulkActions';
 
@@ -39,6 +41,8 @@ interface Property {
 const ManageProperties = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { selectedTenantId, isGlobalView } = useTenantContext();
+  const { isSuperAdmin } = useRoles();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
@@ -50,7 +54,7 @@ const ManageProperties = () => {
     if (user && profile) {
       fetchProperties();
     }
-  }, [user, profile]);
+  }, [user, profile, selectedTenantId, isGlobalView]);
 
   const fetchProperties = async () => {
     try {
@@ -58,8 +62,11 @@ const ManageProperties = () => {
         .from('properties')
         .select('*');
 
-      // Corretor só vê seus próprios imóveis
-      if (profile?.role === 'corretor') {
+      // Super admin com tenant selecionado filtra por tenant
+      if (isSuperAdmin && selectedTenantId && !isGlobalView) {
+        query = query.eq('tenant_id', selectedTenantId);
+      } else if (profile?.role === 'corretor') {
+        // Corretor só vê seus próprios imóveis
         query = query.eq('user_id', user?.id);
       }
 
