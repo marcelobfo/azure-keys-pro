@@ -201,9 +201,10 @@ const AdminTenants: React.FC = () => {
       });
 
       // Create clean site settings for the tenant
+      // Configurações padrão limpas para novo tenant - SEM dados de outras imobiliárias
       const defaultSettings = [
-        { key: 'company_name', value: formData.name, tenant_id: data.id },
-        { key: 'company_description', value: '', tenant_id: data.id },
+        { key: 'company_name', value: 'Minha Imobiliária', tenant_id: data.id },
+        { key: 'company_description', value: 'Sua imobiliária de confiança', tenant_id: data.id },
         { key: 'phone', value: '', tenant_id: data.id },
         { key: 'email', value: '', tenant_id: data.id },
         { key: 'address', value: '', tenant_id: data.id },
