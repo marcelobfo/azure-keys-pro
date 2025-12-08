@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Building2, Globe } from 'lucide-react';
 import {
   Select,
@@ -16,6 +16,11 @@ const TenantSelector: React.FC = () => {
   const { isSuperAdmin } = useRoles();
   const { selectedTenant, allTenants, setSelectedTenant, isGlobalView, loading } = useTenant();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setContainer(containerRef.current);
+  }, []);
 
   // Only show for super admins
   if (!isSuperAdmin) return null;
@@ -46,7 +51,7 @@ const TenantSelector: React.FC = () => {
             </SelectValue>
           </div>
         </SelectTrigger>
-        <SelectContent container={containerRef.current}>
+        <SelectContent container={container}>
           <SelectItem value="all">
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4" />
