@@ -355,11 +355,13 @@ const EditProperty = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="apartamento">Apartamento</SelectItem>
+                      <SelectItem value="apartamento_diferenciado">Apartamento Diferenciado</SelectItem>
                       <SelectItem value="casa">Casa</SelectItem>
                       <SelectItem value="cobertura">Cobertura</SelectItem>
                       <SelectItem value="lote">Lote</SelectItem>
-                      <SelectItem value="studio">Studio</SelectItem>
                       <SelectItem value="loft">Loft</SelectItem>
+                      <SelectItem value="sala_comercial">Sala Comercial</SelectItem>
+                      <SelectItem value="studio">Studio</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

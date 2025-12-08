@@ -100,10 +100,14 @@ const Alerts = () => {
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="casa">Casa</SelectItem>
                       <SelectItem value="apartamento">Apartamento</SelectItem>
-                      <SelectItem value="terreno">Terreno</SelectItem>
-                      <SelectItem value="comercial">Comercial</SelectItem>
+                      <SelectItem value="apartamento_diferenciado">Apartamento Diferenciado</SelectItem>
+                      <SelectItem value="casa">Casa</SelectItem>
+                      <SelectItem value="cobertura">Cobertura</SelectItem>
+                      <SelectItem value="lote">Lote</SelectItem>
+                      <SelectItem value="loft">Loft</SelectItem>
+                      <SelectItem value="sala_comercial">Sala Comercial</SelectItem>
+                      <SelectItem value="studio">Studio</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
