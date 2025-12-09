@@ -1463,6 +1463,10 @@ export type Database = {
         Args: { notif_data: Json; notif_type: string; notif_user_id: string }
         Returns: boolean
       }
+      can_access_profile: {
+        Args: { profile_tenant_id: string }
+        Returns: boolean
+      }
       can_access_property: { Args: { prop_user_id: string }; Returns: boolean }
       can_access_visit: {
         Args: { visit_property_id: string }
