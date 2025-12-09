@@ -359,19 +359,21 @@ const CreateProperty = () => {
                   <SelectContent>
                     <SelectItem value="sale">Venda</SelectItem>
                     <SelectItem value="rent">Aluguel</SelectItem>
+                    <SelectItem value="rent_annual">Aluguel Anual</SelectItem>
+                    <SelectItem value="rent_seasonal">Aluguel Temporada</SelectItem>
                     <SelectItem value="both">Venda e Aluguel</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(formData.purpose === 'sale' || formData.purpose === 'both') && (
+                {(['sale', 'both'].includes(formData.purpose)) && (
                   <div>
                     <Label htmlFor="price">Preço de Venda (R$) *</Label>
                     <Input
                       id="price"
                       type="number"
-                      required={formData.purpose === 'sale' || formData.purpose === 'both'}
+                      required={['sale', 'both'].includes(formData.purpose)}
                       value={formData.price}
                       onChange={(e) => setFormData({...formData, price: e.target.value})}
                       placeholder="Ex: 450000"
@@ -379,13 +381,13 @@ const CreateProperty = () => {
                   </div>
                 )}
                 
-                {(formData.purpose === 'rent' || formData.purpose === 'both') && (
+                {(['rent', 'rent_annual', 'rent_seasonal', 'both'].includes(formData.purpose)) && (
                   <div>
                     <Label htmlFor="rental_price">Preço do Aluguel (R$) *</Label>
                     <Input
                       id="rental_price"
                       type="number"
-                      required={formData.purpose === 'rent' || formData.purpose === 'both'}
+                      required={['rent', 'rent_annual', 'rent_seasonal', 'both'].includes(formData.purpose)}
                       value={formData.rental_price}
                       onChange={(e) => setFormData({...formData, rental_price: e.target.value})}
                       placeholder="Ex: 2500"
