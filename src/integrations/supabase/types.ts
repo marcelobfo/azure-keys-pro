@@ -624,11 +624,16 @@ export type Database = {
           assigned_to: string | null
           created_at: string | null
           email: string | null
+          external_id: string | null
           id: string
           message: string | null
           name: string
+          olx_ad_id: string | null
+          olx_link: string | null
+          olx_list_id: string | null
           phone: string | null
           property_id: string | null
+          source: string | null
           status: string | null
           tenant_id: string | null
           updated_at: string | null
@@ -637,11 +642,16 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string | null
           email?: string | null
+          external_id?: string | null
           id?: string
           message?: string | null
           name: string
+          olx_ad_id?: string | null
+          olx_link?: string | null
+          olx_list_id?: string | null
           phone?: string | null
           property_id?: string | null
+          source?: string | null
           status?: string | null
           tenant_id?: string | null
           updated_at?: string | null
@@ -650,11 +660,16 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string | null
           email?: string | null
+          external_id?: string | null
           id?: string
           message?: string | null
           name?: string
+          olx_ad_id?: string | null
+          olx_link?: string | null
+          olx_list_id?: string | null
           phone?: string | null
           property_id?: string | null
+          source?: string | null
           status?: string | null
           tenant_id?: string | null
           updated_at?: string | null
@@ -772,6 +787,9 @@ export type Database = {
           created_at: string | null
           default_phone: string | null
           id: number
+          lead_config_id: string | null
+          lead_webhook_token: string | null
+          lead_webhook_url: string | null
           redirect_uri: string
           tenant_id: string | null
           updated_at: string | null
@@ -783,6 +801,9 @@ export type Database = {
           created_at?: string | null
           default_phone?: string | null
           id?: number
+          lead_config_id?: string | null
+          lead_webhook_token?: string | null
+          lead_webhook_url?: string | null
           redirect_uri: string
           tenant_id?: string | null
           updated_at?: string | null
@@ -794,6 +815,9 @@ export type Database = {
           created_at?: string | null
           default_phone?: string | null
           id?: number
+          lead_config_id?: string | null
+          lead_webhook_token?: string | null
+          lead_webhook_url?: string | null
           redirect_uri?: string
           tenant_id?: string | null
           updated_at?: string | null

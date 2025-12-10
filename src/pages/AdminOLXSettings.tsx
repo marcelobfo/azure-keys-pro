@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Save, ExternalLink, RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Save, ExternalLink, RefreshCw, CheckCircle, XCircle, AlertCircle, MessageSquare, Copy, Trash, Plus } from 'lucide-react';
 
 interface OLXSettings {
   id?: number;
@@ -21,6 +21,9 @@ interface OLXSettings {
   default_phone: string;
   auto_publish: boolean;
   tenant_id?: string;
+  lead_webhook_token?: string;
+  lead_config_id?: string;
+  lead_webhook_url?: string;
 }
 
 interface OLXIntegration {
@@ -51,6 +54,7 @@ const AdminOLXSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [configuringLeads, setConfiguringLeads] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -79,6 +83,9 @@ const AdminOLXSettings = () => {
           default_phone: data.default_phone || '',
           auto_publish: data.auto_publish || false,
           tenant_id: data.tenant_id,
+          lead_webhook_token: data.lead_webhook_token,
+          lead_config_id: data.lead_config_id,
+          lead_webhook_url: data.lead_webhook_url,
         });
       }
     } catch (error) {
@@ -231,6 +238,144 @@ const AdminOLXSettings = () => {
     }
   };
 
+  const handleRegisterLeadConfig = async () => {
+    if (!user || !tenantId || !integration) {
+      toast({
+        title: 'Erro',
+        description: 'Você precisa estar conectado à OLX primeiro',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setConfiguringLeads(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('olx-lead-config', {
+        body: { 
+          action: 'register',
+          tenant_id: tenantId,
+          user_id: user.id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setSettings(prev => ({
+          ...prev,
+          lead_config_id: data.config_id,
+          lead_webhook_url: data.webhook_url
+        }));
+        toast({
+          title: 'Sucesso',
+          description: 'Recebimento de leads configurado! A OLX agora enviará leads automaticamente.',
+        });
+        fetchSettings();
+      } else {
+        throw new Error(data?.error || 'Erro ao configurar leads');
+      }
+    } catch (error: any) {
+      console.error('Error registering lead config:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao configurar recebimento de leads',
+        variant: 'destructive',
+      });
+    } finally {
+      setConfiguringLeads(false);
+    }
+  };
+
+  const handleUpdateLeadConfig = async () => {
+    if (!user || !tenantId) return;
+
+    setConfiguringLeads(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('olx-lead-config', {
+        body: { 
+          action: 'update',
+          tenant_id: tenantId,
+          user_id: user.id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setSettings(prev => ({
+          ...prev,
+          lead_webhook_url: data.webhook_url
+        }));
+        toast({
+          title: 'Sucesso',
+          description: 'Configuração de leads atualizada!',
+        });
+        fetchSettings();
+      } else {
+        throw new Error(data?.error || 'Erro ao atualizar configuração');
+      }
+    } catch (error: any) {
+      console.error('Error updating lead config:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao atualizar configuração',
+        variant: 'destructive',
+      });
+    } finally {
+      setConfiguringLeads(false);
+    }
+  };
+
+  const handleDeleteLeadConfig = async () => {
+    if (!user || !tenantId) return;
+
+    setConfiguringLeads(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('olx-lead-config', {
+        body: { 
+          action: 'delete',
+          tenant_id: tenantId,
+          user_id: user.id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setSettings(prev => ({
+          ...prev,
+          lead_config_id: undefined,
+          lead_webhook_url: undefined,
+          lead_webhook_token: undefined
+        }));
+        toast({
+          title: 'Removido',
+          description: 'Configuração de leads removida da OLX',
+        });
+        fetchSettings();
+      } else {
+        throw new Error(data?.error || 'Erro ao remover configuração');
+      }
+    } catch (error: any) {
+      console.error('Error deleting lead config:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao remover configuração',
+        variant: 'destructive',
+      });
+    } finally {
+      setConfiguringLeads(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: 'Copiado!',
+      description: 'URL copiada para a área de transferência',
+    });
+  };
+
   if (loading) {
     return (
       <DashboardLayout title="Integração OLX" userRole={dashboardRole}>
@@ -287,6 +432,79 @@ const AdminOLXSettings = () => {
                 Atualizar Status
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Recebimento de Leads */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Recebimento de Leads
+              {settings.lead_config_id ? (
+                <Badge variant="default" className="bg-green-500">
+                  <CheckCircle className="h-3 w-3 mr-1" /> Configurado
+                </Badge>
+              ) : (
+                <Badge variant="secondary">
+                  <XCircle className="h-3 w-3 mr-1" /> Não configurado
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Configure o recebimento automático de leads da OLX. Quando um cliente entra em contato pelo seu anúncio, 
+              o lead será cadastrado automaticamente no sistema.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {settings.lead_webhook_url && (
+              <div className="space-y-2">
+                <Label>URL do Webhook</Label>
+                <div className="flex gap-2">
+                  <Input value={settings.lead_webhook_url} readOnly className="font-mono text-xs" />
+                  <Button variant="outline" size="icon" onClick={() => copyToClipboard(settings.lead_webhook_url!)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Esta URL está registrada na OLX para envio automático de leads.
+                </p>
+              </div>
+            )}
+            
+            <div className="flex gap-2 flex-wrap">
+              {settings.lead_config_id ? (
+                <>
+                  <Button variant="outline" onClick={handleUpdateLeadConfig} disabled={configuringLeads}>
+                    {configuringLeads ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                    )}
+                    Atualizar URL
+                  </Button>
+                  <Button variant="destructive" onClick={handleDeleteLeadConfig} disabled={configuringLeads}>
+                    <Trash className="h-4 w-4 mr-2" />
+                    Remover
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={handleRegisterLeadConfig} disabled={!integration || configuringLeads}>
+                  {configuringLeads ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4 mr-2" />
+                  )}
+                  Configurar Recebimento de Leads
+                </Button>
+              )}
+            </div>
+
+            {!integration && (
+              <div className="bg-muted p-3 rounded-md text-sm">
+                <strong>Atenção:</strong> Você precisa estar conectado à OLX para configurar o recebimento de leads.
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -385,6 +603,7 @@ const AdminOLXSettings = () => {
               <li>Após aprovação, você receberá o <strong>Client ID</strong> e <strong>Client Secret</strong></li>
               <li>Insira as credenciais nos campos acima e salve</li>
               <li>Clique em "Conectar com OLX" para autorizar a aplicação</li>
+              <li>Configure o "Recebimento de Leads" para receber leads automaticamente</li>
               <li>Após autorização, seus imóveis poderão ser publicados na OLX</li>
             </ol>
             <div className="bg-muted p-3 rounded-md">
@@ -393,6 +612,10 @@ const AdminOLXSettings = () => {
             <div className="bg-muted p-3 rounded-md">
               <strong>Multi-tenant:</strong> Cada imobiliária pode configurar suas próprias credenciais OLX. 
               As configurações são isoladas por tenant.
+            </div>
+            <div className="bg-muted p-3 rounded-md">
+              <strong>Leads:</strong> Leads recebidos da OLX aparecerão com a origem "olx" ou "olx_whatsapp" 
+              na lista de leads do sistema.
             </div>
           </CardContent>
         </Card>

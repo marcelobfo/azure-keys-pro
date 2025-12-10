@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.sync-user]
 verify_jwt = false
+
+[functions.olx-webhook-lead]
+verify_jwt = false
+
+[functions.olx-lead-config]
+verify_jwt = false
