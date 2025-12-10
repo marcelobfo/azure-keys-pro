@@ -1458,7 +1458,12 @@ export type Database = {
         Args: { required_roles: Database["public"]["Enums"]["user_role"][] }
         Returns: boolean
       }
-      can_access_lead: { Args: { lead_property_id: string }; Returns: boolean }
+      can_access_lead:
+        | { Args: { lead_property_id: string }; Returns: boolean }
+        | {
+            Args: { lead_assigned_to?: string; lead_property_id: string }
+            Returns: boolean
+          }
       can_access_notification: {
         Args: { notif_data: Json; notif_type: string; notif_user_id: string }
         Returns: boolean
