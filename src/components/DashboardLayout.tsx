@@ -34,7 +34,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   const { profile } = useProfile();
   const { isSuperAdmin, isAdmin, isCorretor } = useRoles();
   const { hasFeature } = useTenantFeatures();
-  const { unreadCount } = useNotifications();
+  useNotifications(); // Keep hook for subscription
   const { selectedTenant, isGlobalView } = useTenant();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -296,14 +296,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
               </Button>
 
               {/* Notifications */}
-              <div className="relative">
-                <NotificationDropdown />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {unreadCount}
-                  </span>
-                )}
-              </div>
+              <NotificationDropdown />
 
               {/* Sign Out */}
               <Button
