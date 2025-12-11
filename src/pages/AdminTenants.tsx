@@ -142,24 +142,50 @@ const AdminTenants: React.FC = () => {
   };
 
   const fetchTenantUsers = async (tenantId: string) => {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select(`
-        id,
-        user_id,
-        role,
-        tenant_id,
-        profiles:user_id (
-          full_name,
-          email
-        )
-      `)
-      .eq('tenant_id', tenantId);
+    try {
+      // First, fetch user_roles for the tenant
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('id, user_id, role, tenant_id')
+        .eq('tenant_id', tenantId);
 
-    if (error) {
-      toast({ title: 'Erro ao carregar usuários', variant: 'destructive' });
-    } else {
-      setTenantUsers(data as any || []);
+      if (rolesError) {
+        console.error('Error fetching user_roles:', rolesError);
+        throw rolesError;
+      }
+
+      if (!rolesData || rolesData.length === 0) {
+        setTenantUsers([]);
+        return;
+      }
+
+      // Then, fetch profiles for those users
+      const userIds = rolesData.map(r => r.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
+
+      // Combine the data
+      const usersWithProfiles = rolesData.map(role => ({
+        ...role,
+        profiles: profilesData?.find(p => p.id === role.user_id) || { full_name: null, email: null }
+      }));
+
+      setTenantUsers(usersWithProfiles as TenantUser[]);
+    } catch (error: any) {
+      console.error('Error in fetchTenantUsers:', error);
+      toast({ 
+        title: 'Erro ao carregar usuários', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+      setTenantUsers([]);
     }
   };
 

@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.olx-lead-config]
 verify_jwt = false
+
+[functions.sitemap]
+verify_jwt = false

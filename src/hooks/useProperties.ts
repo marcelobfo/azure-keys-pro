@@ -182,9 +182,13 @@ export const useProperties = () => {
     }
   };
 
+  const { loading: rolesLoading } = useRoles();
+
   useEffect(() => {
-    fetchProperties();
-  }, [selectedTenantId, isGlobalView]);
+    if (!rolesLoading) {
+      fetchProperties();
+    }
+  }, [selectedTenantId, isGlobalView, isSuperAdmin, rolesLoading]);
 
   return {
     properties,

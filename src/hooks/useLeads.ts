@@ -16,6 +16,10 @@ export interface Lead {
   created_at: string;
   updated_at: string | null;
   tenant_id?: string | null;
+  source?: string | null;
+  olx_link?: string | null;
+  olx_ad_id?: string | null;
+  olx_list_id?: string | null;
   properties?: {
     title: string;
   };
@@ -243,9 +247,13 @@ export const useLeads = () => {
     }
   };
 
+  const { loading: rolesLoading } = useRoles();
+
   useEffect(() => {
-    fetchLeads();
-  }, [selectedTenantId, isGlobalView]);
+    if (!rolesLoading) {
+      fetchLeads();
+    }
+  }, [selectedTenantId, isGlobalView, isSuperAdmin, rolesLoading]);
 
   return {
     leads,

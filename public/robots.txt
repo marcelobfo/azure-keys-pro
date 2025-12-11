@@ -12,3 +12,6 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Sitemap - substitua pelo seu domínio real
+Sitemap: https://techne.imobiliario.digital/sitemap.xml

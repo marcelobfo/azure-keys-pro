@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Phone, Mail, Calendar, MessageSquare, Search, Filter, Trash2 } from 'lucide-react';
+import { Phone, Mail, Calendar, MessageSquare, Search, Filter, Trash2, Globe, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -22,6 +22,7 @@ const LeadsManagement = () => {
   const { leads, loading, updateLeadStatus, updateLead, deleteLead, fetchLeads } = useLeads();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('all');
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   
   const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
@@ -117,11 +118,25 @@ const LeadsManagement = () => {
     }
   };
 
+  const getSourceBadge = (source: string | null | undefined) => {
+    switch (source) {
+      case 'olx':
+        return <Badge className="bg-orange-500 text-white">OLX</Badge>;
+      case 'olx_whatsapp':
+        return <Badge className="bg-green-500 text-white">OLX WhatsApp</Badge>;
+      case 'site':
+        return <Badge variant="secondary">Site</Badge>;
+      default:
+        return <Badge variant="outline">Site</Badge>;
+    }
+  };
+
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          lead.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesSource = sourceFilter === 'all' || (lead.source || 'site') === sourceFilter;
+    return matchesSearch && matchesStatus && matchesSource;
   });
 
   if (loading) {
@@ -170,12 +185,12 @@ const LeadsManagement = () => {
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-48">
+            <SelectTrigger className="w-full sm:w-40">
               <Filter className="w-4 h-4 mr-2" />
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="all">Todos Status</SelectItem>
               <SelectItem value="new">Novo</SelectItem>
               <SelectItem value="contacted">Contatado</SelectItem>
               <SelectItem value="qualified">Qualificado</SelectItem>
@@ -183,10 +198,22 @@ const LeadsManagement = () => {
               <SelectItem value="lost">Perdido</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+            <SelectTrigger className="w-full sm:w-40">
+              <Globe className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Origem" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas Origens</SelectItem>
+              <SelectItem value="site">Site</SelectItem>
+              <SelectItem value="olx">OLX</SelectItem>
+              <SelectItem value="olx_whatsapp">OLX WhatsApp</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{leads.length}</div>
@@ -209,6 +236,12 @@ const LeadsManagement = () => {
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{leads.filter(l => l.status === 'converted').length}</div>
               <p className="text-sm text-muted-foreground">Convertidos</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-orange-500">{leads.filter(l => l.source === 'olx' || l.source === 'olx_whatsapp').length}</div>
+              <p className="text-sm text-muted-foreground">Leads OLX</p>
             </CardContent>
           </Card>
         </div>
@@ -239,7 +272,10 @@ const LeadsManagement = () => {
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="text-lg font-semibold">{lead.name}</h3>
-                          {getStatusBadge(lead.status)}
+                          <div className="flex gap-2">
+                            {getSourceBadge(lead.source)}
+                            {getStatusBadge(lead.status)}
+                          </div>
                         </div>
                       
                       <div className="space-y-1 mb-4">
@@ -261,6 +297,14 @@ const LeadsManagement = () => {
                         {lead.message && (
                           <p className="text-sm text-gray-600 dark:text-gray-300">
                             <strong>Mensagem:</strong> {lead.message}
+                          </p>
+                        )}
+                        {lead.olx_link && (
+                          <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center">
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            <a href={lead.olx_link} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">
+                              Ver anúncio OLX
+                            </a>
                           </p>
                         )}
                         <p className="text-xs text-gray-500">
