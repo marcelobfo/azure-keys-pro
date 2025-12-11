@@ -21,33 +21,36 @@ export const useNotifications = () => {
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const channelRef = useRef<any>(null);
-
-  // Cleanup function
-  const cleanupSubscription = () => {
-    if (channelRef.current) {
-      console.log('Cleaning up notification subscription');
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-  };
+  const isSubscribingRef = useRef(false);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const cleanup = () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      isSubscribingRef.current = false;
+    };
+
     if (user?.id) {
-      console.log('Setting up notifications for user:', user.id);
-      fetchNotifications();
-      setupRealtimeSubscription();
+      fetchNotifications(isMounted);
+      setupRealtimeSubscription(isMounted);
     } else {
-      cleanupSubscription();
+      cleanup();
       setNotifications([]);
       setUnreadCount(0);
       setLoading(false);
     }
 
-    // Cleanup function for useEffect
-    return cleanupSubscription;
+    return () => {
+      isMounted = false;
+      cleanup();
+    };
   }, [user?.id]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (isMounted: boolean) => {
     if (!user) return;
 
     try {
@@ -60,7 +63,7 @@ export const useNotifications = () => {
 
       if (error) {
         console.error('Error fetching notifications:', error);
-      } else {
+      } else if (isMounted) {
         const typedData = (data || []).map(item => ({
           ...item,
           type: item.type as 'property_alert' | 'lead_assigned' | 'system'
@@ -71,22 +74,17 @@ export const useNotifications = () => {
     } catch (error) {
       console.error('Error in fetchNotifications:', error);
     }
-    setLoading(false);
+    if (isMounted) setLoading(false);
   };
 
-  const setupRealtimeSubscription = () => {
-    if (!user?.id) {
-      console.log('Skipping subscription setup - no user');
+  const setupRealtimeSubscription = (isMounted: boolean) => {
+    if (!user?.id || isSubscribingRef.current || channelRef.current) {
       return;
     }
 
-    // Cleanup any existing subscription first
-    cleanupSubscription();
+    isSubscribingRef.current = true;
 
     try {
-      console.log('Creating new notification channel for user:', user.id);
-      
-      // Create new channel with unique name
       const channelName = `notifications-${user.id}-${Date.now()}`;
       const channel = supabase
         .channel(channelName)
@@ -99,7 +97,7 @@ export const useNotifications = () => {
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
-            console.log('New notification received:', payload);
+            if (!isMounted) return;
             const newNotification = {
               ...payload.new,
               type: payload.new.type as 'property_alert' | 'lead_assigned' | 'system'
@@ -108,16 +106,13 @@ export const useNotifications = () => {
             setNotifications(prev => [newNotification, ...prev]);
             setUnreadCount(prev => prev + 1);
             
-            // Show toast notification
             toast({
               title: newNotification.title,
               description: newNotification.message,
             });
           }
         )
-        .subscribe((status) => {
-          console.log('Subscription status:', status);
-        });
+        .subscribe();
 
       channelRef.current = channel;
     } catch (error) {
@@ -165,12 +160,16 @@ export const useNotifications = () => {
     }
   };
 
+  const refetch = async () => {
+    await fetchNotifications(true);
+  };
+
   return {
     notifications,
     loading,
     unreadCount,
     markAsRead,
     markAllAsRead,
-    refetch: fetchNotifications,
+    refetch,
   };
 };
