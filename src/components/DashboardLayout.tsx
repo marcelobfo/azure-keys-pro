@@ -38,7 +38,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   const { selectedTenant, isGlobalView } = useTenant();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarHovered, setSidebarHovered] = useState(false);
+  
+  // Determine if sidebar should be expanded (collapsed but hovered = expanded)
+  const isSidebarExpanded = !sidebarCollapsed || sidebarHovered;
 
   const handleSignOut = async () => {
     await signOut();
@@ -129,20 +133,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex w-full">
-        {/* Sidebar - Collapsible on desktop */}
-        <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-          lg:translate-x-0 fixed lg:relative inset-y-0 left-0 z-50 
-          ${sidebarCollapsed ? 'lg:w-16' : 'w-64'} 
-          bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 
-          transition-all duration-300 ease-in-out flex flex-col flex-shrink-0`}>
+        {/* Sidebar - Collapsible on desktop with hover expand */}
+        <aside 
+          className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+            lg:translate-x-0 fixed lg:relative inset-y-0 left-0 z-50 
+            ${isSidebarExpanded ? 'w-64' : 'lg:w-16'} 
+            bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 
+            transition-all duration-300 ease-in-out flex flex-col flex-shrink-0 shadow-lg lg:shadow-none`}
+          onMouseEnter={() => sidebarCollapsed && setSidebarHovered(true)}
+          onMouseLeave={() => setSidebarHovered(false)}
+        >
           
           {/* Logo */}
-          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} p-4 border-b border-gray-200 dark:border-slate-700`}>
+          <div className={`flex items-center ${!isSidebarExpanded ? 'justify-center' : 'justify-between'} p-4 border-b border-gray-200 dark:border-slate-700`}>
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Home className="w-5 h-5 text-white" />
               </div>
-              {!sidebarCollapsed && (
+              {isSidebarExpanded && (
                 <span className="text-xl font-bold text-gray-900 dark:text-white whitespace-nowrap">
                   Maresia Litoral
                 </span>
@@ -159,8 +167,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
           </div>
 
           {/* User Info */}
-          <div className={`p-4 border-b border-gray-200 dark:border-slate-700 ${sidebarCollapsed ? 'flex justify-center' : ''}`}>
-            {sidebarCollapsed ? (
+          <div className={`p-4 border-b border-gray-200 dark:border-slate-700 ${!isSidebarExpanded ? 'flex justify-center' : ''}`}>
+            {!isSidebarExpanded ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center cursor-pointer">
@@ -190,9 +198,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
           </div>
 
           {/* Navigation */}
-          <nav className={`p-2 space-y-1 overflow-y-auto flex-1 ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
+          <nav className={`p-2 space-y-1 overflow-y-auto flex-1 ${!isSidebarExpanded ? 'px-2' : 'px-4'}`}>
             {menuItems.map((item) => (
-              sidebarCollapsed ? (
+              !isSidebarExpanded ? (
                 <Tooltip key={item.href}>
                   <TooltipTrigger asChild>
                     <Link

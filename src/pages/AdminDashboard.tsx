@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,9 +7,13 @@ import { Users, Home, MessageSquare, TrendingUp, Settings, Webhook, BarChart3, U
 import { Navigate, useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
+import { useTenant } from '@/hooks/useTenant';
+import { useRoles } from '@/hooks/useRoles';
 
 const AdminDashboard = () => {
   const { profile, loading, hasRole } = useProfile();
+  const { selectedTenantId, isGlobalView } = useTenant();
+  const { isSuperAdmin } = useRoles();
   const navigate = useNavigate();
 
   // States for counts
@@ -23,59 +27,81 @@ const AdminDashboard = () => {
   const [salesThisMonth, setSalesThisMonth] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
 
-  // Fetch Dashboard Data
-  useEffect(() => {
-    // Users
-    supabase.from('profiles')
-      .select('role')
-      .then(({ data }) => {
-        if (!data) return setUserCounts({ total: 0, admin: 0, corretor: 0, user: 0 });
-        const total = data.length;
-        const admin = data.filter((d: any) => d.role === 'admin').length;
-        const corretor = data.filter((d: any) => d.role === 'corretor').length;
-        const user = data.filter((d: any) => d.role === 'user').length;
-        setUserCounts({ total, admin, corretor, user });
-        setCorretorActive(corretor);
-      });
+  // Fetch Dashboard Data based on tenant
+  const fetchDashboardData = useCallback(async () => {
+    // Users query
+    let usersQuery = supabase.from('profiles').select('role, tenant_id');
+    if (!isSuperAdmin) {
+      // Non-super admin sees only their tenant
+    } else if (!isGlobalView && selectedTenantId) {
+      usersQuery = usersQuery.eq('tenant_id', selectedTenantId);
+    }
+    
+    const { data: usersData } = await usersQuery;
+    if (usersData) {
+      const total = usersData.length;
+      const admin = usersData.filter((d: any) => d.role === 'admin').length;
+      const corretor = usersData.filter((d: any) => d.role === 'corretor').length;
+      const user = usersData.filter((d: any) => d.role === 'user').length;
+      setUserCounts({ total, admin, corretor, user });
+      setCorretorActive(corretor);
+    } else {
+      setUserCounts({ total: 0, admin: 0, corretor: 0, user: 0 });
+      setCorretorActive(0);
+    }
 
-    // Properties
-    supabase
-      .from('properties')
-      .select('id')
-      .eq('status', 'active')
-      .then(({ data }) => setPropertyCount(data ? data.length : 0));
+    // Properties query
+    let propertiesQuery = supabase.from('properties').select('id, tenant_id').eq('status', 'active');
+    if (!isSuperAdmin) {
+      // Non-super admin sees only their tenant
+    } else if (!isGlobalView && selectedTenantId) {
+      propertiesQuery = propertiesQuery.eq('tenant_id', selectedTenantId);
+    }
+    
+    const { data: propertiesData } = await propertiesQuery;
+    setPropertyCount(propertiesData ? propertiesData.length : 0);
 
-    // Leads
-    supabase
-      .from('leads')
-      .select('status')
-      .then(({ data }) => {
-        if (!data) return setLeadsCounts({ total: 0, new: 0, progressing: 0, converted: 0 });
-        const total = data.length;
-        const newCount = data.filter((d: any) => d.status === 'new').length;
-        const progressing = data.filter((d: any) => d.status === 'in_progress').length;
-        const converted = data.filter((d: any) => d.status === 'converted').length;
-        setLeadsCounts({ total, new: newCount, progressing, converted });
-        setConversionRate(total ? ((converted / total) * 100) : 0);
-      });
+    // Leads query
+    let leadsQuery = supabase.from('leads').select('status, tenant_id');
+    if (!isSuperAdmin) {
+      // Non-super admin sees only their tenant
+    } else if (!isGlobalView && selectedTenantId) {
+      leadsQuery = leadsQuery.eq('tenant_id', selectedTenantId);
+    }
+    
+    const { data: leadsData } = await leadsQuery;
+    if (leadsData) {
+      const total = leadsData.length;
+      const newCount = leadsData.filter((d: any) => d.status === 'new').length;
+      const progressing = leadsData.filter((d: any) => d.status === 'in_progress').length;
+      const converted = leadsData.filter((d: any) => d.status === 'converted').length;
+      setLeadsCounts({ total, new: newCount, progressing, converted });
+      setConversionRate(total ? ((converted / total) * 100) : 0);
+    } else {
+      setLeadsCounts({ total: 0, new: 0, progressing: 0, converted: 0 });
+      setConversionRate(0);
+    }
 
-    // Chat Sessions
-    supabase
-      .from('chat_sessions')
-      .select('status')
-      .then(({ data }) => {
-        if (!data) return setChatStats({ active: 0, waiting: 0, total: 0 });
-        const total = data.length;
-        const active = data.filter((d: any) => d.status === 'active').length;
-        const waiting = data.filter((d: any) => d.status === 'waiting').length;
-        setChatStats({ active, waiting, total });
-      });
+    // Chat Sessions - don't have tenant_id directly, but can be linked via leads
+    const { data: chatData } = await supabase.from('chat_sessions').select('status');
+    if (chatData) {
+      const total = chatData.length;
+      const active = chatData.filter((d: any) => d.status === 'active').length;
+      const waiting = chatData.filter((d: any) => d.status === 'waiting').length;
+      setChatStats({ active, waiting, total });
+    } else {
+      setChatStats({ active: 0, waiting: 0, total: 0 });
+    }
 
     // Webhooks (simulado)
     setWebhookStats({ active: 0, failures: 0 });
     setSalesThisMonth(0);
     setTotalRevenue(0);
-  }, []);
+  }, [isSuperAdmin, isGlobalView, selectedTenantId]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   if (loading) {
     return (
