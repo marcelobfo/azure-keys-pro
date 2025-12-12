@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -20,38 +19,16 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
-  const channelRef = useRef<any>(null);
-  const isSubscribingRef = useRef(false);
+  const subscriptionRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const userIdRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const cleanup = () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-      isSubscribingRef.current = false;
-    };
-
-    if (user?.id) {
-      fetchNotifications(isMounted);
-      setupRealtimeSubscription(isMounted);
-    } else {
-      cleanup();
+  const fetchNotifications = useCallback(async () => {
+    if (!user?.id) {
       setNotifications([]);
       setUnreadCount(0);
       setLoading(false);
+      return;
     }
-
-    return () => {
-      isMounted = false;
-      cleanup();
-    };
-  }, [user?.id]);
-
-  const fetchNotifications = async (isMounted: boolean) => {
-    if (!user) return;
 
     try {
       const { data, error } = await supabase
@@ -63,30 +40,48 @@ export const useNotifications = () => {
 
       if (error) {
         console.error('Error fetching notifications:', error);
-      } else if (isMounted) {
-        const typedData = (data || []).map(item => ({
-          ...item,
-          type: item.type as 'property_alert' | 'lead_assigned' | 'system'
-        }));
-        setNotifications(typedData);
-        setUnreadCount(typedData.filter(n => !n.read).length);
+        return;
       }
+
+      const typedData = (data || []).map(item => ({
+        ...item,
+        type: item.type as 'property_alert' | 'lead_assigned' | 'system'
+      }));
+      
+      setNotifications(typedData);
+      setUnreadCount(typedData.filter(n => !n.read).length);
     } catch (error) {
       console.error('Error in fetchNotifications:', error);
+    } finally {
+      setLoading(false);
     }
-    if (isMounted) setLoading(false);
-  };
+  }, [user?.id]);
 
-  const setupRealtimeSubscription = (isMounted: boolean) => {
-    if (!user?.id || isSubscribingRef.current || channelRef.current) {
+  // Setup realtime subscription
+  useEffect(() => {
+    // Cleanup previous subscription if user changed
+    if (subscriptionRef.current && userIdRef.current !== user?.id) {
+      supabase.removeChannel(subscriptionRef.current);
+      subscriptionRef.current = null;
+    }
+
+    if (!user?.id) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setLoading(false);
       return;
     }
 
-    isSubscribingRef.current = true;
+    userIdRef.current = user.id;
 
-    try {
-      const channelName = `notifications-${user.id}-${Date.now()}`;
-      const channel = supabase
+    // Fetch initial data
+    fetchNotifications();
+
+    // Only create subscription if we don't have one for this user
+    if (!subscriptionRef.current) {
+      const channelName = `notifications_${user.id}_${Math.random().toString(36).slice(2)}`;
+      
+      subscriptionRef.current = supabase
         .channel(channelName)
         .on(
           'postgres_changes',
@@ -97,7 +92,6 @@ export const useNotifications = () => {
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
-            if (!isMounted) return;
             const newNotification = {
               ...payload.new,
               type: payload.new.type as 'property_alert' | 'lead_assigned' | 'system'
@@ -112,13 +106,20 @@ export const useNotifications = () => {
             });
           }
         )
-        .subscribe();
-
-      channelRef.current = channel;
-    } catch (error) {
-      console.error('Error setting up realtime subscription:', error);
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR') {
+            console.error('Notification channel error');
+          }
+        });
     }
-  };
+
+    return () => {
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
+      }
+    };
+  }, [user?.id, fetchNotifications, toast]);
 
   const markAsRead = async (notificationId: string) => {
     if (!user?.id) return;
@@ -160,16 +161,12 @@ export const useNotifications = () => {
     }
   };
 
-  const refetch = async () => {
-    await fetchNotifications(true);
-  };
-
   return {
     notifications,
     loading,
     unreadCount,
     markAsRead,
     markAllAsRead,
-    refetch,
+    refetch: fetchNotifications,
   };
 };
