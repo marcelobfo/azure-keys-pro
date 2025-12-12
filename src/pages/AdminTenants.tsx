@@ -317,19 +317,48 @@ const AdminTenants: React.FC = () => {
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      // First check if features exist for this tenant
+      const { data: existingFeatures } = await supabase
         .from('tenant_features')
-        .upsert({
-          tenant_id: selectedTenant.id,
-          chat_enabled: tenantFeatures.chat_enabled,
-          olx_enabled: tenantFeatures.olx_enabled,
-          leads_enabled: tenantFeatures.leads_enabled,
-          commissions_enabled: tenantFeatures.commissions_enabled,
-          evolution_enabled: tenantFeatures.evolution_enabled,
-          whatsapp_enabled: tenantFeatures.whatsapp_enabled,
-          max_users: tenantFeatures.max_users,
-          max_properties: tenantFeatures.max_properties,
-        });
+        .select('id')
+        .eq('tenant_id', selectedTenant.id)
+        .maybeSingle();
+
+      let error;
+
+      if (existingFeatures) {
+        // Update existing record
+        const result = await supabase
+          .from('tenant_features')
+          .update({
+            chat_enabled: tenantFeatures.chat_enabled,
+            olx_enabled: tenantFeatures.olx_enabled,
+            leads_enabled: tenantFeatures.leads_enabled,
+            commissions_enabled: tenantFeatures.commissions_enabled,
+            evolution_enabled: tenantFeatures.evolution_enabled,
+            whatsapp_enabled: tenantFeatures.whatsapp_enabled,
+            max_users: tenantFeatures.max_users,
+            max_properties: tenantFeatures.max_properties,
+          })
+          .eq('tenant_id', selectedTenant.id);
+        error = result.error;
+      } else {
+        // Insert new record
+        const result = await supabase
+          .from('tenant_features')
+          .insert({
+            tenant_id: selectedTenant.id,
+            chat_enabled: tenantFeatures.chat_enabled,
+            olx_enabled: tenantFeatures.olx_enabled,
+            leads_enabled: tenantFeatures.leads_enabled,
+            commissions_enabled: tenantFeatures.commissions_enabled,
+            evolution_enabled: tenantFeatures.evolution_enabled,
+            whatsapp_enabled: tenantFeatures.whatsapp_enabled,
+            max_users: tenantFeatures.max_users,
+            max_properties: tenantFeatures.max_properties,
+          });
+        error = result.error;
+      }
 
       if (error) throw error;
 
