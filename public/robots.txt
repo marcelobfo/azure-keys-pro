@@ -13,5 +13,7 @@ Allow: /
 User-agent: *
 Allow: /
 
-# Sitemap - substitua pelo seu domínio real
-Sitemap: https://techne.imobiliario.digital/sitemap.xml
+# Sitemap dinâmico - configure proxy no seu servidor para apontar para a Edge Function
+# Nginx: proxy_pass https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/sitemap
+# Apache: RewriteRule ^sitemap\.xml$ https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/sitemap [P,L]
+Sitemap: /sitemap.xml

@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_tenant_context: {
+        Row: {
+          created_at: string | null
+          updated_at: string | null
+          user_id: string
+          viewing_tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          updated_at?: string | null
+          user_id: string
+          viewing_tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+          viewing_tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_tenant_context_viewing_tenant_id_fkey"
+            columns: ["viewing_tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analytics_events: {
         Row: {
           created_at: string
@@ -1342,6 +1371,13 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
