@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import NotificationDropdown from './NotificationDropdown';
 import { supabase } from '@/integrations/supabase/client';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useTenant } from '@/hooks/useTenant';
 
 const Header = () => {
   const { theme, toggleTheme } = useTheme();
@@ -25,19 +26,31 @@ const Header = () => {
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
   const { trackEvent } = useAnalytics();
+  const { currentTenant, selectedTenantId } = useTenant();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [lightLogoUrl, setLightLogoUrl] = useState<string | null>(null);
   const [darkLogoUrl, setDarkLogoUrl] = useState<string | null>(null);
   const [logoHeight, setLogoHeight] = useState<number>(40);
+  const [siteName, setSiteName] = useState<string>('');
 
-  // Busca logos separadas para tema claro e escuro + tamanho
+  const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
+
+  // Busca logos separadas para tema claro e escuro + tamanho + nome do site
   useEffect(() => {
     async function fetchLogos() {
-      const { data } = await supabase
+      let query = supabase
         .from('site_settings')
         .select('key, value')
-        .in('key', ['footer_logo', 'header_logo_light', 'header_logo_dark', 'logo_size_header']);
+        .in('key', ['footer_logo', 'header_logo_light', 'header_logo_dark', 'logo_size_header', 'site_name']);
+      
+      if (effectiveTenantId) {
+        query = query.eq('tenant_id', effectiveTenantId);
+      } else {
+        query = query.is('tenant_id', null);
+      }
+
+      const { data } = await query;
       
       if (data) {
         const settings = data.reduce((acc, item) => {
@@ -49,13 +62,19 @@ const Header = () => {
         setLightLogoUrl(settings.header_logo_light || settings.footer_logo || null);
         setDarkLogoUrl(settings.header_logo_dark || settings.footer_logo || null);
         
+        // Usar nome do tenant como fallback para site_name
+        setSiteName(settings.site_name || currentTenant?.name || '');
+        
         // Configurar altura da logo (padrão: 50px)
         const size = settings.logo_size_header ? parseInt(settings.logo_size_header) : 50;
-        setLogoHeight(size > 20 && size <= 300 ? size : 50); // Limitar entre 20-300px
+        setLogoHeight(size > 20 && size <= 300 ? size : 50);
+      } else {
+        // Se não há settings, usar nome do tenant
+        setSiteName(currentTenant?.name || '');
       }
     }
     fetchLogos();
-  }, []);
+  }, [effectiveTenantId, currentTenant?.name]);
 
   const toggleLanguage = () => {
     setLanguage(language === 'pt' ? 'en' : 'pt');
@@ -120,9 +139,9 @@ const Header = () => {
               </div>
             )}
             {/* Se não tiver logo, mostra nome visual */}
-            {!currentLogo && (
+            {!currentLogo && siteName && (
               <span className="text-xl font-bold text-gray-900 dark:text-white">
-                Maresia Litoral
+                {siteName}
               </span>
             )}
           </Link>

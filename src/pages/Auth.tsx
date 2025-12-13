@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Home, Mail, Lock, User, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useTenant } from '@/hooks/useTenant';
 
 const AuthPage = () => {
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -21,28 +22,44 @@ const AuthPage = () => {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [lightLogoUrl, setLightLogoUrl] = useState<string | null>(null);
   const [logoHeight, setLogoHeight] = useState<number>(64);
+  const [siteName, setSiteName] = useState<string>('');
   const { signIn, signUp, user } = useAuth();
+  const { currentTenant, selectedTenantId } = useTenant();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
 
-  // Busca logo da Maresia Litoral
+  // Busca logo e nome do tenant
   useEffect(() => {
     async function fetchLogo() {
-      const { data } = await supabase
+      let query = supabase
         .from('site_settings')
         .select('key, value')
-        .in('key', ['header_logo_light', 'logo_size_header']);
+        .in('key', ['header_logo_light', 'logo_size_header', 'site_name']);
+      
+      if (effectiveTenantId) {
+        query = query.eq('tenant_id', effectiveTenantId);
+      } else {
+        query = query.is('tenant_id', null);
+      }
+
+      const { data } = await query;
       
       if (data) {
         const logoData = data.find(item => item.key === 'header_logo_light');
         const sizeData = data.find(item => item.key === 'logo_size_header');
+        const nameData = data.find(item => item.key === 'site_name');
         
         if (logoData?.value) setLightLogoUrl(logoData.value);
         if (sizeData?.value) setLogoHeight(parseInt(sizeData.value));
+        setSiteName(nameData?.value || currentTenant?.name || '');
+      } else {
+        setSiteName(currentTenant?.name || '');
       }
     }
     fetchLogo();
-  }, []);
+  }, [effectiveTenantId, currentTenant?.name]);
 
   useEffect(() => {
     if (user) {
@@ -115,7 +132,7 @@ const AuthPage = () => {
             {lightLogoUrl ? (
               <img
                 src={lightLogoUrl}
-                alt="Maresia Litoral"
+                alt={siteName || 'Logo'}
                 style={{ height: `${logoHeight}px` }}
                 className="w-auto object-contain rounded-lg"
                 onError={e => {
@@ -123,14 +140,16 @@ const AuthPage = () => {
                 }}
               />
             ) : (
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
-                <Home className="w-8 h-8 text-white" />
+              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
+                <Home className="w-8 h-8 text-primary-foreground" />
               </div>
             )}
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
-            Maresia Litoral
-          </h2>
+          {siteName && (
+            <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
+              {siteName}
+            </h2>
+          )}
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             Entre na sua conta ou crie uma nova
           </p>
