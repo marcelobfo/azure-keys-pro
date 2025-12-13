@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Home from '@/pages/Home';
@@ -42,6 +41,7 @@ import CommissionsPanel from '@/pages/CommissionsPanel';
 import AdminOLXSettings from '@/pages/AdminOLXSettings';
 import OLXCallback from '@/pages/OLXCallback';
 import AdminTenants from '@/pages/AdminTenants';
+import TenantIndex from '@/pages/TenantIndex';
 import SEOUpdater from '@/components/SEOUpdater';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
 import { useEffect } from 'react';
@@ -83,6 +83,17 @@ function App() {
               <AnalyticsTracker />
               <Router>
               <Routes>
+                {/* Tenant-specific routes (path-based) */}
+                <Route path="/t/:tenantSlug" element={<TenantIndex />} />
+                <Route path="/t/:tenantSlug/home" element={<Home />} />
+                <Route path="/t/:tenantSlug/properties" element={<PropertiesPage />} />
+                <Route path="/t/:tenantSlug/imoveis" element={<PropertiesPage />} />
+                <Route path="/t/:tenantSlug/imovel/:identifier" element={<PropertyDetail />} />
+                <Route path="/t/:tenantSlug/property/:identifier" element={<PropertyDetail />} />
+                <Route path="/t/:tenantSlug/contact" element={<Contact />} />
+                <Route path="/t/:tenantSlug/auth" element={<Auth />} />
+                <Route path="/t/:tenantSlug/schedule-visit/:propertyId" element={<ScheduleVisit />} />
+
                 {/* Public Routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/home" element={<Home />} />

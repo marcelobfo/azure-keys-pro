@@ -17,6 +17,7 @@ interface Tenant {
 interface TenantContextType {
   selectedTenantId: string | null;
   selectedTenant: Tenant | null;
+  currentTenant: Tenant | null; // Tenant detected by domain/URL
   allTenants: Tenant[];
   setSelectedTenant: (tenantId: string | null) => void;
   isGlobalView: boolean;
@@ -29,6 +30,55 @@ const TenantContext = createContext<TenantContextType | undefined>(undefined);
 const STORAGE_KEY = 'selectedTenantId';
 const GLOBAL_VIEW_KEY = 'tenantGlobalView';
 
+// Detect tenant from URL/domain
+const detectTenantFromUrl = async (): Promise<Tenant | null> => {
+  const hostname = window.location.hostname;
+  const pathname = window.location.pathname;
+
+  // 1. Check for path-based tenant: /t/tenant-slug/...
+  const pathMatch = pathname.match(/^\/t\/([^/]+)/);
+  if (pathMatch) {
+    const tenantSlug = pathMatch[1];
+    const { data } = await supabase
+      .from('tenants')
+      .select('*')
+      .eq('slug', tenantSlug)
+      .single();
+
+    if (data) return data;
+  }
+
+  // 2. Check for custom domain
+  if (!hostname.includes('localhost') && 
+      !hostname.includes('lovableproject.com') &&
+      !hostname.includes('lovable.app')) {
+    const { data } = await supabase
+      .from('tenants')
+      .select('*')
+      .eq('domain', hostname)
+      .single();
+
+    if (data) return data;
+  }
+
+  // 3. Check for subdomain: tenant-slug.domain.com
+  const subdomainParts = hostname.split('.');
+  if (subdomainParts.length >= 3) {
+    const subdomain = subdomainParts[0];
+    if (subdomain !== 'www' && subdomain !== 'app' && subdomain !== 'api') {
+      const { data } = await supabase
+        .from('tenants')
+        .select('*')
+        .eq('slug', subdomain)
+        .single();
+
+      if (data) return data;
+    }
+  }
+
+  return null;
+};
+
 export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { isSuperAdmin, loading: rolesLoading } = useRoles();
@@ -37,8 +87,25 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [allTenants, setAllTenants] = useState<Tenant[]>([]);
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   const [selectedTenant, setSelectedTenantState] = useState<Tenant | null>(null);
+  const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
   const [isGlobalView, setIsGlobalView] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Detect tenant from URL/domain on mount
+  useEffect(() => {
+    const detectTenant = async () => {
+      const detected = await detectTenantFromUrl();
+      setCurrentTenant(detected);
+      
+      // If tenant detected and no user logged in, use it as selected
+      if (detected && !user) {
+        setSelectedTenantId(detected.id);
+        setSelectedTenantState(detected);
+      }
+    };
+    
+    detectTenant();
+  }, [user]);
 
   // Load all tenants for super admin
   useEffect(() => {
@@ -68,9 +135,16 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     loadTenants();
   }, [user, isSuperAdmin, rolesLoading]);
 
-  // Initialize selected tenant from localStorage or profile
+  // Initialize selected tenant from localStorage, profile, or detected tenant
   useEffect(() => {
     if (rolesLoading || profileLoading || loading) return;
+
+    // If tenant was detected from URL/domain, prioritize it for non-admin users
+    if (currentTenant && !isSuperAdmin) {
+      setSelectedTenantId(currentTenant.id);
+      setSelectedTenantState(currentTenant);
+      return;
+    }
 
     if (isSuperAdmin) {
       // Check localStorage for saved selection
@@ -87,7 +161,6 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           setSelectedTenantId(savedTenantId);
           setSelectedTenantState(tenant);
         } else if (profile?.tenant_id) {
-          // Fallback to profile tenant
           const profileTenant = allTenants.find(t => t.id === profile.tenant_id);
           if (profileTenant) {
             setSelectedTenantId(profile.tenant_id);
@@ -102,10 +175,15 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         }
       }
     } else {
-      // Non super admin - use profile tenant
-      setSelectedTenantId(profile?.tenant_id || null);
+      // Non super admin - use detected tenant or profile tenant
+      if (currentTenant) {
+        setSelectedTenantId(currentTenant.id);
+        setSelectedTenantState(currentTenant);
+      } else {
+        setSelectedTenantId(profile?.tenant_id || null);
+      }
     }
-  }, [isSuperAdmin, rolesLoading, profileLoading, loading, allTenants, profile?.tenant_id]);
+  }, [isSuperAdmin, rolesLoading, profileLoading, loading, allTenants, profile?.tenant_id, currentTenant]);
 
   const setSelectedTenant = (tenantId: string | null) => {
     if (tenantId === null || tenantId === 'all') {
@@ -139,6 +217,7 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       value={{
         selectedTenantId,
         selectedTenant,
+        currentTenant,
         allTenants,
         setSelectedTenant,
         isGlobalView,

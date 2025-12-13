@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTenant } from '@/hooks/useTenant';
 
 export interface SiteSettings {
   site_name: string;
@@ -30,10 +31,11 @@ export interface SiteSettings {
   contact_map_url: string;
 }
 
+// Defaults neutros - sem referências a nenhuma imobiliária específica
 const defaultSettings: SiteSettings = {
-  site_name: 'Maresia Litoral',
-  site_title: 'Maresia Litoral - Encontre o Imóvel dos Seus Sonhos',
-  site_description: 'Encontre o imóvel dos seus sonhos com a Maresia Litoral. Casas, apartamentos e terrenos de qualidade em todo o Brasil.',
+  site_name: '',
+  site_title: '',
+  site_description: '',
   site_favicon_url: '/favicon.svg',
   footer_logo: '',
   header_logo_light: '',
@@ -60,16 +62,31 @@ const defaultSettings: SiteSettings = {
 };
 
 export const useSiteSettings = () => {
+  const { selectedTenantId, currentTenant } = useTenant();
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSettings = async () => {
+  // Determine which tenant to use
+  const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
+
+  const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      let query = supabase
         .from('site_settings')
-        .select('key, value');
+        .select('key, value, tenant_id');
+
+      // Filter by tenant if we have one
+      if (effectiveTenantId) {
+        query = query.eq('tenant_id', effectiveTenantId);
+      } else {
+        // If no tenant, get settings without tenant_id (global settings)
+        query = query.is('tenant_id', null);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         setError(error.message);
@@ -81,9 +98,12 @@ export const useSiteSettings = () => {
         settingsMap[item.key] = item.value || '';
       });
 
+      // Use tenant name as fallback for site_name if not set
+      const tenantName = currentTenant?.name || '';
+
       setSettings({
-        site_name: settingsMap.site_name || defaultSettings.site_name,
-        site_title: settingsMap.site_title || defaultSettings.site_title,
+        site_name: settingsMap.site_name || tenantName || defaultSettings.site_name,
+        site_title: settingsMap.site_title || (tenantName ? `${tenantName} - Imóveis` : defaultSettings.site_title),
         site_description: settingsMap.site_description || defaultSettings.site_description,
         site_favicon_url: settingsMap.site_favicon_url || defaultSettings.site_favicon_url,
         footer_logo: settingsMap.footer_logo || defaultSettings.footer_logo,
@@ -116,17 +136,27 @@ export const useSiteSettings = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [effectiveTenantId, currentTenant?.name]);
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [fetchSettings]);
 
   const updateSetting = async (key: keyof SiteSettings, value: string) => {
     try {
+      const updateData: { key: string; value: string; updated_at: string; tenant_id?: string } = { 
+        key, 
+        value, 
+        updated_at: new Date().toISOString() 
+      };
+      
+      if (effectiveTenantId) {
+        updateData.tenant_id = effectiveTenantId;
+      }
+
       const { error } = await supabase
         .from('site_settings')
-        .upsert([{ key, value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
+        .upsert([updateData], { onConflict: 'key,tenant_id' });
 
       if (error) {
         throw error;

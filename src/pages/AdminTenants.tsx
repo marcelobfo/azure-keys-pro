@@ -226,17 +226,38 @@ const AdminTenants: React.FC = () => {
         api_provider: 'gemini',
       });
 
-      // Create clean site settings for the tenant
-      // Configurações padrão limpas para novo tenant - SEM dados de outras imobiliárias
+      // Create complete site settings for the new tenant - using tenant name
       const defaultSettings = [
-        { key: 'company_name', value: 'Minha Imobiliária', tenant_id: data.id },
-        { key: 'company_description', value: 'Sua imobiliária de confiança', tenant_id: data.id },
-        { key: 'phone', value: '', tenant_id: data.id },
-        { key: 'email', value: '', tenant_id: data.id },
-        { key: 'address', value: '', tenant_id: data.id },
-        { key: 'logo_url', value: '', tenant_id: data.id },
-        { key: 'hero_title', value: 'Encontre seu imóvel ideal', tenant_id: data.id },
-        { key: 'hero_subtitle', value: 'Os melhores imóveis da região', tenant_id: data.id },
+        { key: 'site_name', value: formData.name, tenant_id: data.id },
+        { key: 'site_title', value: `${formData.name} - Imóveis`, tenant_id: data.id },
+        { key: 'site_description', value: `Encontre os melhores imóveis com ${formData.name}`, tenant_id: data.id },
+        { key: 'site_favicon_url', value: '/favicon.svg', tenant_id: data.id },
+        { key: 'header_logo_light', value: '', tenant_id: data.id },
+        { key: 'header_logo_dark', value: '', tenant_id: data.id },
+        { key: 'footer_logo', value: '', tenant_id: data.id },
+        { key: 'footer_email', value: '', tenant_id: data.id },
+        { key: 'footer_phone', value: '', tenant_id: data.id },
+        { key: 'footer_address', value: '', tenant_id: data.id },
+        { key: 'footer_instagram', value: '', tenant_id: data.id },
+        { key: 'footer_whatsapp', value: '', tenant_id: data.id },
+        { key: 'footer_facebook', value: '', tenant_id: data.id },
+        { key: 'home_banner_title', value: 'Encontre seu imóvel ideal', tenant_id: data.id },
+        { key: 'home_banner_subtitle', value: 'Os melhores imóveis da região', tenant_id: data.id },
+        { key: 'home_banner_button', value: 'Ver Imóveis', tenant_id: data.id },
+        { key: 'home_banner_image', value: '', tenant_id: data.id },
+        { key: 'about_section_title', value: `Sobre a ${formData.name}`, tenant_id: data.id },
+        { key: 'about_section_text', value: '', tenant_id: data.id },
+        { key: 'about_section_image', value: '', tenant_id: data.id },
+        { key: 'home_layout', value: 'default', tenant_id: data.id },
+        { key: 'home_sections_featured', value: 'true', tenant_id: data.id },
+        { key: 'home_sections_beachfront', value: 'false', tenant_id: data.id },
+        { key: 'home_sections_near_beach', value: 'false', tenant_id: data.id },
+        { key: 'home_sections_developments', value: 'false', tenant_id: data.id },
+        { key: 'contact_address', value: '', tenant_id: data.id },
+        { key: 'contact_phone', value: '', tenant_id: data.id },
+        { key: 'contact_email', value: '', tenant_id: data.id },
+        { key: 'contact_hours', value: '', tenant_id: data.id },
+        { key: 'contact_map_url', value: '', tenant_id: data.id },
       ];
 
       await supabase.from('site_settings').insert(defaultSettings);
@@ -512,13 +533,30 @@ const AdminTenants: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="domain">Domínio (opcional)</Label>
+                  <Label htmlFor="domain">Domínio Personalizado (opcional)</Label>
                   <Input
                     id="domain"
                     value={formData.domain}
                     onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
                     placeholder="www.minhaimobiliaria.com.br"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Para usar um domínio personalizado, configure o DNS:
+                  </p>
+                  <div className="text-xs bg-muted p-2 rounded space-y-1">
+                    <p><strong>Registro A:</strong> Aponte para o IP do servidor</p>
+                    <p><strong>Registro CNAME:</strong> www → seu-dominio.com</p>
+                    <p className="text-muted-foreground">A propagação pode levar até 48h</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>URLs de Acesso</Label>
+                  <div className="text-xs bg-muted p-2 rounded space-y-1">
+                    <p><strong>URL por slug:</strong> /t/{formData.slug || 'seu-slug'}/</p>
+                    {formData.domain && (
+                      <p><strong>Domínio:</strong> https://{formData.domain}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setIsFormOpen(false)}>
