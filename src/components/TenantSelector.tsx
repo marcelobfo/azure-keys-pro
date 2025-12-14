@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Building2, Globe } from 'lucide-react';
 import {
   Select,
@@ -13,13 +13,17 @@ import { useRoles } from '@/hooks/useRoles';
 import { useTenant } from '@/hooks/useTenant';
 
 const TenantSelector: React.FC = () => {
-  const { isSuperAdmin } = useRoles();
-  const { selectedTenant, allTenants, setSelectedTenant, isGlobalView, loading } = useTenant();
+  const { isSuperAdmin, loading: rolesLoading } = useRoles();
+  const { selectedTenant, allTenants, setSelectedTenant, isGlobalView, loading: tenantLoading } = useTenant();
+  const [open, setOpen] = useState(false);
+
+  // Wait for roles to load before deciding to render
+  if (rolesLoading) return null;
 
   // Only show for super admins
   if (!isSuperAdmin) return null;
 
-  if (loading) {
+  if (tenantLoading) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md animate-pulse">
         <Building2 className="w-4 h-4 text-muted-foreground" />
@@ -32,7 +36,12 @@ const TenantSelector: React.FC = () => {
 
   return (
     <div className="flex items-center gap-2">
-      <Select value={currentValue} onValueChange={setSelectedTenant}>
+      <Select 
+        value={currentValue} 
+        onValueChange={setSelectedTenant}
+        open={open}
+        onOpenChange={setOpen}
+      >
         <SelectTrigger className="w-[220px] bg-background border-border">
           <div className="flex items-center gap-2">
             {isGlobalView ? (
@@ -45,7 +54,11 @@ const TenantSelector: React.FC = () => {
             </SelectValue>
           </div>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent 
+          className="z-50 bg-popover border border-border shadow-lg"
+          position="popper"
+          sideOffset={4}
+        >
           <SelectItem value="all">
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4" />
