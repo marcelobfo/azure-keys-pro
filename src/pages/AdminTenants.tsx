@@ -262,10 +262,12 @@ const AdminTenants: React.FC = () => {
 
       await supabase.from('site_settings').insert(defaultSettings);
 
-      toast({ title: 'Imobiliária criada com sucesso!' });
+      toast({ title: 'Imobiliária criada! Redirecionando para configuração...' });
       setIsFormOpen(false);
       setFormData({ name: '', slug: '', domain: '' });
-      fetchTenants();
+      
+      // Redirect to onboarding wizard
+      navigate(`/onboarding/${data.id}`);
     } catch (error: any) {
       toast({
         title: 'Erro ao criar imobiliária',

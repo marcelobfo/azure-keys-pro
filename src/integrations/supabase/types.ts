@@ -1315,31 +1315,55 @@ export type Database = {
       }
       tenants: {
         Row: {
+          contact_email: string | null
           created_at: string | null
           domain: string | null
+          favicon_url: string | null
           id: string
+          logo_url: string | null
           name: string
+          primary_color: string | null
+          redirect_url: string | null
+          secondary_color: string | null
           settings: Json | null
           slug: string
+          subdomain: string | null
           updated_at: string | null
+          whatsapp: string | null
         }
         Insert: {
+          contact_email?: string | null
           created_at?: string | null
           domain?: string | null
+          favicon_url?: string | null
           id?: string
+          logo_url?: string | null
           name: string
+          primary_color?: string | null
+          redirect_url?: string | null
+          secondary_color?: string | null
           settings?: Json | null
           slug: string
+          subdomain?: string | null
           updated_at?: string | null
+          whatsapp?: string | null
         }
         Update: {
+          contact_email?: string | null
           created_at?: string | null
           domain?: string | null
+          favicon_url?: string | null
           id?: string
+          logo_url?: string | null
           name?: string
+          primary_color?: string | null
+          redirect_url?: string | null
+          secondary_color?: string | null
           settings?: Json | null
           slug?: string
+          subdomain?: string | null
           updated_at?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -1578,6 +1602,10 @@ export type Database = {
         }[]
       }
       get_site_context_for_ai: { Args: never; Returns: Json }
+      get_tenant_id_by_domain: {
+        Args: { domain_input: string }
+        Returns: string
+      }
       get_user_email: { Args: { user_id: string }; Returns: string }
       get_user_tenant_id: { Args: never; Returns: string }
       has_role: {
