@@ -42,6 +42,7 @@ import AdminOLXSettings from '@/pages/AdminOLXSettings';
 import OLXCallback from '@/pages/OLXCallback';
 import AdminTenants from '@/pages/AdminTenants';
 import TenantIndex from '@/pages/TenantIndex';
+import TenantOnboarding from '@/pages/TenantOnboarding';
 import SEOUpdater from '@/components/SEOUpdater';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
 import { useEffect } from 'react';
@@ -135,6 +136,7 @@ function App() {
                 <Route path="/commissions" element={<CommissionsPanel />} />
                 <Route path="/admin/olx-settings" element={<AdminOLXSettings />} />
                 <Route path="/admin/tenants" element={<AdminTenants />} />
+                <Route path="/onboarding/:tenantId" element={<TenantOnboarding />} />
                 <Route path="/olx-callback" element={<OLXCallback />} />
 
                 {/* Corretor Routes */}
