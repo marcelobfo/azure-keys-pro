@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useTenantContext } from '@/contexts/TenantContext';
 import { useRoles } from '@/hooks/useRoles';
+import { useProfile } from '@/hooks/useProfile';
 
 export interface Property {
   id: string;
@@ -44,6 +45,7 @@ export const useProperties = () => {
   const [loading, setLoading] = useState(true);
   const { selectedTenantId, isGlobalView } = useTenantContext();
   const { isSuperAdmin } = useRoles();
+  const { profile } = useProfile();
 
   const fetchProperties = async () => {
     try {
@@ -57,6 +59,11 @@ export const useProperties = () => {
       // Super admin com tenant selecionado filtra por tenant
       if (isSuperAdmin && selectedTenantId && !isGlobalView) {
         query = query.eq('tenant_id', selectedTenantId);
+      } else if (isSuperAdmin && isGlobalView) {
+        // Super admin em modo global - não filtra
+      } else if (profile?.tenant_id) {
+        // Usuário normal do tenant - sempre filtra pelo tenant_id do perfil
+        query = query.eq('tenant_id', profile.tenant_id);
       }
 
       const { data, error } = await query;
@@ -185,10 +192,10 @@ export const useProperties = () => {
   const { loading: rolesLoading } = useRoles();
 
   useEffect(() => {
-    if (!rolesLoading) {
+    if (!rolesLoading && profile !== undefined) {
       fetchProperties();
     }
-  }, [selectedTenantId, isGlobalView, isSuperAdmin, rolesLoading]);
+  }, [selectedTenantId, isGlobalView, isSuperAdmin, rolesLoading, profile?.tenant_id]);
 
   return {
     properties,
