@@ -65,9 +65,14 @@ const ManageProperties = () => {
       // Super admin com tenant selecionado filtra por tenant
       if (isSuperAdmin && selectedTenantId && !isGlobalView) {
         query = query.eq('tenant_id', selectedTenantId);
+      } else if (isSuperAdmin && isGlobalView) {
+        // Super admin em modo global - não filtra
       } else if (profile?.role === 'corretor') {
         // Corretor só vê seus próprios imóveis
         query = query.eq('user_id', user?.id);
+      } else if (profile?.tenant_id) {
+        // Usuário normal do tenant - filtra pelo tenant_id do perfil
+        query = query.eq('tenant_id', profile.tenant_id);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });

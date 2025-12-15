@@ -8,6 +8,7 @@ import PropertyFiltersTop from '../components/PropertyFiltersTop';
 import { usePropertyFilters } from '../hooks/usePropertyFilters';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
+import { useTenantContext } from '@/contexts/TenantContext';
 
 interface Property {
   id: string;
@@ -39,18 +40,29 @@ const PropertiesPage = () => {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const { currentTenant, selectedTenantId } = useTenantContext();
+  
+  // Tenant efetivo: prioriza selectedTenantId (super admin), depois currentTenant (detectado pela URL)
+  const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
 
   useEffect(() => {
     fetchProperties();
-  }, []);
+  }, [effectiveTenantId]);
 
   const fetchProperties = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('properties')
         .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
+
+      // Filtrar por tenant se disponível
+      if (effectiveTenantId) {
+        query = query.eq('tenant_id', effectiveTenantId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         throw error;
