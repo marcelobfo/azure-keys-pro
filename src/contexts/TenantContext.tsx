@@ -48,14 +48,14 @@ const detectTenantFromUrl = async (): Promise<Tenant | null> => {
     if (data) return data;
   }
 
-  // 2. Check for custom domain
+  // 2. Check for custom domain (usando ILIKE para matching flexível)
   if (!hostname.includes('localhost') && 
       !hostname.includes('lovableproject.com') &&
       !hostname.includes('lovable.app')) {
     const { data } = await supabase
       .from('tenants')
       .select('*')
-      .eq('domain', hostname)
+      .ilike('domain', `%${hostname}%`)
       .single();
 
     if (data) return data;

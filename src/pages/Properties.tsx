@@ -51,18 +51,20 @@ const PropertiesPage = () => {
 
   const fetchProperties = async () => {
     try {
-      let query = supabase
+      // Se não há tenant detectado, não mostrar imóveis (comportamento seguro)
+      if (!effectiveTenantId) {
+        console.log('Nenhum tenant detectado - lista de imóveis vazia');
+        setProperties([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
         .from('properties')
         .select('*')
         .eq('status', 'active')
+        .eq('tenant_id', effectiveTenantId)
         .order('created_at', { ascending: false });
-
-      // Filtrar por tenant se disponível
-      if (effectiveTenantId) {
-        query = query.eq('tenant_id', effectiveTenantId);
-      }
-
-      const { data, error } = await query;
 
       if (error) {
         throw error;
