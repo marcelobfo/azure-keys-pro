@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Badge } from './ui/badge';
 import { Card } from './ui/card';
 import { useLanguage } from '../contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useTenantContext } from '@/contexts/TenantContext';
 
 interface PropertyFilters {
   search: string;
@@ -42,6 +44,63 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
   setIsExpanded,
 }) => {
   const { t } = useLanguage();
+  const { currentTenant, selectedTenantId } = useTenantContext();
+  const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
+  
+  const [propertyTypes, setPropertyTypes] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+  const [purposes, setPurposes] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      if (!effectiveTenantId) return;
+
+      try {
+        // Buscar tipos únicos
+        const { data: typesData } = await supabase
+          .from('properties')
+          .select('property_type')
+          .eq('status', 'active')
+          .eq('tenant_id', effectiveTenantId)
+          .not('property_type', 'is', null);
+
+        if (typesData) {
+          const uniqueTypes = [...new Set(typesData.map(t => t.property_type).filter(Boolean))];
+          setPropertyTypes(uniqueTypes.sort());
+        }
+
+        // Buscar cidades únicas
+        const { data: citiesData } = await supabase
+          .from('properties')
+          .select('city')
+          .eq('status', 'active')
+          .eq('tenant_id', effectiveTenantId)
+          .not('city', 'is', null);
+
+        if (citiesData) {
+          const uniqueCities = [...new Set(citiesData.map(c => c.city?.trim()).filter(Boolean))];
+          setCities(uniqueCities.sort());
+        }
+
+        // Buscar finalidades únicas
+        const { data: purposesData } = await supabase
+          .from('properties')
+          .select('purpose')
+          .eq('status', 'active')
+          .eq('tenant_id', effectiveTenantId)
+          .not('purpose', 'is', null);
+
+        if (purposesData) {
+          const uniquePurposes = [...new Set(purposesData.map(p => p.purpose).filter(Boolean))];
+          setPurposes(uniquePurposes);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar opções de filtro:', error);
+      }
+    };
+
+    fetchFilterOptions();
+  }, [effectiveTenantId]);
 
   const updateFilter = (key: keyof PropertyFilters, value: any) => {
     setFilters({ ...filters, [key]: value });
@@ -73,6 +132,35 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
     return count;
   };
 
+  const getPurposeLabel = (purpose: string) => {
+    const labels: Record<string, string> = {
+      'sale': 'Venda',
+      'rent': 'Aluguel',
+      'both': 'Venda/Aluguel'
+    };
+    return labels[purpose] || purpose;
+  };
+
+  const formatPropertyType = (type: string) => {
+    const labels: Record<string, string> = {
+      'apartamento': 'Apartamento',
+      'apartamento_diferenciado': 'Apartamento Diferenciado',
+      'casa': 'Casa',
+      'cobertura': 'Cobertura',
+      'loft': 'Loft',
+      'lote': 'Lote',
+      'sala_comercial': 'Sala Comercial',
+      'studio': 'Studio',
+      'terreno': 'Terreno',
+      'sobrado': 'Sobrado',
+      'galpao': 'Galpão',
+      'fazenda': 'Fazenda',
+      'sitio': 'Sítio',
+      'chacara': 'Chácara'
+    };
+    return labels[type?.toLowerCase()] || type;
+  };
+
   return (
     <Card className="mb-6 p-4">
       {/* Top Row - Always Visible */}
@@ -93,30 +181,38 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
           {/* Quick Filters */}
           <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 xs:gap-3 flex-1">
             <Select value={filters.purpose || 'all'} onValueChange={(value) => updateFilter('purpose', value === 'all' ? '' : value)}>
-              <SelectTrigger className="w-full xs:w-32">
+              <SelectTrigger className="w-full xs:w-40">
                 <SelectValue placeholder="Finalidade" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="sale">Venda</SelectItem>
-                <SelectItem value="rent">Aluguel</SelectItem>
+              <SelectContent className="bg-white dark:bg-slate-800">
+                <SelectItem value="all">Todas Finalidades</SelectItem>
+                {purposes.length > 0 ? (
+                  purposes.map((purpose) => (
+                    <SelectItem key={purpose} value={purpose}>
+                      {getPurposeLabel(purpose)}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <>
+                    <SelectItem value="sale">Venda</SelectItem>
+                    <SelectItem value="rent">Aluguel</SelectItem>
+                    <SelectItem value="both">Venda/Aluguel</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
 
             <Select value={filters.type || 'all'} onValueChange={(value) => updateFilter('type', value === 'all' ? '' : value)}>
-              <SelectTrigger className="w-full xs:w-32">
+              <SelectTrigger className="w-full xs:w-40">
                 <SelectValue placeholder="Tipo" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="apartamento">Apartamento</SelectItem>
-                <SelectItem value="apartamento_diferenciado">Apartamento Diferenciado</SelectItem>
-                <SelectItem value="casa">Casa</SelectItem>
-                <SelectItem value="cobertura">Cobertura</SelectItem>
-                <SelectItem value="loft">Loft</SelectItem>
-                <SelectItem value="lote">Lote</SelectItem>
-                <SelectItem value="sala_comercial">Sala Comercial</SelectItem>
-                <SelectItem value="studio">Studio</SelectItem>
+              <SelectContent className="bg-white dark:bg-slate-800">
+                <SelectItem value="all">Todos os Tipos</SelectItem>
+                {propertyTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {formatPropertyType(type)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -157,17 +253,24 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
 
       {/* Expanded Filters */}
       {isExpanded && (
-        <div className="border-t pt-4 space-y-4">
+        <div className="border-t pt-4 space-y-4 mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* City */}
             <div>
               <label className="block text-sm font-medium mb-1">Cidade</label>
-              <Input
-                type="text"
-                placeholder="Digite a cidade"
-                value={filters.city}
-                onChange={(e) => updateFilter('city', e.target.value)}
-              />
+              <Select value={filters.city || 'all'} onValueChange={(value) => updateFilter('city', value === 'all' ? '' : value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a cidade" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-slate-800">
+                  <SelectItem value="all">Todas as Cidades</SelectItem>
+                  {cities.map((city) => (
+                    <SelectItem key={city} value={city}>
+                      {city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Price Range */}
@@ -211,7 +314,7 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Qualquer" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-slate-800">
                   <SelectItem value="any">Qualquer</SelectItem>
                   <SelectItem value="1">1+</SelectItem>
                   <SelectItem value="2">2+</SelectItem>
@@ -229,7 +332,7 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Qualquer" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-slate-800">
                   <SelectItem value="any">Qualquer</SelectItem>
                   <SelectItem value="1">1+</SelectItem>
                   <SelectItem value="2">2+</SelectItem>

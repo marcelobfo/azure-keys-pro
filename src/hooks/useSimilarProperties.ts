@@ -14,6 +14,8 @@ interface Property {
   bathrooms: number;
   property_type: string;
   images: string[];
+  tenant_id?: string;
+  slug?: string;
 }
 
 export const useSimilarProperties = (currentProperty: Property | null, limit: number = 4) => {
@@ -30,10 +32,10 @@ export const useSimilarProperties = (currentProperty: Property | null, limit: nu
         const minPrice = currentProperty.price - priceRange;
         const maxPrice = currentProperty.price + priceRange;
 
-        const { data, error } = await supabase
+        let query = supabase
           .from('properties')
           .select('*')
-          .eq('status', 'available')
+          .eq('status', 'active')
           .eq('property_type', currentProperty.property_type)
           .eq('city', currentProperty.city)
           .neq('id', currentProperty.id)
@@ -41,17 +43,30 @@ export const useSimilarProperties = (currentProperty: Property | null, limit: nu
           .lte('price', maxPrice)
           .limit(limit);
 
+        // Filtrar por tenant_id se disponível
+        if (currentProperty.tenant_id) {
+          query = query.eq('tenant_id', currentProperty.tenant_id);
+        }
+
+        const { data, error } = await query;
+
         if (error) throw error;
 
         // Se não encontrou imóveis similares com os mesmos critérios, relaxar filtros
         if (!data || data.length === 0) {
-          const { data: fallbackData, error: fallbackError } = await supabase
+          let fallbackQuery = supabase
             .from('properties')
             .select('*')
-            .eq('status', 'available')
+            .eq('status', 'active')
             .eq('property_type', currentProperty.property_type)
             .neq('id', currentProperty.id)
             .limit(limit);
+
+          if (currentProperty.tenant_id) {
+            fallbackQuery = fallbackQuery.eq('tenant_id', currentProperty.tenant_id);
+          }
+
+          const { data: fallbackData, error: fallbackError } = await fallbackQuery;
 
           if (fallbackError) throw fallbackError;
           setSimilarProperties(fallbackData || []);

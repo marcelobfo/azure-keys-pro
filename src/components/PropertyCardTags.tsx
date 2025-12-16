@@ -7,6 +7,7 @@ interface TagData {
 }
 
 interface FeaturedProperty {
+  purpose?: string;
   is_featured?: boolean;
   is_beachfront?: boolean;
   is_near_beach?: boolean;
@@ -24,40 +25,51 @@ export const usePropertyTags = (property: FeaturedProperty): TagData[] => {
   // Garantir que tags sempre seja um array
   const propertyTags = Array.isArray(property.tags) ? property.tags : [];
 
-  // Criar tags especiais baseadas nas propriedades booleanas
-  const specialTags = [];
-  if (property.is_featured) specialTags.push({ text: 'Destaque', color: 'bg-yellow-500' });
-  if (property.is_beachfront) specialTags.push({ text: 'Frente Mar', color: 'bg-blue-500' });
-  if (property.is_near_beach) specialTags.push({ text: 'Quadra Mar', color: 'bg-cyan-500' });
-  if (property.is_development) specialTags.push({ text: 'Empreendimento', color: 'bg-purple-500' });
-  if (property.accepts_exchange) specialTags.push({ text: 'Aceita Permuta', color: 'bg-green-500' });
+  // Tag de finalidade (prioridade máxima)
+  const purposeTags: TagData[] = [];
+  if (property.purpose === 'sale') {
+    purposeTags.push({ text: 'Venda', color: 'bg-green-600' });
+  } else if (property.purpose === 'rent') {
+    purposeTags.push({ text: 'Aluguel', color: 'bg-orange-500' });
+  } else if (property.purpose === 'both') {
+    purposeTags.push({ text: 'Venda/Aluguel', color: 'bg-blue-600' });
+  }
 
-  // Combinar tags normais com tags especiais
+  // Criar tags especiais baseadas nas propriedades booleanas
+  const specialTags: TagData[] = [];
+  if (property.is_featured) specialTags.push({ text: 'Destaque', color: 'bg-yellow-500' });
+  if (property.is_beachfront) specialTags.push({ text: 'Frente Mar', color: 'bg-cyan-500' });
+  if (property.is_near_beach) specialTags.push({ text: 'Quadra Mar', color: 'bg-sky-500' });
+  if (property.is_development) specialTags.push({ text: 'Lançamento', color: 'bg-purple-500' });
+  if (property.accepts_exchange) specialTags.push({ text: 'Aceita Permuta', color: 'bg-emerald-500' });
+
+  // Combinar tags: finalidade primeiro, depois especiais, depois normais
   const allTags = [
+    ...purposeTags,
     ...specialTags,
-    ...propertyTags.slice(0, Math.max(0, 3 - specialTags.length)).map(tag => ({ text: tag, color: 'bg-gray-600' }))
+    ...propertyTags.slice(0, Math.max(0, 3 - purposeTags.length - specialTags.length)).map(tag => ({ text: tag, color: 'bg-gray-600' }))
   ];
 
   return allTags;
 };
 
-const PropertyCardTags: React.FC<PropertyCardTagsProps> = ({ property, maxVisibleTags = 2 }) => {
+const PropertyCardTags: React.FC<PropertyCardTagsProps> = ({ property, maxVisibleTags = 3 }) => {
   const allTags = usePropertyTags(property);
 
   if (allTags.length === 0) return null;
 
   return (
-    <div className="absolute top-4 left-4 flex flex-col gap-1 max-w-[50%]">
+    <div className="absolute top-4 left-4 flex flex-col gap-1 max-w-[60%]">
       {allTags.slice(0, maxVisibleTags).map((tag, index) => (
         <span
           key={index}
-          className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${tag.color}`}
+          className={`px-2 py-1 rounded-full text-xs font-semibold text-white ${tag.color} shadow-md`}
         >
           {tag.text}
         </span>
       ))}
       {allTags.length > maxVisibleTags && (
-        <span className="px-2 py-1 rounded-full text-xs font-semibold text-white bg-gray-600">
+        <span className="px-2 py-1 rounded-full text-xs font-semibold text-white bg-gray-600 shadow-md">
           +{allTags.length - maxVisibleTags}
         </span>
       )}

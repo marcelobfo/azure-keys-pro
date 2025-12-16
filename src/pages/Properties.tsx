@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { LayoutGrid, List } from 'lucide-react';
 import PropertyCardSimple from '../components/PropertyCardSimple';
+import PropertyListItem from '../components/PropertyListItem';
 import PropertyFiltersTop from '../components/PropertyFiltersTop';
 import { usePropertyFilters } from '../hooks/usePropertyFilters';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +33,7 @@ interface Property {
   accepts_exchange?: boolean;
   property_code?: string;
   hide_address?: boolean;
+  slug?: string;
 }
 
 const PropertiesPage = () => {
@@ -40,6 +43,7 @@ const PropertiesPage = () => {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const { currentTenant, selectedTenantId } = useTenantContext();
   
   // Tenant efetivo: prioriza selectedTenantId (super admin), depois currentTenant (detectado pela URL)
@@ -90,7 +94,8 @@ const PropertiesPage = () => {
         is_featured: property.is_featured || false,
         accepts_exchange: property.accepts_exchange || false,
         property_code: property.property_code,
-        hide_address: property.hide_address || false
+        hide_address: property.hide_address || false,
+        slug: property.slug
       })) || [];
 
       setProperties(formattedProperties);
@@ -151,19 +156,49 @@ const PropertiesPage = () => {
           setIsExpanded={setFiltersExpanded}
         />
 
-        {/* Results Count */}
-        <div className="mb-6">
+        {/* Results Count and View Toggle */}
+        <div className="mb-6 flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             {t('properties.found')} {filteredProperties.length} {t('properties.properties')}
           </p>
+          
+          {/* View Toggle */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className="flex items-center gap-2"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span className="hidden sm:inline">Grade</span>
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="flex items-center gap-2"
+            >
+              <List className="w-4 h-4" />
+              <span className="hidden sm:inline">Lista</span>
+            </Button>
+          </div>
         </div>
 
-        {/* Properties Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProperties.map((property) => (
-            <PropertyCardSimple key={property.id} property={property} />
-          ))}
-        </div>
+        {/* Properties Grid or List */}
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProperties.map((property) => (
+              <PropertyCardSimple key={property.id} property={property} />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredProperties.map((property) => (
+              <PropertyListItem key={property.id} property={property} />
+            ))}
+          </div>
+        )}
 
         {/* No Results */}
         {filteredProperties.length === 0 && (
