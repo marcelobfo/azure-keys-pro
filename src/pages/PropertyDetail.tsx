@@ -11,6 +11,7 @@ import PropertyMainInfo from '@/components/PropertyMainInfo';
 import PropertySidebar from '@/components/PropertySidebar';
 import PropertyConfidentialInfo from '@/components/PropertyConfidentialInfo';
 import Breadcrumb from '@/components/Breadcrumb';
+import SimilarProperties from '@/components/SimilarProperties';
 import { useSEO, generatePropertySEO } from '@/hooks/useSEO';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
@@ -43,6 +44,8 @@ interface Property {
   accepts_exchange?: boolean;
   broker_name?: string;
   broker_creci?: string;
+  tenant_id?: string;
+  rental_price?: number;
 }
 
 const PropertyDetail = () => {
@@ -209,6 +212,9 @@ const PropertyDetail = () => {
 
           <PropertySidebar property={property} />
         </div>
+
+        {/* Imóveis Similares */}
+        <SimilarProperties currentProperty={property} />
       </div>
     </Layout>
   );

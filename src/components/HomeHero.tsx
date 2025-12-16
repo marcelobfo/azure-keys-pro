@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
-import PropertyPurposeButtons from './PropertyPurposeButtons';
 
 interface HomeHeroProps {
   settings: Record<string, string>;
@@ -15,16 +15,48 @@ const HomeHero: React.FC<HomeHeroProps> = ({ settings }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [purpose, setPurpose] = useState('all');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate(`/properties?search=${encodeURIComponent(searchTerm)}`);
+    const params = new URLSearchParams();
+    if (searchTerm) params.set('search', searchTerm);
+    if (purpose && purpose !== 'all') params.set('purpose', purpose);
+    navigate(`/properties?${params.toString()}`);
   };
 
   const layout = settings['home_layout'] || 'modelo1';
   const bannerType = settings['home_banner_type'] || 'image';
   const bannerImage = settings['home_banner_image'] || 'https://images.unsplash.com/photo-1496307653780-42ee777d4833?w=1200&h=500&fit=crop';
   const bannerVideo = settings['home_banner_video_url'] || '';
+
+  const SearchBar = () => (
+    <form onSubmit={handleSearch} className="max-w-3xl mx-auto mt-8">
+      <div className="flex flex-col sm:flex-row bg-white rounded-lg shadow-lg p-2 gap-2">
+        <Select value={purpose} onValueChange={setPurpose}>
+          <SelectTrigger className="w-full sm:w-40 border-none bg-gray-50 text-gray-900">
+            <SelectValue placeholder="Finalidade" />
+          </SelectTrigger>
+          <SelectContent className="bg-white">
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="sale">Comprar</SelectItem>
+            <SelectItem value="rent">Alugar</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input
+          type="text"
+          placeholder={t('home.search.placeholder')}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1 border-none text-gray-900 text-lg"
+        />
+        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 px-8">
+          <Search className="w-5 h-5 mr-2" />
+          {t('home.search.button')}
+        </Button>
+      </div>
+    </form>
+  );
 
   if (layout === 'modelo2') {
     return (
@@ -52,7 +84,7 @@ const HomeHero: React.FC<HomeHeroProps> = ({ settings }) => {
           <p className="text-2xl mb-6">
             {settings['home_banner_subtitle'] || t('home.hero.subtitle')}
           </p>
-          <PropertyPurposeButtons />
+          <SearchBar />
         </div>
       </section>
     );
@@ -69,23 +101,7 @@ const HomeHero: React.FC<HomeHeroProps> = ({ settings }) => {
           {settings['home_banner_subtitle'] || t('home.hero.subtitle')}
         </p>
         
-        <PropertyPurposeButtons />
-        
-        <form onSubmit={handleSearch} className="max-w-2xl mx-auto mt-8">
-          <div className="flex bg-white rounded-lg shadow-lg p-2">
-            <Input
-              type="text"
-              placeholder={t('home.search.placeholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 border-none text-gray-900 text-lg"
-            />
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 px-8">
-              <Search className="w-5 h-5 mr-2" />
-              {t('home.search.button')}
-            </Button>
-          </div>
-        </form>
+        <SearchBar />
       </div>
       {bannerType === 'video' && bannerVideo ? (
         <video
