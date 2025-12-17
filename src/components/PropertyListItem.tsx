@@ -17,9 +17,9 @@ interface Property {
   area: number;
   bedrooms: number;
   bathrooms: number;
-  type: string;
+  property_type: string;
   purpose?: string;
-  image: string;
+  images: string[];
   tags?: string[];
   is_beachfront?: boolean;
   is_near_beach?: boolean;
@@ -54,7 +54,7 @@ const PropertyListItem: React.FC<PropertyListItemProps> = ({ property }) => {
   };
 
   const getPriceDisplay = () => {
-    if (property.purpose === 'rent' && property.rental_price) {
+    if ((property.purpose === 'rent' || property.purpose === 'rent_annual' || property.purpose === 'rent_seasonal') && property.rental_price) {
       return `${formatPrice(property.rental_price)}/mês`;
     } else if (property.purpose === 'both') {
       return `${formatPrice(property.price)}`;
@@ -66,31 +66,49 @@ const PropertyListItem: React.FC<PropertyListItemProps> = ({ property }) => {
   const getPurposeLabel = () => {
     if (property.purpose === 'sale') return 'Venda';
     if (property.purpose === 'rent') return 'Aluguel';
+    if (property.purpose === 'rent_annual') return 'Aluguel Anual';
+    if (property.purpose === 'rent_seasonal') return 'Temporada';
     if (property.purpose === 'both') return 'Venda/Aluguel';
     return null;
   };
 
   const getPurposeColor = () => {
     if (property.purpose === 'sale') return 'bg-green-600';
-    if (property.purpose === 'rent') return 'bg-orange-500';
+    if (property.purpose === 'rent' || property.purpose === 'rent_annual' || property.purpose === 'rent_seasonal') return 'bg-orange-500';
     if (property.purpose === 'both') return 'bg-blue-600';
     return 'bg-gray-500';
+  };
+
+  const getPropertyTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      'apartamento': 'Apartamento',
+      'apartamento_diferenciado': 'Apto Diferenciado',
+      'casa': 'Casa',
+      'cobertura': 'Cobertura',
+      'loft': 'Loft',
+      'lote': 'Lote',
+      'sala_comercial': 'Sala Comercial',
+      'studio': 'Studio'
+    };
+    return labels[type?.toLowerCase()] || type;
   };
 
   const handleClick = () => {
     navigate(property.slug ? `/imovel/${property.slug}` : `/property/${property.id}`);
   };
 
+  const image = property.images?.[0] || '/placeholder.svg';
+
   return (
     <Card 
-      className="group hover:shadow-lg transition-all duration-300 overflow-hidden bg-white dark:bg-slate-800 cursor-pointer"
+      className="group hover:shadow-lg transition-all duration-300 overflow-hidden bg-card cursor-pointer"
       onClick={handleClick}
     >
       <div className="flex flex-col sm:flex-row">
         {/* Imagem */}
         <div className="relative w-full sm:w-64 md:w-80 flex-shrink-0">
           <img
-            src={property.image}
+            src={image}
             alt={property.title}
             className="w-full h-48 sm:h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
@@ -134,11 +152,11 @@ const PropertyListItem: React.FC<PropertyListItemProps> = ({ property }) => {
           <div>
             {/* Título e Tipo */}
             <div className="flex items-start justify-between gap-4 mb-2">
-              <h3 className="text-lg md:text-xl font-semibold group-hover:text-blue-600 transition-colors line-clamp-2">
+              <h3 className="text-lg md:text-xl font-semibold group-hover:text-blue-600 transition-colors line-clamp-2 text-foreground">
                 {property.title}
               </h3>
               <Badge variant="secondary" className="flex-shrink-0">
-                {property.type}
+                {getPropertyTypeLabel(property.property_type)}
               </Badge>
             </div>
 

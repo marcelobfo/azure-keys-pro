@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, ChevronDown, ChevronUp, Repeat, User, FileText } from 'lucide-react';
+import { Lock, ChevronDown, ChevronUp, Repeat, User, FileText, Phone, Mail } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,10 @@ interface PropertyConfidentialInfoProps {
   acceptsExchange?: boolean;
   brokerName?: string;
   brokerCreci?: string;
+  ownerName?: string;
+  ownerPhone?: string;
+  ownerEmail?: string;
+  ownerNotes?: string;
 }
 
 const PropertyConfidentialInfo: React.FC<PropertyConfidentialInfoProps> = ({
@@ -18,6 +22,10 @@ const PropertyConfidentialInfo: React.FC<PropertyConfidentialInfoProps> = ({
   acceptsExchange,
   brokerName,
   brokerCreci,
+  ownerName,
+  ownerPhone,
+  ownerEmail,
+  ownerNotes,
 }) => {
   const { profile, loading } = useProfile();
   const [isOpen, setIsOpen] = useState(false);
@@ -28,7 +36,7 @@ const PropertyConfidentialInfo: React.FC<PropertyConfidentialInfoProps> = ({
   if (!['corretor', 'admin', 'master'].includes(profile.role)) return null;
 
   // Verificar se há alguma informação para mostrar
-  const hasContent = negotiationNotes || acceptsExchange !== undefined || brokerName || brokerCreci;
+  const hasContent = negotiationNotes || acceptsExchange !== undefined || brokerName || brokerCreci || ownerName || ownerPhone || ownerEmail || ownerNotes;
   if (!hasContent) return null;
 
   return (
@@ -56,6 +64,50 @@ const PropertyConfidentialInfo: React.FC<PropertyConfidentialInfoProps> = ({
         
         <CollapsibleContent>
           <CardContent className="p-4 pt-0 space-y-4">
+            {/* Dados do Proprietário */}
+            {(ownerName || ownerPhone || ownerEmail) && (
+              <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-800">
+                <div className="flex items-start gap-3">
+                  <User className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Proprietário</p>
+                    <div className="space-y-2">
+                      {ownerName && (
+                        <p className="text-gray-900 dark:text-white font-semibold">{ownerName}</p>
+                      )}
+                      {ownerPhone && (
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                          <Phone className="w-4 h-4" />
+                          <a href={`tel:${ownerPhone}`} className="hover:text-blue-600">{ownerPhone}</a>
+                        </div>
+                      )}
+                      {ownerEmail && (
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                          <Mail className="w-4 h-4" />
+                          <a href={`mailto:${ownerEmail}`} className="hover:text-blue-600">{ownerEmail}</a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Observações do Proprietário */}
+            {ownerNotes && (
+              <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-800">
+                <div className="flex items-start gap-3">
+                  <FileText className="w-5 h-5 text-amber-600 dark:text-amber-500 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Observações do Proprietário</p>
+                    <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-md border-l-4 border-amber-400">
+                      <p className="text-gray-800 dark:text-gray-200 whitespace-pre-line">{ownerNotes}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Corretor Responsável */}
             {(brokerName || brokerCreci) && (
               <div className="flex items-start gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-800">

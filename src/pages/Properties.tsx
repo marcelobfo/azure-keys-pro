@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LayoutGrid, List } from 'lucide-react';
-import PropertyCardSimple from '../components/PropertyCardSimple';
+import PropertyCardEnhanced from '../components/PropertyCardEnhanced';
 import PropertyListItem from '../components/PropertyListItem';
 import PropertyFiltersTop from '../components/PropertyFiltersTop';
 import { usePropertyFilters } from '../hooks/usePropertyFilters';
@@ -18,14 +17,17 @@ interface Property {
   price: number;
   rental_price?: number;
   location: string;
-  city?: string;
+  city: string;
+  state: string;
   area: number;
   bedrooms: number;
   bathrooms: number;
-  type: string;
+  suites?: number;
+  property_type: string;
   purpose?: string;
-  image: string;
+  images: string[];
   tags?: string[];
+  features?: string[];
   is_beachfront?: boolean;
   is_near_beach?: boolean;
   is_development?: boolean;
@@ -81,13 +83,16 @@ const PropertiesPage = () => {
         rental_price: property.rental_price,
         location: property.location,
         city: property.city || '',
+        state: property.state || '',
         area: property.area || 0,
         bedrooms: property.bedrooms || 0,
         bathrooms: property.bathrooms || 0,
-        type: property.property_type,
+        suites: property.suites || 0,
+        property_type: property.property_type,
         purpose: property.purpose,
-        image: property.images?.[0] || '/placeholder.svg',
+        images: Array.isArray(property.images) ? property.images : ['/placeholder.svg'],
         tags: Array.isArray(property.tags) ? property.tags : [],
+        features: Array.isArray(property.features) ? property.features : [],
         is_beachfront: property.is_beachfront || false,
         is_near_beach: property.is_near_beach || false,
         is_development: property.is_development || false,
@@ -189,7 +194,7 @@ const PropertiesPage = () => {
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProperties.map((property) => (
-              <PropertyCardSimple key={property.id} property={property} />
+              <PropertyCardEnhanced key={property.id} property={property} />
             ))}
           </div>
         ) : (

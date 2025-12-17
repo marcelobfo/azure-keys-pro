@@ -45,6 +45,8 @@ import TenantIndex from '@/pages/TenantIndex';
 import TenantOnboarding from '@/pages/TenantOnboarding';
 import SEOUpdater from '@/components/SEOUpdater';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
+import Team from '@/pages/Team';
+import OwnersManagement from '@/pages/OwnersManagement';
 import { useEffect } from 'react';
 
 // Create QueryClient outside component to prevent recreation
@@ -113,6 +115,7 @@ function App() {
                 
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/favorites" element={<Favorites />} />
+                <Route path="/nossa-equipe" element={<Team />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/sitemap.xml" element={<Sitemap />} />
@@ -136,6 +139,7 @@ function App() {
                 <Route path="/commissions" element={<CommissionsPanel />} />
                 <Route path="/admin/olx-settings" element={<AdminOLXSettings />} />
                 <Route path="/admin/tenants" element={<AdminTenants />} />
+                <Route path="/admin/owners" element={<OwnersManagement />} />
                 <Route path="/onboarding/:tenantId" element={<TenantOnboarding />} />
                 <Route path="/olx-callback" element={<OLXCallback />} />
 

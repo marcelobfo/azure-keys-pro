@@ -7,7 +7,6 @@ import PropertyStats from './PropertyStats';
 import PropertyMultimedia from './PropertyMultimedia';
 import PropertyFeatures from './PropertyFeatures';
 import PropertyTag from './PropertyTag';
-import SimilarProperties from './SimilarProperties';
 import { formatCurrency } from '@/utils/priceUtils';
 import { useProfile } from '@/hooks/useProfile';
 
@@ -180,9 +179,6 @@ const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
         {property.features && (
           <PropertyFeatures features={property.features} />
         )}
-
-        {/* Similar Properties */}
-        <SimilarProperties currentProperty={property} />
       </CardContent>
     </Card>
   );
