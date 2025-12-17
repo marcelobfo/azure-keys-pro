@@ -952,6 +952,10 @@ export type Database = {
           olx_error_message: string | null
           olx_last_sync: string | null
           olx_status: string | null
+          owner_email: string | null
+          owner_name: string | null
+          owner_notes: string | null
+          owner_phone: string | null
           price: number
           property_code: string | null
           property_type: string
@@ -1004,6 +1008,10 @@ export type Database = {
           olx_error_message?: string | null
           olx_last_sync?: string | null
           olx_status?: string | null
+          owner_email?: string | null
+          owner_name?: string | null
+          owner_notes?: string | null
+          owner_phone?: string | null
           price: number
           property_code?: string | null
           property_type: string
@@ -1056,6 +1064,10 @@ export type Database = {
           olx_error_message?: string | null
           olx_last_sync?: string | null
           olx_status?: string | null
+          owner_email?: string | null
+          owner_name?: string | null
+          owner_notes?: string | null
+          owner_phone?: string | null
           price?: number
           property_code?: string | null
           property_type?: string

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Dialog,
@@ -8,8 +7,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Download, Copy, Share2, Link } from 'lucide-react';
+import { Download, Copy, Share2, Link, MessageCircle } from 'lucide-react';
 import { useInstagramShare } from '@/hooks/useInstagramShare';
+import { formatCurrency } from '@/utils/priceUtils';
 
 interface Property {
   id: string;
@@ -105,6 +105,19 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
 
               {/* Botões de Ação */}
               <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+                <Button
+                  onClick={() => {
+                    const text = encodeURIComponent(
+                      `🏡 ${property.title}\n💰 ${formatCurrency(property.price)}\n📍 ${property.hide_address ? property.city : property.location}\n\n🔗 ${window.location.origin}/imovel/${property.slug || property.id}`
+                    );
+                    window.open(`https://wa.me/?text=${text}`, '_blank');
+                  }}
+                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  WhatsApp
+                </Button>
+
                 <Button
                   onClick={copyPropertyLink}
                   variant="outline"

@@ -136,7 +136,9 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
     const labels: Record<string, string> = {
       'sale': 'Venda',
       'rent': 'Aluguel',
-      'both': 'Venda/Aluguel'
+      'rent_annual': 'Aluguel Anual',
+      'rent_seasonal': 'Aluguel Temporada',
+      'both': 'Venda e Aluguel'
     };
     return labels[purpose] || purpose;
   };
@@ -196,7 +198,9 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
                   <>
                     <SelectItem value="sale">Venda</SelectItem>
                     <SelectItem value="rent">Aluguel</SelectItem>
-                    <SelectItem value="both">Venda/Aluguel</SelectItem>
+                    <SelectItem value="rent_annual">Aluguel Anual</SelectItem>
+                    <SelectItem value="rent_seasonal">Aluguel Temporada</SelectItem>
+                    <SelectItem value="both">Venda e Aluguel</SelectItem>
                   </>
                 )}
               </SelectContent>

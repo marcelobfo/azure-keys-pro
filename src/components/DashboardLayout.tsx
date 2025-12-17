@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Home, User, Settings, LogOut, Bell, Moon, Sun, 
   Menu, X, Heart, MessageSquare, Calendar,
-  BarChart3, Users, Building, Building2, FileText, ChevronLeft, ChevronRight, DollarSign, Store, Shield
+  BarChart3, Users, Building, Building2, FileText, ChevronLeft, ChevronRight, DollarSign, Store, Shield, UserCircle
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -118,6 +118,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
       }
 
       baseItems.splice(-1, 0, { icon: Settings, label: 'Configurações', href: '/admin/site-settings' });
+      baseItems.splice(-1, 0, { icon: UserCircle, label: 'Proprietários', href: '/admin/owners' });
     }
 
     // Items ONLY for super_admin

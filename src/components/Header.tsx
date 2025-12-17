@@ -111,6 +111,7 @@ const Header = () => {
   const navItems = [
     { href: '/', label: 'Início', icon: Home },
     { href: '/properties', label: 'Imóveis', icon: Home },
+    { href: '/nossa-equipe', label: 'Nossa Equipe', icon: User },
     { href: '/contact', label: 'Contato', icon: Phone },
   ];
 

@@ -39,8 +39,11 @@ const HomeHero: React.FC<HomeHeroProps> = ({ settings }) => {
           </SelectTrigger>
           <SelectContent className="bg-white">
             <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="sale">Comprar</SelectItem>
-            <SelectItem value="rent">Alugar</SelectItem>
+            <SelectItem value="sale">Venda</SelectItem>
+            <SelectItem value="rent">Aluguel</SelectItem>
+            <SelectItem value="rent_annual">Aluguel Anual</SelectItem>
+            <SelectItem value="rent_seasonal">Aluguel Temporada</SelectItem>
+            <SelectItem value="both">Venda e Aluguel</SelectItem>
           </SelectContent>
         </Select>
         <Input
