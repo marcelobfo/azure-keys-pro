@@ -22,7 +22,11 @@ export interface Lead {
   olx_list_id?: string | null;
   properties?: {
     title: string;
-  };
+    user_id?: string | null;
+  } | null;
+  assigned_profile?: {
+    full_name: string | null;
+  }[] | null;
 }
 
 export const useLeads = () => {
@@ -41,7 +45,11 @@ export const useLeads = () => {
         .select(`
           *,
           properties (
-            title
+            title,
+            user_id
+          ),
+          assigned_profile:profiles!leads_assigned_to_fkey (
+            full_name
           )
         `)
         .order('created_at', { ascending: false });

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Phone, Mail, Calendar, MessageSquare, Search, Filter, Trash2, Globe, ExternalLink } from 'lucide-react';
+import { Phone, Mail, Calendar, MessageSquare, Search, Filter, Trash2, Globe, ExternalLink, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -272,7 +272,13 @@ const LeadsManagement = () => {
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <h3 className="text-lg font-semibold">{lead.name}</h3>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap">
+                            {lead.assigned_to && lead.assigned_profile?.[0]?.full_name && (
+                              <Badge variant="outline" className="flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                {lead.assigned_profile[0].full_name}
+                              </Badge>
+                            )}
                             {getSourceBadge(lead.source)}
                             {getStatusBadge(lead.status)}
                           </div>

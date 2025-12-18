@@ -185,13 +185,24 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [isSuperAdmin, rolesLoading, profileLoading, loading, allTenants, profile?.tenant_id, currentTenant]);
 
-  const setSelectedTenant = (tenantId: string | null) => {
+  const setSelectedTenant = async (tenantId: string | null) => {
     if (tenantId === null || tenantId === 'all') {
       setIsGlobalView(true);
       setSelectedTenantId(null);
       setSelectedTenantState(null);
       localStorage.setItem(GLOBAL_VIEW_KEY, 'true');
       localStorage.removeItem(STORAGE_KEY);
+      
+      // Update admin_tenant_context in database for super admin
+      if (user && isSuperAdmin) {
+        await supabase
+          .from('admin_tenant_context')
+          .upsert({ 
+            user_id: user.id, 
+            viewing_tenant_id: null,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
+      }
     } else {
       setIsGlobalView(false);
       setSelectedTenantId(tenantId);
@@ -199,6 +210,17 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       setSelectedTenantState(tenant || null);
       localStorage.setItem(STORAGE_KEY, tenantId);
       localStorage.setItem(GLOBAL_VIEW_KEY, 'false');
+      
+      // Update admin_tenant_context in database for super admin
+      if (user && isSuperAdmin) {
+        await supabase
+          .from('admin_tenant_context')
+          .upsert({ 
+            user_id: user.id, 
+            viewing_tenant_id: tenantId,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
+      }
     }
   };
 

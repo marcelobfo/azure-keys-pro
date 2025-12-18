@@ -124,24 +124,27 @@ serve(async (req) => {
       }
     }
 
-    // Try to find property_id by olx_ad_id
+    // Try to find property_id and corretor (user_id) by olx_ad_id
     let propertyId = null;
+    let assignedTo = null;
+    
     if (olxLead.adId) {
       const { data: property } = await supabase
         .from('properties')
-        .select('id')
+        .select('id, user_id')
         .eq('olx_ad_id', olxLead.adId)
         .eq('tenant_id', settings.tenant_id)
         .maybeSingle();
       
       propertyId = property?.id || null;
-      console.log('Found property for adId:', olxLead.adId, '-> property_id:', propertyId);
+      assignedTo = property?.user_id || null; // Atribuir ao corretor dono do imóvel
+      console.log('Found property for adId:', olxLead.adId, '-> property_id:', propertyId, '-> assigned_to (corretor):', assignedTo);
     }
 
     // Determine source
     const source = olxLead.source === 'WhatsApp' ? 'olx_whatsapp' : 'olx';
 
-    // Insert lead
+    // Insert lead with assigned_to set to the property owner (corretor)
     const { data: newLead, error: insertError } = await supabase
       .from('leads')
       .insert({
@@ -156,6 +159,7 @@ serve(async (req) => {
         olx_list_id: olxLead.listId || null,
         olx_ad_id: olxLead.adId || null,
         olx_link: olxLead.linkAd || null,
+        assigned_to: assignedTo, // Atribuir lead ao corretor do imóvel
         status: 'new'
       })
       .select()
