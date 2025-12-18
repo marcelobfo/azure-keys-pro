@@ -51,6 +51,11 @@ const EditProperty = () => {
     broker_name: '',
     broker_creci: '',
     negotiation_notes: '',
+    // Dados do Proprietário
+    owner_name: '',
+    owner_phone: '',
+    owner_email: '',
+    owner_notes: '',
     images: [] as string[],
     features: [] as string[],
     tags: [] as string[],
@@ -121,6 +126,11 @@ const EditProperty = () => {
           broker_name: data.broker_name ?? '',
           broker_creci: data.broker_creci ?? '',
           negotiation_notes: data.negotiation_notes ?? '',
+          // Dados do Proprietário
+          owner_name: data.owner_name ?? '',
+          owner_phone: data.owner_phone ?? '',
+          owner_email: data.owner_email ?? '',
+          owner_notes: data.owner_notes ?? '',
           images: Array.isArray(data.images) ? data.images : [],
           features: features.filter(f => !['Piscina', 'Academia', 'Playground', 'Churrasqueira', 'Salão de Festas', 'Portaria 24h', 'Elevador', 'Jardim', 'Varanda', 'Sacada', 'Lavabo', 'Mobiliado', 'Ar Condicionado', 'Energia Solar'].includes(f)),
           tags: Array.isArray(data.tags) ? data.tags : [],
@@ -261,6 +271,11 @@ const EditProperty = () => {
           broker_name: formData.broker_name || null,
           broker_creci: formData.broker_creci || null,
           negotiation_notes: formData.negotiation_notes || null,
+          // Dados do Proprietário
+          owner_name: formData.owner_name || null,
+          owner_phone: formData.owner_phone || null,
+          owner_email: formData.owner_email || null,
+          owner_notes: formData.owner_notes || null,
           images: formData.images,
           features: allFeatures,
           tags: formData.tags,
@@ -941,6 +956,56 @@ const EditProperty = () => {
                   value={formData.negotiation_notes}
                   onChange={(e) => setFormData({...formData, negotiation_notes: e.target.value})}
                   placeholder="Informações importantes sobre negociação, documentação, etc."
+                  rows={3}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dados do Proprietário */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Dados do Proprietário</CardTitle>
+              <CardDescription>Informações confidenciais do proprietário (visível apenas para corretores e administradores)</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="owner_name">Nome do Proprietário</Label>
+                  <Input
+                    id="owner_name"
+                    value={formData.owner_name}
+                    onChange={(e) => setFormData({...formData, owner_name: e.target.value})}
+                    placeholder="Nome completo do proprietário"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="owner_phone">Telefone do Proprietário</Label>
+                  <Input
+                    id="owner_phone"
+                    value={formData.owner_phone}
+                    onChange={(e) => setFormData({...formData, owner_phone: e.target.value})}
+                    placeholder="(47) 99999-9999"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="owner_email">Email do Proprietário</Label>
+                <Input
+                  id="owner_email"
+                  type="email"
+                  value={formData.owner_email}
+                  onChange={(e) => setFormData({...formData, owner_email: e.target.value})}
+                  placeholder="proprietario@email.com"
+                />
+              </div>
+              <div>
+                <Label htmlFor="owner_notes">Observações sobre o Proprietário</Label>
+                <Textarea
+                  id="owner_notes"
+                  value={formData.owner_notes}
+                  onChange={(e) => setFormData({...formData, owner_notes: e.target.value})}
+                  placeholder="Informações relevantes sobre o proprietário, disponibilidade, etc."
                   rows={3}
                 />
               </div>
