@@ -49,7 +49,6 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
   
   const [propertyTypes, setPropertyTypes] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
-  const [purposes, setPurposes] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchFilterOptions = async () => {
@@ -82,18 +81,6 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
           setCities(uniqueCities.sort());
         }
 
-        // Buscar finalidades únicas
-        const { data: purposesData } = await supabase
-          .from('properties')
-          .select('purpose')
-          .eq('status', 'active')
-          .eq('tenant_id', effectiveTenantId)
-          .not('purpose', 'is', null);
-
-        if (purposesData) {
-          const uniquePurposes = [...new Set(purposesData.map(p => p.purpose).filter(Boolean))];
-          setPurposes(uniquePurposes);
-        }
       } catch (error) {
         console.error('Erro ao buscar opções de filtro:', error);
       }
@@ -188,21 +175,11 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-slate-800">
                 <SelectItem value="all">Todas Finalidades</SelectItem>
-                {purposes.length > 0 ? (
-                  purposes.map((purpose) => (
-                    <SelectItem key={purpose} value={purpose}>
-                      {getPurposeLabel(purpose)}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <>
-                    <SelectItem value="sale">Venda</SelectItem>
-                    <SelectItem value="rent">Aluguel</SelectItem>
-                    <SelectItem value="rent_annual">Aluguel Anual</SelectItem>
-                    <SelectItem value="rent_seasonal">Aluguel Temporada</SelectItem>
-                    <SelectItem value="both">Venda e Aluguel</SelectItem>
-                  </>
-                )}
+                <SelectItem value="sale">Venda</SelectItem>
+                <SelectItem value="rent">Aluguel</SelectItem>
+                <SelectItem value="rent_annual">Aluguel Anual</SelectItem>
+                <SelectItem value="rent_seasonal">Aluguel Temporada</SelectItem>
+                <SelectItem value="both">Venda e Aluguel</SelectItem>
               </SelectContent>
             </Select>
 
