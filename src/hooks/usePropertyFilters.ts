@@ -91,12 +91,41 @@ export const usePropertyFilters = (properties: Property[]) => {
         }
       }
 
-      // Purpose filter
+      // Purpose filter - lógica inteligente que considera "both"
       if (filters.purpose && filters.purpose !== 'all' && filters.purpose !== '') {
         const filterPurpose = filters.purpose.toLowerCase().trim();
         const propertyPurpose = property.purpose?.toLowerCase().trim() || '';
         
-        if (propertyPurpose !== filterPurpose) {
+        const purposeMatches = (): boolean => {
+          // Se busca venda, mostrar imóveis de venda OU ambos
+          if (filterPurpose === 'sale') {
+            return propertyPurpose === 'sale' || propertyPurpose === 'both';
+          }
+          
+          // Se busca aluguel (genérico), mostrar todos os tipos de aluguel + ambos
+          if (filterPurpose === 'rent') {
+            return ['rent', 'rent_annual', 'rent_seasonal', 'both'].includes(propertyPurpose);
+          }
+          
+          // Se busca aluguel anual, mostrar aluguel anual OU ambos
+          if (filterPurpose === 'rent_annual') {
+            return propertyPurpose === 'rent_annual' || propertyPurpose === 'both';
+          }
+          
+          // Se busca aluguel temporada, mostrar aluguel temporada OU ambos
+          if (filterPurpose === 'rent_seasonal') {
+            return propertyPurpose === 'rent_seasonal' || propertyPurpose === 'both';
+          }
+          
+          // Se busca "both", mostrar apenas "both"
+          if (filterPurpose === 'both') {
+            return propertyPurpose === 'both';
+          }
+          
+          return propertyPurpose === filterPurpose;
+        };
+
+        if (!purposeMatches()) {
           return false;
         }
       }
