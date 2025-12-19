@@ -48,17 +48,37 @@ const detectTenantFromUrl = async (): Promise<Tenant | null> => {
     if (data) return data;
   }
 
-  // 2. Check for custom domain (usando ILIKE para matching flexível)
+  // 2. Check for custom domain
   if (!hostname.includes('localhost') && 
       !hostname.includes('lovableproject.com') &&
       !hostname.includes('lovable.app')) {
-    const { data } = await supabase
+    // Remove www. prefix for matching
+    const cleanHostname = hostname.replace(/^www\./, '');
+    
+    // First try exact match (with or without www)
+    const { data: exactMatch } = await supabase
       .from('tenants')
       .select('*')
-      .ilike('domain', `%${hostname}%`)
+      .or(`domain.eq.${cleanHostname},domain.eq.www.${cleanHostname}`)
       .single();
 
-    if (data) return data;
+    if (exactMatch) return exactMatch;
+    
+    // Fallback: check if hostname contains the domain
+    const { data: allTenants } = await supabase
+      .from('tenants')
+      .select('*')
+      .not('domain', 'is', null);
+    
+    if (allTenants) {
+      const matchedTenant = allTenants.find(t => 
+        t.domain && (
+          cleanHostname.includes(t.domain.replace(/^www\./, '')) ||
+          t.domain.replace(/^www\./, '').includes(cleanHostname)
+        )
+      );
+      if (matchedTenant) return matchedTenant;
+    }
   }
 
   // 3. Check for subdomain: tenant-slug.domain.com
