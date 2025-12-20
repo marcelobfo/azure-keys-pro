@@ -14,6 +14,8 @@ interface Property {
   slug?: string;
   title: string;
   price: number;
+  rental_price?: number;
+  purpose?: string;
   location: string;
   city?: string;
   area: number;
@@ -68,9 +70,22 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
         {/* Tags */}
         <PropertyCardTags property={property} maxVisibleTags={2} />
         
-        <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold z-10">
-          {formatPrice(property.price)}
-        </div>
+        {property.purpose === 'both' ? (
+          <div className="absolute top-4 right-4 flex flex-col gap-1 z-10">
+            <div className="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+              Venda: {formatPrice(property.price)}
+            </div>
+            {property.rental_price && (
+              <div className="bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                Aluguel: {formatPrice(property.rental_price)}/mês
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold z-10">
+            {formatPrice(property.price)}
+          </div>
+        )}
         <div className="absolute bottom-4 left-4 bg-white dark:bg-slate-800 text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm font-medium">
           {property.type}
         </div>
