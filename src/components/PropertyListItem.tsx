@@ -195,12 +195,24 @@ const PropertyListItem: React.FC<PropertyListItemProps> = ({ property }) => {
           {/* Preço e CTA */}
           <div className="flex items-center justify-between mt-4 pt-4 border-t">
             <div>
-              <p className="text-2xl font-bold text-blue-600">
-                {getPriceDisplay()}
-              </p>
-              {property.purpose === 'both' && property.rental_price && (
-                <p className="text-sm text-muted-foreground">
-                  ou {formatPrice(property.rental_price)}/mês
+              {property.purpose === 'both' ? (
+                <div className="flex flex-col gap-1">
+                  <p className="text-xl font-bold text-blue-600">
+                    Venda: {formatPrice(property.price)}
+                  </p>
+                  {property.rental_price && (
+                    <p className="text-lg font-semibold text-green-600">
+                      Aluguel: {formatPrice(property.rental_price)}/mês
+                    </p>
+                  )}
+                </div>
+              ) : (property.purpose === 'rent' || property.purpose === 'rent_annual' || property.purpose === 'rent_seasonal') && property.rental_price ? (
+                <p className="text-2xl font-bold text-green-600">
+                  {formatPrice(property.rental_price)}/mês
+                </p>
+              ) : (
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatPrice(property.price)}
                 </p>
               )}
             </div>
