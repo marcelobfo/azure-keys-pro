@@ -134,7 +134,7 @@ const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
                 <div className="text-blue-100 text-sm md:text-base">Preço de Aluguel</div>
               </div>
             </div>
-          ) : property.purpose === 'rent' && property.rental_price ? (
+          ) : ['rent', 'rent_annual', 'rent_seasonal'].includes(property.purpose || '') && property.rental_price ? (
             <>
               <div className="text-2xl md:text-4xl font-bold">
                 {formatCurrency(property.rental_price)}/mês
