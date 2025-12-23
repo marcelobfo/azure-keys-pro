@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Umbrella } from 'lucide-react';
 import PropertyCardSpecs from './PropertyCardSpecs';
 import { formatCurrency } from '../utils/priceUtils';
 
@@ -35,7 +35,8 @@ const PropertyCardContent: React.FC<PropertyCardContentProps> = ({ property }) =
       {/* Preços abaixo do título */}
       <div className="mb-3">
         {['rent', 'rent_annual', 'rent_seasonal'].includes(property.purpose || '') && property.rental_price ? (
-          <div className="text-lg font-bold text-green-600">
+          <div className="text-lg font-bold text-green-600 flex items-center gap-1">
+            {property.purpose === 'rent_seasonal' && <Umbrella className="w-4 h-4" />}
             {property.purpose === 'rent_seasonal' ? 'Temporada: ' : 'Aluguel: '}{formatCurrency(property.rental_price)}/mês
           </div>
         ) : property.purpose === 'both' ? (

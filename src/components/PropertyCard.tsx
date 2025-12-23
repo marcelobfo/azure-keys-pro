@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, MapPin, Bed, Toilet, Square } from 'lucide-react';
+import { Heart, MapPin, Bed, Toilet, Square, Umbrella } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -82,7 +82,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
             )}
           </div>
         ) : ['rent', 'rent_annual', 'rent_seasonal'].includes(property.purpose || '') && property.rental_price ? (
-          <div className="absolute top-4 right-4 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold z-10">
+          <div className="absolute top-4 right-4 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold z-10 flex items-center gap-1">
+            {property.purpose === 'rent_seasonal' && <Umbrella className="w-4 h-4" />}
             {property.purpose === 'rent_seasonal' ? 'Temporada: ' : ''}{formatPrice(property.rental_price)}/mês
           </div>
         ) : (
