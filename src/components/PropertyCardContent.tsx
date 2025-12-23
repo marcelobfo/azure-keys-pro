@@ -36,7 +36,7 @@ const PropertyCardContent: React.FC<PropertyCardContentProps> = ({ property }) =
       <div className="mb-3">
         {['rent', 'rent_annual', 'rent_seasonal'].includes(property.purpose || '') && property.rental_price ? (
           <div className="text-lg font-bold text-green-600">
-            {formatCurrency(property.rental_price)}/mês
+            {property.purpose === 'rent_seasonal' ? 'Temporada: ' : 'Aluguel: '}{formatCurrency(property.rental_price)}/mês
           </div>
         ) : property.purpose === 'both' ? (
           <div className="flex flex-col gap-1">

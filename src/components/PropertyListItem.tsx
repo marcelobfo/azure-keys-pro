@@ -206,9 +206,9 @@ const PropertyListItem: React.FC<PropertyListItemProps> = ({ property }) => {
                     </p>
                   )}
                 </div>
-              ) : (property.purpose === 'rent' || property.purpose === 'rent_annual' || property.purpose === 'rent_seasonal') && property.rental_price ? (
+              ) : ['rent', 'rent_annual', 'rent_seasonal'].includes(property.purpose || '') && property.rental_price ? (
                 <p className="text-2xl font-bold text-green-600">
-                  {formatPrice(property.rental_price)}/mês
+                  {property.purpose === 'rent_seasonal' ? 'Temporada: ' : 'Aluguel: '}{formatPrice(property.rental_price)}/mês
                 </p>
               ) : (
                 <p className="text-2xl font-bold text-blue-600">
