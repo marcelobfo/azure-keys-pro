@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MapPin, Bed, Bath, Square, ArrowRight, Umbrella } from 'lucide-react';
+import { Heart, MapPin, Bed, Bath, Square, ArrowRight, Umbrella, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFavorites } from '@/hooks/useFavorites';
 
@@ -212,7 +212,8 @@ const PropertyListItem: React.FC<PropertyListItemProps> = ({ property }) => {
                   {property.purpose === 'rent_seasonal' ? 'Temporada: ' : 'Aluguel: '}{formatPrice(property.rental_price)}/mês
                 </p>
               ) : (
-                <p className="text-2xl font-bold text-blue-600">
+                <p className="text-2xl font-bold text-blue-600 flex items-center gap-1">
+                  <Key className="w-5 h-5" />
                   {formatPrice(property.price)}
                 </p>
               )}

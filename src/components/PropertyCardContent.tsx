@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MapPin, Umbrella } from 'lucide-react';
+import { MapPin, Umbrella, Key } from 'lucide-react';
 import PropertyCardSpecs from './PropertyCardSpecs';
 import { formatCurrency } from '../utils/priceUtils';
 
@@ -51,7 +51,8 @@ const PropertyCardContent: React.FC<PropertyCardContentProps> = ({ property }) =
             )}
           </div>
         ) : (
-          <div className="text-lg font-bold text-blue-600">
+          <div className="text-lg font-bold text-blue-600 flex items-center gap-1">
+            <Key className="w-4 h-4" />
             {formatCurrency(property.price)}
           </div>
         )}
