@@ -1,6 +1,6 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import QRCode from 'qrcode';
 
 interface Property {
   id: string;
@@ -113,10 +113,57 @@ export const useInstagramShare = () => {
       const displayLocation = property.hide_address ? property.city : `${property.location}, ${property.city}`;
       ctx.fillText(displayLocation, 540, property.images?.length ? 940 : 440);
 
-      // Logo/Marca no canto inferior
+      // Gerar e desenhar QR Code com link do imóvel
+      const propertyLinkForQR = `${window.location.origin}/imovel/${property.slug || property.id}`;
+      
+      try {
+        const qrDataUrl = await QRCode.toDataURL(propertyLinkForQR, {
+          width: 120,
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          },
+          errorCorrectionLevel: 'M'
+        });
+        
+        const qrImg = new Image();
+        await new Promise((resolve, reject) => {
+          qrImg.onload = resolve;
+          qrImg.onerror = reject;
+          qrImg.src = qrDataUrl;
+        });
+        
+        // Posição do QR Code (canto inferior direito)
+        const qrSize = 120;
+        const qrX = 1080 - qrSize - 30; // 30px de margem direita
+        const qrY = 1080 - qrSize - 60; // 60px de margem inferior
+        
+        // Fundo branco arredondado para o QR Code
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.roundRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 35, 10);
+        ctx.fill();
+        
+        // Desenhar QR Code
+        ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+        
+        // Texto "Escaneie" abaixo do QR Code
+        ctx.font = 'bold 14px Arial';
+        ctx.fillStyle = '#333333';
+        ctx.textAlign = 'center';
+        ctx.fillText('📱 Escaneie', qrX + qrSize / 2, qrY + qrSize + 18);
+        
+      } catch (qrError) {
+        console.log('Erro ao gerar QR Code:', qrError);
+        // Continua sem o QR Code se houver erro
+      }
+
+      // Logo/Marca no canto inferior (centralizado à esquerda do QR)
       ctx.font = 'bold 24px Arial';
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      ctx.fillText('Maresia Litoral', 540, 1040);
+      ctx.textAlign = 'center';
+      ctx.fillText('Maresia Litoral', 400, 1040);
 
       // Converter canvas para blob
       const imageUrl = canvas.toDataURL('image/jpeg', 0.9);
