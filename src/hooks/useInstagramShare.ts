@@ -183,6 +183,9 @@ export const useInstagramShare = () => {
     // Localização (ocultar endereço se marcado)
     const displayLocation = property.hide_address ? property.city : `${property.location}, ${property.city}`;
 
+    // Gerar URL do imóvel
+    const propertyUrl = `${window.location.origin}/imovel/${property.slug || property.id}`;
+
     return `🏡 ${property.title}
 
 💰 ${price}
@@ -192,6 +195,9 @@ ${details.join('\n')}
 📍 ${displayLocation}
 
 ✨ Imóvel incrível esperando por você!
+
+🔗 Veja mais detalhes:
+${propertyUrl}
 
 👆 Entre em contato para mais informações e agende sua visita!
 
