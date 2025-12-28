@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, Copy, Share2, Link, MessageCircle, Square, Smartphone } from 'lucide-react';
 import { useInstagramShare } from '@/hooks/useInstagramShare';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { formatCurrency } from '@/utils/priceUtils';
 
 interface Property {
@@ -39,6 +40,7 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
   property
 }) => {
   const [format, setFormat] = useState<'feed' | 'stories'>('feed');
+  const { settings: siteSettings } = useSiteSettings();
   
   const { 
     generateShareContent, 
@@ -53,9 +55,12 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
 
   React.useEffect(() => {
     if (isOpen && !shareData) {
-      generateShareContent(property);
+      generateShareContent(property, {
+        logoUrl: siteSettings.header_logo_light || siteSettings.footer_logo,
+        siteName: siteSettings.site_name
+      });
     }
-  }, [isOpen, property]);
+  }, [isOpen, property, siteSettings]);
 
   React.useEffect(() => {
     if (!isOpen) {

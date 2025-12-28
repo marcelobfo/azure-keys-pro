@@ -17,6 +17,11 @@ interface Property {
   hide_address?: boolean;
 }
 
+export interface ShareSettings {
+  logoUrl?: string;
+  siteName?: string;
+}
+
 export const useInstagramShare = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [shareData, setShareData] = useState<{
@@ -78,7 +83,46 @@ ${propertyUrl}
 #imoveis #${property.city.toLowerCase().replace(/\s+/g, '')} #apartamento #casa #venda #aluguel #corretor #imobiliaria #maresialitoral`;
   };
 
-  const generateStoriesImage = async (property: Property): Promise<string> => {
+  const drawBranding = async (
+    ctx: CanvasRenderingContext2D, 
+    canvasWidth: number, 
+    yPosition: number, 
+    settings?: ShareSettings
+  ) => {
+    ctx.textAlign = 'center';
+    
+    if (settings?.logoUrl) {
+      try {
+        const logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+          logoImg.onload = resolve;
+          logoImg.onerror = reject;
+          logoImg.src = settings.logoUrl!;
+        });
+        
+        const maxLogoWidth = 200;
+        const maxLogoHeight = 50;
+        const scale = Math.min(maxLogoWidth / logoImg.width, maxLogoHeight / logoImg.height);
+        const logoWidth = logoImg.width * scale;
+        const logoHeight = logoImg.height * scale;
+        
+        ctx.drawImage(logoImg, (canvasWidth - logoWidth) / 2, yPosition - logoHeight, logoWidth, logoHeight);
+      } catch {
+        // Fallback para texto
+        ctx.font = 'bold 28px Arial';
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillText(settings?.siteName || '', canvasWidth / 2, yPosition);
+      }
+    } else if (settings?.siteName) {
+      ctx.font = 'bold 28px Arial';
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText(settings.siteName, canvasWidth / 2, yPosition);
+    }
+  };
+
+  const generateStoriesImage = async (property: Property, settings?: ShareSettings): Promise<string> => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     
@@ -214,15 +258,12 @@ ${propertyUrl}
     }
 
     // Logo/Marca na parte inferior
-    ctx.font = 'bold 28px Arial';
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.textAlign = 'center';
-    ctx.fillText('Maresia Litoral', 540, 1870);
+    await drawBranding(ctx, 1080, 1870, settings);
 
     return canvas.toDataURL('image/jpeg', 0.9);
   };
 
-  const generateShareContent = async (property: Property) => {
+  const generateShareContent = async (property: Property, settings?: ShareSettings) => {
     setIsGenerating(true);
     
     try {
@@ -356,16 +397,13 @@ ${propertyUrl}
       }
 
       // Logo/Marca no canto inferior (centralizado à esquerda do QR)
-      ctx.font = 'bold 24px Arial';
-      ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      ctx.textAlign = 'center';
-      ctx.fillText('Maresia Litoral', 400, 1040);
+      await drawBranding(ctx, 800, 1045, settings);
 
       // Converter canvas para blob
       const imageUrl = canvas.toDataURL('image/jpeg', 0.9);
 
       // Gerar imagem Stories
-      const storiesImageUrl = await generateStoriesImage(property);
+      const storiesImageUrl = await generateStoriesImage(property, settings);
 
       // Gerar caption otimizada para Instagram
       const caption = generateInstagramCaption(property);
