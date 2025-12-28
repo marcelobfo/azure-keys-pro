@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Download, Copy, Share2, Link, MessageCircle } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Download, Copy, Share2, Link, MessageCircle, Square, Smartphone } from 'lucide-react';
 import { useInstagramShare } from '@/hooks/useInstagramShare';
 import { formatCurrency } from '@/utils/priceUtils';
 
@@ -37,6 +38,8 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
   onClose,
   property
 }) => {
+  const [format, setFormat] = useState<'feed' | 'stories'>('feed');
+  
   const { 
     generateShareContent, 
     downloadImage, 
@@ -57,6 +60,7 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
   React.useEffect(() => {
     if (!isOpen) {
       setShareData(null);
+      setFormat('feed');
     }
   }, [isOpen]);
 
@@ -69,7 +73,7 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
             Compartilhar no Instagram
           </DialogTitle>
           <DialogDescription>
-            Preview do seu post otimizado para Instagram
+            Escolha o formato ideal para seu post
           </DialogDescription>
         </DialogHeader>
 
@@ -81,16 +85,35 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
             </div>
           ) : shareData ? (
             <>
+              {/* Tabs para escolher formato */}
+              <Tabs value={format} onValueChange={(v) => setFormat(v as 'feed' | 'stories')}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="feed" className="flex items-center gap-2">
+                    <Square className="w-4 h-4" />
+                    Feed (1:1)
+                  </TabsTrigger>
+                  <TabsTrigger value="stories" className="flex items-center gap-2">
+                    <Smartphone className="w-4 h-4" />
+                    Stories (9:16)
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
               {/* Preview da Imagem */}
               <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">Imagem para Instagram</h3>
-                <div className="aspect-square max-w-sm mx-auto">
+                <h3 className="font-semibold mb-3">
+                  {format === 'feed' ? 'Imagem para Feed' : 'Imagem para Stories'}
+                </h3>
+                <div className={`mx-auto ${format === 'feed' ? 'aspect-square max-w-sm' : 'aspect-[9/16] max-w-xs'}`}>
                   <img
-                    src={shareData.imageUrl}
-                    alt="Preview Instagram"
+                    src={format === 'feed' ? shareData.imageUrl : shareData.storiesImageUrl}
+                    alt={`Preview ${format === 'feed' ? 'Feed' : 'Stories'}`}
                     className="w-full h-full object-cover rounded-lg shadow-lg"
                   />
                 </div>
+                <p className="text-center text-sm text-muted-foreground mt-2">
+                  {format === 'feed' ? '1080 x 1080 pixels' : '1080 x 1920 pixels'}
+                </p>
               </div>
 
               {/* Preview da Caption */}
@@ -128,7 +151,7 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
                 </Button>
 
                 <Button
-                  onClick={() => shareViaWebAPI()}
+                  onClick={() => shareViaWebAPI(format)}
                   className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                 >
                   <Share2 className="w-4 h-4" />
@@ -136,12 +159,12 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
                 </Button>
                 
                 <Button
-                  onClick={downloadImage}
+                  onClick={() => downloadImage(format)}
                   variant="outline"
                   className="flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
-                  Baixar Imagem
+                  Baixar {format === 'feed' ? 'Feed' : 'Stories'}
                 </Button>
                 
                 <Button
@@ -155,7 +178,9 @@ const InstagramShareModal: React.FC<InstagramShareModalProps> = ({
               </div>
 
               <div className="text-sm text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                💡 <strong>Dica:</strong> Baixe a imagem e copie o texto, depois cole no Instagram para um post perfeito!
+                💡 <strong>Dica:</strong> {format === 'feed' 
+                  ? 'Use o formato Feed para posts no seu perfil!' 
+                  : 'Use o formato Stories para compartilhar nos stories - o QR Code maior facilita o escaneamento!'}
               </div>
             </>
           ) : (
