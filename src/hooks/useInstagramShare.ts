@@ -87,7 +87,8 @@ ${propertyUrl}
     ctx: CanvasRenderingContext2D, 
     canvasWidth: number, 
     yPosition: number, 
-    settings?: ShareSettings
+    settings?: ShareSettings,
+    isStories: boolean = false
   ) => {
     ctx.textAlign = 'center';
     
@@ -102,8 +103,9 @@ ${propertyUrl}
           logoImg.src = settings.logoUrl!;
         });
         
-        const maxLogoWidth = 200;
-        const maxLogoHeight = 50;
+        // Logo maior para melhor visibilidade
+        const maxLogoWidth = isStories ? 350 : 280;
+        const maxLogoHeight = isStories ? 90 : 70;
         const scale = Math.min(maxLogoWidth / logoImg.width, maxLogoHeight / logoImg.height);
         const logoWidth = logoImg.width * scale;
         const logoHeight = logoImg.height * scale;
@@ -111,13 +113,13 @@ ${propertyUrl}
         ctx.drawImage(logoImg, (canvasWidth - logoWidth) / 2, yPosition - logoHeight, logoWidth, logoHeight);
       } catch {
         // Fallback para texto
-        ctx.font = 'bold 28px Arial';
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.font = isStories ? 'bold 36px Arial' : 'bold 28px Arial';
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
         ctx.fillText(settings?.siteName || '', canvasWidth / 2, yPosition);
       }
     } else if (settings?.siteName) {
-      ctx.font = 'bold 28px Arial';
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.font = isStories ? 'bold 36px Arial' : 'bold 28px Arial';
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
       ctx.fillText(settings.siteName, canvasWidth / 2, yPosition);
     }
   };
@@ -252,8 +254,8 @@ ${propertyUrl}
       console.log('Erro ao gerar QR Code:', qrError);
     }
 
-    // Logo/Marca na parte inferior
-    await drawBranding(ctx, 1080, 1870, settings);
+    // Logo/Marca na parte inferior (Stories)
+    await drawBranding(ctx, 1080, 1870, settings, true);
 
     return canvas.toDataURL('image/jpeg', 0.9);
   };
@@ -391,8 +393,8 @@ ${propertyUrl}
         // Continua sem o QR Code se houver erro
       }
 
-      // Logo/Marca no canto inferior (centralizado à esquerda do QR)
-      await drawBranding(ctx, 800, 1045, settings);
+      // Logo/Marca no canto inferior (Feed)
+      await drawBranding(ctx, 800, 1045, settings, false);
 
       // Converter canvas para blob
       const imageUrl = canvas.toDataURL('image/jpeg', 0.9);

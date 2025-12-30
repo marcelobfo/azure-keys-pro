@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
-
+import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenant } from '@/hooks/useTenant';
 interface Property {
   id: string;
   title: string;
@@ -29,6 +30,9 @@ const CreateLeadDialog: React.FC<CreateLeadDialogProps> = ({ onLeadCreated }) =>
   const [properties, setProperties] = useState<Property[]>([]);
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const { profile } = useProfile();
+  const { selectedTenantId } = useTenantContext();
+  const { currentTenant } = useTenant();
+  const effectiveTenantId = selectedTenantId || currentTenant?.id;
   
   const [formData, setFormData] = useState({
     name: '',
@@ -88,7 +92,8 @@ const CreateLeadDialog: React.FC<CreateLeadDialogProps> = ({ onLeadCreated }) =>
           message: formData.message.trim() || null,
           property_id: formData.property_id === 'none' || !formData.property_id ? null : formData.property_id,
           status: formData.status,
-          assigned_to: formData.assigned_to === 'none' || !formData.assigned_to ? null : formData.assigned_to
+          assigned_to: formData.assigned_to === 'none' || !formData.assigned_to ? null : formData.assigned_to,
+          tenant_id: effectiveTenantId || null
         });
 
       if (error) throw error;
