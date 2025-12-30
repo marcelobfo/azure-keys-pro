@@ -188,29 +188,24 @@ ${propertyUrl}
     const priceY = titleStartY + (titleLines.length * 70) + 80;
     ctx.fillText(price, 540, priceY);
 
-    // Detalhes (linhas separadas)
-    ctx.font = '40px Arial';
+    // Detalhes em linha horizontal
+    ctx.font = '36px Arial';
     ctx.fillStyle = 'white';
-    let detailY = priceY + 100;
+    const detailY = priceY + 80;
     
-    if (property.bedrooms) {
-      ctx.fillText(`🛏️ ${property.bedrooms} quartos`, 540, detailY);
-      detailY += 60;
-    }
-    if (property.bathrooms) {
-      ctx.fillText(`🚿 ${property.bathrooms} banheiros`, 540, detailY);
-      detailY += 60;
-    }
-    if (property.area) {
-      ctx.fillText(`📐 ${property.area}m²`, 540, detailY);
-      detailY += 60;
-    }
+    const details = [];
+    if (property.bedrooms) details.push(`🛏️ ${property.bedrooms}`);
+    if (property.bathrooms) details.push(`🚿 ${property.bathrooms}`);
+    if (property.area) details.push(`📐 ${property.area}m²`);
+    
+    const detailsLine = details.join('  •  ');
+    ctx.fillText(detailsLine, 540, detailY);
 
     // Localização
     ctx.font = '36px Arial';
     ctx.fillStyle = '#E0E0E0';
     const displayLocation = property.hide_address ? property.city : `${property.location}, ${property.city}`;
-    ctx.fillText(`📍 ${displayLocation}`, 540, detailY + 30);
+    ctx.fillText(`📍 ${displayLocation}`, 540, detailY + 60);
 
     // QR Code MAIOR e CENTRALIZADO
     const propertyLinkForQR = `${window.location.origin}/imovel/${property.slug || property.id}`;
