@@ -136,6 +136,7 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
       'apartamento_diferenciado': 'Apartamento Diferenciado',
       'casa': 'Casa',
       'cobertura': 'Cobertura',
+      'construcao': 'Construção/Planta',
       'loft': 'Loft',
       'lote': 'Lote',
       'sala_comercial': 'Sala Comercial',

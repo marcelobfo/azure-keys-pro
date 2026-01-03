@@ -373,6 +373,7 @@ const EditProperty = () => {
                       <SelectItem value="apartamento_diferenciado">Apartamento Diferenciado</SelectItem>
                       <SelectItem value="casa">Casa</SelectItem>
                       <SelectItem value="cobertura">Cobertura</SelectItem>
+                      <SelectItem value="construcao">Construção/Planta</SelectItem>
                       <SelectItem value="lote">Lote</SelectItem>
                       <SelectItem value="loft">Loft</SelectItem>
                       <SelectItem value="sala_comercial">Sala Comercial</SelectItem>
