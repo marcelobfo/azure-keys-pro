@@ -8,10 +8,40 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenant } from '@/hooks/useTenant';
 
 // Novo: Tabs para organizaçao das configurações por página/setor
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+
+// Configurações das seções da home
+const HOME_SECTIONS_SETTINGS = [
+  {
+    key: 'home_sections_featured',
+    titleKey: 'home_section_featured_title',
+    label: 'Imóveis em Destaque',
+    defaultTitle: 'Imóveis em Destaque',
+  },
+  {
+    key: 'home_sections_beachfront',
+    titleKey: 'home_section_beachfront_title',
+    label: 'Frente Mar',
+    defaultTitle: 'Imóveis Frente Mar',
+  },
+  {
+    key: 'home_sections_near_beach',
+    titleKey: 'home_section_near_beach_title',
+    label: 'Quadra Mar',
+    defaultTitle: 'Imóveis Quadra Mar',
+  },
+  {
+    key: 'home_sections_developments',
+    titleKey: 'home_section_developments_title',
+    label: 'Empreendimentos',
+    defaultTitle: 'Empreendimentos',
+  },
+];
 
 const TEMPLATE_PREVIEWS = [
   {
@@ -256,6 +286,9 @@ const ANALYTICS_TOGGLES = [
 const AdminSiteSettings = () => {
   const { profile, loading, hasRole } = useProfile();
   const { toast } = useToast();
+  const { selectedTenantId } = useTenantContext();
+  const { currentTenant } = useTenant();
+  const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -265,11 +298,26 @@ const AdminSiteSettings = () => {
     if (!profile || !hasRole('admin')) return;
 
     async function fetchSettings() {
-      const keys = ALL_FIELDS.map(s => s.key).concat(['home_layout']).concat(ANALYTICS_TOGGLES.map(t => t.key));
-      const { data, error } = await supabase
+      // Incluir keys das seções da home
+      const sectionKeys = HOME_SECTIONS_SETTINGS.flatMap(s => [s.key, s.titleKey]);
+      const keys = ALL_FIELDS.map(s => s.key)
+        .concat(['home_layout'])
+        .concat(ANALYTICS_TOGGLES.map(t => t.key))
+        .concat(sectionKeys);
+      
+      let query = supabase
         .from('site_settings')
         .select('key, value')
         .in('key', keys);
+      
+      // Filtrar por tenant
+      if (effectiveTenantId) {
+        query = query.eq('tenant_id', effectiveTenantId);
+      } else {
+        query = query.is('tenant_id', null);
+      }
+      
+      const { data, error } = await query;
 
       if (error) {
         toast({
@@ -289,39 +337,68 @@ const AdminSiteSettings = () => {
 
     fetchSettings();
     // eslint-disable-next-line
-  }, [profile]);
+  }, [profile, effectiveTenantId]);
 
   const handleChange = (key: string, value: string) => {
     setValues(prev => ({ ...prev, [key]: value }));
+  };
+
+  const saveSetting = async (key: string, value: string) => {
+    // Usar delete + insert para contornar problema de unique constraint com COALESCE
+    if (effectiveTenantId) {
+      await supabase
+        .from('site_settings')
+        .delete()
+        .eq('key', key)
+        .eq('tenant_id', effectiveTenantId);
+    } else {
+      await supabase
+        .from('site_settings')
+        .delete()
+        .eq('key', key)
+        .is('tenant_id', null);
+    }
+    
+    const { error } = await supabase
+      .from('site_settings')
+      .insert({ 
+        key, 
+        value, 
+        tenant_id: effectiveTenantId || null,
+        updated_at: new Date().toISOString() 
+      });
+    
+    return !error;
   };
 
   const saveSettings = async () => {
     setIsSaving(true);
     let isOk = true;
 
+    // Salvar campos de seções da home
+    for (const section of HOME_SECTIONS_SETTINGS) {
+      const enabledValue = values[section.key] || 'false';
+      const titleValue = values[section.titleKey] || '';
+      
+      if (!await saveSetting(section.key, enabledValue)) isOk = false;
+      if (!await saveSetting(section.titleKey, titleValue)) isOk = false;
+    }
+
     for (const setting of ALL_FIELDS) {
       const { key } = setting;
       const value = values[key] || '';
-      const { error } = await supabase
-        .from('site_settings')
-        .upsert([{ key, value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
-      if (error) isOk = false;
+      if (!await saveSetting(key, value)) isOk = false;
     }
+    
     // Salva home_layout também
     if (values['home_layout']) {
-      const { error } = await supabase
-        .from('site_settings')
-        .upsert([{ key: 'home_layout', value: values['home_layout'], updated_at: new Date().toISOString() }], { onConflict: 'key' });
-      if (error) isOk = false;
+      if (!await saveSetting('home_layout', values['home_layout'])) isOk = false;
     }
     
     // Salva toggles de analytics
     for (const toggle of ANALYTICS_TOGGLES) {
       const value = values[toggle.key] || 'false';
-      const { error } = await supabase
-        .from('site_settings')
-        .upsert([{ key: toggle.key, value, updated_at: new Date().toISOString() }], { onConflict: 'key' });
-      if (error) isOk = false;
+      if (!await saveSetting(toggle.key, value)) isOk = false;
     }
 
     setIsSaving(false);
@@ -422,6 +499,47 @@ const AdminSiteSettings = () => {
                       )}
                     </div>
                   ))}
+
+                  {/* Seções da Home - Ativar/Desativar e Títulos Personalizados */}
+                  <div className="space-y-4 mt-8 p-4 border rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                    <div className="mb-4">
+                      <h3 className="font-semibold text-lg">Seções da Home</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Ative/desative seções e personalize os títulos que aparecem na página inicial.
+                      </p>
+                    </div>
+                    
+                    {HOME_SECTIONS_SETTINGS.map((section) => (
+                      <div key={section.key} className="flex flex-col gap-2 p-3 border rounded-md bg-white dark:bg-slate-900">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Switch
+                              id={section.key}
+                              checked={values[section.key] === 'true'}
+                              onCheckedChange={(checked) => handleChange(section.key, checked ? 'true' : 'false')}
+                            />
+                            <Label htmlFor={section.key} className="font-medium cursor-pointer">
+                              {section.label}
+                            </Label>
+                          </div>
+                        </div>
+                        {values[section.key] === 'true' && (
+                          <div className="ml-12">
+                            <Label htmlFor={section.titleKey} className="text-sm text-muted-foreground">
+                              Título personalizado
+                            </Label>
+                            <Input
+                              id={section.titleKey}
+                              value={values[section.titleKey] || ''}
+                              onChange={(e) => handleChange(section.titleKey, e.target.value)}
+                              placeholder={section.defaultTitle}
+                              className="mt-1"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
 
                   {/* Seleção visual do template */}
                   <div className="space-y-2 mt-8">

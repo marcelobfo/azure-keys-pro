@@ -21,25 +21,25 @@ const HomePage = () => {
   const sectionsConfig = {
     featured: {
       show: settings['home_sections_featured'] === 'true' && featuredProperties.length > 0,
-      title: 'Imóveis em Destaque',
+      title: settings['home_section_featured_title'] || 'Imóveis em Destaque',
       properties: featuredProperties,
       emptyMessage: 'Nenhum imóvel em destaque no momento.'
     },
     beachfront: {
       show: settings['home_sections_beachfront'] === 'true' && beachfrontProperties.length > 0,
-      title: 'Imóveis Frente Mar',
+      title: settings['home_section_beachfront_title'] || 'Imóveis Frente Mar',
       properties: beachfrontProperties,
       emptyMessage: 'Nenhum imóvel frente mar no momento.'
     },
     near_beach: {
       show: settings['home_sections_near_beach'] === 'true' && nearBeachProperties.length > 0,
-      title: 'Imóveis Quadra Mar',
+      title: settings['home_section_near_beach_title'] || 'Imóveis Quadra Mar',
       properties: nearBeachProperties,
       emptyMessage: 'Nenhum imóvel quadra mar no momento.'
     },
     developments: {
       show: settings['home_sections_developments'] === 'true' && developments.length > 0,
-      title: 'Empreendimentos',
+      title: settings['home_section_developments_title'] || 'Empreendimentos',
       properties: developments,
       emptyMessage: 'Nenhum empreendimento no momento.'
     }

@@ -56,6 +56,11 @@ export const useHomeData = () => {
       'home_sections_near_beach',
       'home_sections_developments',
       'home_sections_order',
+      // Títulos personalizados das seções
+      'home_section_featured_title',
+      'home_section_beachfront_title',
+      'home_section_near_beach_title',
+      'home_section_developments_title',
     ];
     
     let query = supabase
