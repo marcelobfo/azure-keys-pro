@@ -10,10 +10,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useTenantContext } from '@/contexts/TenantContext';
 import { useTenant } from '@/hooks/useTenant';
-
-// Novo: Tabs para organizaçao das configurações por página/setor
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import HomeSectionManager from '@/components/HomeSectionManager';
 
 // Configurações das seções da home
 const HOME_SECTIONS_SETTINGS = [
@@ -500,46 +500,9 @@ const AdminSiteSettings = () => {
                     </div>
                   ))}
 
-                  {/* Seções da Home - Ativar/Desativar e Títulos Personalizados */}
-                  <div className="space-y-4 mt-8 p-4 border rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                    <div className="mb-4">
-                      <h3 className="font-semibold text-lg">Seções da Home</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Ative/desative seções e personalize os títulos que aparecem na página inicial.
-                      </p>
-                    </div>
-                    
-                    {HOME_SECTIONS_SETTINGS.map((section) => (
-                      <div key={section.key} className="flex flex-col gap-2 p-3 border rounded-md bg-white dark:bg-slate-900">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Switch
-                              id={section.key}
-                              checked={values[section.key] === 'true'}
-                              onCheckedChange={(checked) => handleChange(section.key, checked ? 'true' : 'false')}
-                            />
-                            <Label htmlFor={section.key} className="font-medium cursor-pointer">
-                              {section.label}
-                            </Label>
-                          </div>
-                        </div>
-                        {values[section.key] === 'true' && (
-                          <div className="ml-12">
-                            <Label htmlFor={section.titleKey} className="text-sm text-muted-foreground">
-                              Título personalizado
-                            </Label>
-                            <Input
-                              id={section.titleKey}
-                              value={values[section.titleKey] || ''}
-                              onChange={(e) => handleChange(section.titleKey, e.target.value)}
-                              placeholder={section.defaultTitle}
-                              className="mt-1"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  {/* Seções da Home - Gerenciador Dinâmico */}
+                  <Separator className="my-6" />
+                  <HomeSectionManager />
 
                   {/* Seleção visual do template */}
                   <div className="space-y-2 mt-8">
