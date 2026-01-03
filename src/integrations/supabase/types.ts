@@ -607,6 +607,56 @@ export type Database = {
           },
         ]
       }
+      home_sections: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          filter_field: string | null
+          filter_type: string
+          filter_value: string | null
+          id: string
+          is_active: boolean | null
+          max_items: number | null
+          tenant_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          filter_field?: string | null
+          filter_type?: string
+          filter_value?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_items?: number | null
+          tenant_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          filter_field?: string | null
+          filter_type?: string
+          filter_value?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_items?: number | null
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_sections_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_base_articles: {
         Row: {
           content: string
