@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import HomeSectionManager from '@/components/HomeSectionManager';
+import TagManager from '@/components/TagManager';
 
 // Configurações das seções da home
 const HOME_SECTIONS_SETTINGS = [
@@ -457,8 +458,9 @@ const AdminSiteSettings = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="home">
-              <TabsList className="mb-4 grid grid-cols-5 w-full">
+              <TabsList className="mb-4 grid grid-cols-6 w-full">
                 <TabsTrigger value="home">Home</TabsTrigger>
+                <TabsTrigger value="tags">Tags</TabsTrigger>
                 <TabsTrigger value="footer">Rodapé</TabsTrigger>
                 <TabsTrigger value="contact">Contato</TabsTrigger>
                 <TabsTrigger value="site">Site</TabsTrigger>
@@ -541,6 +543,11 @@ const AdminSiteSettings = () => {
                     {isSaving ? "Salvando..." : "Salvar Configurações"}
                   </Button>
                 </form>
+              </TabsContent>
+
+              {/* TAGS TAB */}
+              <TabsContent value="tags">
+                <TagManager />
               </TabsContent>
 
               {/* FOOTER TAB */}

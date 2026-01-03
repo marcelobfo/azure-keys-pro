@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from '@/hooks/useTenant';
 import { useTenantContext } from '@/contexts/TenantContext';
+import { usePropertyTags } from '@/hooks/usePropertyTags';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -99,6 +100,7 @@ const HomeSectionManager: React.FC = () => {
   const { selectedTenantId } = useTenantContext();
   const { currentTenant } = useTenant();
   const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
+  const { tags: availableTags } = usePropertyTags();
 
   const [sections, setSections] = useState<HomeSection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -358,12 +360,31 @@ const HomeSectionManager: React.FC = () => {
 
             {formFilterType === 'tag' && (
               <div className="space-y-2">
-                <Label>Nome da Tag</Label>
-                <Input
-                  value={formFilterValue}
-                  onChange={(e) => setFormFilterValue(e.target.value)}
-                  placeholder="Ex: alto-padrao, oportunidade, lancamento"
-                />
+                <Label>Selecione a Tag</Label>
+                {availableTags && availableTags.length > 0 ? (
+                  <Select value={formFilterValue} onValueChange={setFormFilterValue}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTags.map((tag) => (
+                        <SelectItem key={tag.id} value={tag.slug}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: tag.color }}
+                            />
+                            {tag.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="text-sm text-muted-foreground p-2 border rounded">
+                    Nenhuma tag cadastrada. Crie tags na aba "Tags".
+                  </div>
+                )}
               </div>
             )}
 

@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import DashboardLayout from '@/components/DashboardLayout';
 import ImageUpload from '@/components/ImageUpload';
+import PropertyTagSelector from '@/components/PropertyTagSelector';
 
 const CreateProperty = () => {
   const navigate = useNavigate();
@@ -766,34 +767,13 @@ const CreateProperty = () => {
           <Card>
             <CardHeader>
               <CardTitle>Tags</CardTitle>
-              <CardDescription>Adicione tags para melhor categorização e busca</CardDescription>
+              <CardDescription>Selecione as tags que se aplicam a este imóvel</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  value={currentTag}
-                  onChange={(e) => setCurrentTag(e.target.value)}
-                  onKeyPress={(e) => handleKeyPress(e, 'tag')}
-                  placeholder="Digite uma tag e pressione Enter"
-                />
-                <Button type="button" onClick={addTag}>
-                  Adicionar
-                </Button>
-              </div>
-              
-              {formData.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                      {tag}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
-                        onClick={() => removeTag(tag)}
-                      />
-                    </Badge>
-                  ))}
-                </div>
-              )}
+            <CardContent>
+              <PropertyTagSelector
+                selectedTags={formData.tags}
+                onTagsChange={(tags) => setFormData({ ...formData, tags })}
+              />
             </CardContent>
           </Card>
 
