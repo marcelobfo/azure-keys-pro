@@ -614,6 +614,7 @@ export type Database = {
           filter_field: string | null
           filter_type: string
           filter_value: string | null
+          filters: Json | null
           id: string
           is_active: boolean | null
           max_items: number | null
@@ -627,6 +628,7 @@ export type Database = {
           filter_field?: string | null
           filter_type?: string
           filter_value?: string | null
+          filters?: Json | null
           id?: string
           is_active?: boolean | null
           max_items?: number | null
@@ -640,6 +642,7 @@ export type Database = {
           filter_field?: string | null
           filter_type?: string
           filter_value?: string | null
+          filters?: Json | null
           id?: string
           is_active?: boolean | null
           max_items?: number | null

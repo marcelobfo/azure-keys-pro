@@ -2,10 +2,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from '@/hooks/useTenant';
 
+export interface SectionFilter {
+  type: 'boolean_field' | 'tag' | 'property_type' | 'city' | 'purpose';
+  field: string | null;
+  value: string;
+}
+
 export interface HomeSection {
   id: string;
   tenant_id: string | null;
   title: string;
+  filters: SectionFilter[];
+  // Legacy fields (kept for compatibility)
   filter_type: string;
   filter_field: string | null;
   filter_value: string | null;
@@ -37,6 +45,25 @@ export interface HomeSectionProperty {
   hide_address?: boolean;
 }
 
+// Helper to get effective filters from a section (handles both new and legacy format)
+const getEffectiveFilters = (section: HomeSection): SectionFilter[] => {
+  // If filters array exists and has items, use it
+  if (section.filters && Array.isArray(section.filters) && section.filters.length > 0) {
+    return section.filters;
+  }
+  
+  // Fallback to legacy format
+  if (section.filter_type === 'boolean_field' && section.filter_field) {
+    return [{ type: 'boolean_field', field: section.filter_field, value: 'true' }];
+  }
+  
+  if (['tag', 'property_type', 'city', 'purpose'].includes(section.filter_type) && section.filter_value) {
+    return [{ type: section.filter_type as SectionFilter['type'], field: null, value: section.filter_value }];
+  }
+  
+  return [];
+};
+
 export const useHomeSections = () => {
   const { selectedTenantId, currentTenant } = useTenant();
   const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
@@ -60,7 +87,14 @@ export const useHomeSections = () => {
         .order('display_order', { ascending: true });
 
       if (error) throw error;
-      setSections(data || []);
+      
+      // Parse filters from JSONB
+      const parsedSections = (data || []).map((s: any) => ({
+        ...s,
+        filters: Array.isArray(s.filters) ? s.filters : [],
+      }));
+      
+      setSections(parsedSections);
     } catch (error) {
       console.error('Error fetching home sections:', error);
       setSections([]);
@@ -79,83 +113,41 @@ export const useHomeSections = () => {
 
     try {
       for (const section of sections) {
-        let data: any[] | null = null;
-        let error: any = null;
+        const filters = getEffectiveFilters(section);
+        
+        // Build query with all filters applied (AND logic)
+        let query = supabase
+          .from('properties')
+          .select('*')
+          .eq('tenant_id', effectiveTenantId)
+          .in('status', ['active', 'ativo', 'available']);
 
-        const baseFilters = {
-          tenant_id: effectiveTenantId,
-          status: ['active', 'ativo', 'available'],
-        };
-
-        if (section.filter_type === 'boolean_field' && section.filter_field) {
-          // Use explicit type to avoid TypeScript depth issues
-          const filterField = section.filter_field;
-          const result = await (supabase
-            .from('properties')
-            .select('*')
-            .eq('tenant_id', effectiveTenantId)
-            .in('status', ['active', 'ativo', 'available']) as any)
-            .eq(filterField, true)
-            .order('created_at', { ascending: false })
-            .limit(section.max_items || 8);
-          data = result.data;
-          error = result.error;
-        } else if (section.filter_type === 'tag' && section.filter_value) {
-          const result = await supabase
-            .from('properties')
-            .select('*')
-            .eq('tenant_id', effectiveTenantId)
-            .in('status', ['active', 'ativo', 'available'])
-            .contains('tags', [section.filter_value])
-            .order('created_at', { ascending: false })
-            .limit(section.max_items || 8);
-          data = result.data;
-          error = result.error;
-        } else if (section.filter_type === 'property_type' && section.filter_value) {
-          const result = await supabase
-            .from('properties')
-            .select('*')
-            .eq('tenant_id', effectiveTenantId)
-            .in('status', ['active', 'ativo', 'available'])
-            .eq('property_type', section.filter_value)
-            .order('created_at', { ascending: false })
-            .limit(section.max_items || 8);
-          data = result.data;
-          error = result.error;
-        } else if (section.filter_type === 'city' && section.filter_value) {
-          const result = await supabase
-            .from('properties')
-            .select('*')
-            .eq('tenant_id', effectiveTenantId)
-            .in('status', ['active', 'ativo', 'available'])
-            .ilike('city', `%${section.filter_value}%`)
-            .order('created_at', { ascending: false })
-            .limit(section.max_items || 8);
-          data = result.data;
-          error = result.error;
-        } else if (section.filter_type === 'purpose' && section.filter_value) {
-          const result = await supabase
-            .from('properties')
-            .select('*')
-            .eq('tenant_id', effectiveTenantId)
-            .in('status', ['active', 'ativo', 'available'])
-            .eq('purpose', section.filter_value)
-            .order('created_at', { ascending: false })
-            .limit(section.max_items || 8);
-          data = result.data;
-          error = result.error;
-        } else {
-          // Default query without specific filter
-          const result = await supabase
-            .from('properties')
-            .select('*')
-            .eq('tenant_id', effectiveTenantId)
-            .in('status', ['active', 'ativo', 'available'])
-            .order('created_at', { ascending: false })
-            .limit(section.max_items || 8);
-          data = result.data;
-          error = result.error;
+        // Apply each filter
+        for (const filter of filters) {
+          switch (filter.type) {
+            case 'boolean_field':
+              if (filter.field) {
+                query = (query as any).eq(filter.field, true);
+              }
+              break;
+            case 'tag':
+              query = query.contains('tags', [filter.value]);
+              break;
+            case 'property_type':
+              query = query.eq('property_type', filter.value);
+              break;
+            case 'city':
+              query = query.ilike('city', `%${filter.value}%`);
+              break;
+            case 'purpose':
+              query = query.eq('purpose', filter.value);
+              break;
+          }
         }
+
+        const { data, error } = await query
+          .order('created_at', { ascending: false })
+          .limit(section.max_items || 8);
 
         if (error) {
           console.error(`Error fetching properties for section ${section.id}:`, error);
@@ -211,3 +203,6 @@ export const useHomeSections = () => {
     refetch: fetchSections
   };
 };
+
+// Export helper for use in other components
+export { getEffectiveFilters };

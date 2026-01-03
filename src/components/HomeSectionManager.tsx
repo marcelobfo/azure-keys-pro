@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from '@/hooks/useTenant';
 import { useTenantContext } from '@/contexts/TenantContext';
 import { usePropertyTags } from '@/hooks/usePropertyTags';
+import { SectionFilter } from '@/hooks/useHomeSections';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,8 +11,9 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Trash2, GripVertical, Pencil } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Pencil, X } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -20,6 +22,7 @@ interface HomeSection {
   id: string;
   tenant_id: string | null;
   title: string;
+  filters: SectionFilter[];
   filter_type: string;
   filter_field: string | null;
   filter_value: string | null;
@@ -35,6 +38,53 @@ interface SortableSectionItemProps {
   onToggleActive: (id: string, isActive: boolean) => void;
 }
 
+const FILTER_TYPE_LABELS: Record<string, string> = {
+  boolean_field: 'Campo',
+  tag: 'Tag',
+  property_type: 'Tipo',
+  city: 'Cidade',
+  purpose: 'Finalidade',
+};
+
+const BOOLEAN_FIELD_LABELS: Record<string, string> = {
+  is_featured: 'Em Destaque',
+  is_beachfront: 'Frente Mar',
+  is_near_beach: 'Quadra Mar',
+  is_development: 'Empreendimento',
+  accepts_exchange: 'Aceita Permuta',
+};
+
+const PROPERTY_TYPE_LABELS: Record<string, string> = {
+  apartamento: 'Apartamento',
+  apartamento_diferenciado: 'Apto Diferenciado',
+  casa: 'Casa',
+  cobertura: 'Cobertura',
+  lote: 'Lote',
+  studio: 'Studio',
+  loft: 'Loft',
+  sala_comercial: 'Sala Comercial',
+  construcao: 'Construção',
+};
+
+const PURPOSE_LABELS: Record<string, string> = {
+  venda: 'Venda',
+  aluguel: 'Aluguel',
+  temporada: 'Temporada',
+};
+
+const getFilterLabel = (filter: SectionFilter): string => {
+  switch (filter.type) {
+    case 'boolean_field':
+      return BOOLEAN_FIELD_LABELS[filter.field || ''] || filter.field || '';
+    case 'property_type':
+      return PROPERTY_TYPE_LABELS[filter.value] || filter.value;
+    case 'purpose':
+      return PURPOSE_LABELS[filter.value] || filter.value;
+    default:
+      return filter.value;
+  }
+};
+
 const SortableSectionItem: React.FC<SortableSectionItemProps> = ({ section, onEdit, onDelete, onToggleActive }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: section.id });
 
@@ -43,28 +93,24 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({ section, onEd
     transition,
   };
 
-  const getFilterDescription = () => {
-    switch (section.filter_type) {
-      case 'boolean_field':
-        const fieldLabels: Record<string, string> = {
-          'is_featured': 'Em Destaque',
-          'is_beachfront': 'Frente Mar',
-          'is_near_beach': 'Quadra Mar',
-          'is_development': 'Empreendimento',
-          'accepts_exchange': 'Aceita Permuta',
-        };
-        return fieldLabels[section.filter_field || ''] || section.filter_field;
-      case 'tag':
-        return `Tag: ${section.filter_value}`;
-      case 'property_type':
-        return `Tipo: ${section.filter_value}`;
-      case 'city':
-        return `Cidade: ${section.filter_value}`;
-      case 'purpose':
-        return `Finalidade: ${section.filter_value}`;
-      default:
-        return section.filter_type;
-    }
+  const getFiltersDescription = () => {
+    const filters = section.filters && section.filters.length > 0 
+      ? section.filters 
+      : section.filter_type && (section.filter_field || section.filter_value)
+        ? [{ 
+            type: section.filter_type as SectionFilter['type'], 
+            field: section.filter_field, 
+            value: section.filter_value || '' 
+          }]
+        : [];
+
+    if (filters.length === 0) return 'Sem filtros';
+
+    return filters.map(f => {
+      const typeLabel = FILTER_TYPE_LABELS[f.type] || f.type;
+      const valueLabel = getFilterLabel(f);
+      return `${typeLabel}: ${valueLabel}`;
+    }).join(' • ');
   };
 
   return (
@@ -74,9 +120,9 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({ section, onEd
           <GripVertical className="h-5 w-5 text-muted-foreground" />
         </div>
         
-        <div className="flex-1">
-          <p className="font-medium">{section.title}</p>
-          <p className="text-sm text-muted-foreground">{getFilterDescription()} • Máx: {section.max_items} imóveis</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium truncate">{section.title}</p>
+          <p className="text-sm text-muted-foreground truncate">{getFiltersDescription()} • Máx: {section.max_items}</p>
         </div>
 
         <Switch
@@ -109,10 +155,13 @@ const HomeSectionManager: React.FC = () => {
 
   // Form state
   const [formTitle, setFormTitle] = useState('');
-  const [formFilterType, setFormFilterType] = useState('boolean_field');
-  const [formFilterField, setFormFilterField] = useState('is_featured');
-  const [formFilterValue, setFormFilterValue] = useState('');
+  const [formFilters, setFormFilters] = useState<SectionFilter[]>([]);
   const [formMaxItems, setFormMaxItems] = useState(8);
+
+  // New filter form
+  const [newFilterType, setNewFilterType] = useState<SectionFilter['type']>('boolean_field');
+  const [newFilterField, setNewFilterField] = useState('is_featured');
+  const [newFilterValue, setNewFilterValue] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -131,7 +180,13 @@ const HomeSectionManager: React.FC = () => {
         .order('display_order', { ascending: true });
 
       if (error) throw error;
-      setSections(data || []);
+      
+      const parsedSections = (data || []).map((s: any) => ({
+        ...s,
+        filters: Array.isArray(s.filters) ? s.filters : [],
+      }));
+      
+      setSections(parsedSections);
     } catch (error) {
       console.error('Error fetching sections:', error);
       toast.error('Erro ao carregar seções');
@@ -156,7 +211,6 @@ const HomeSectionManager: React.FC = () => {
     
     setSections(newSections);
 
-    // Update display_order in database
     try {
       for (let i = 0; i < newSections.length; i++) {
         await supabase
@@ -211,21 +265,60 @@ const HomeSectionManager: React.FC = () => {
   const openCreateDialog = () => {
     setEditingSection(null);
     setFormTitle('');
-    setFormFilterType('boolean_field');
-    setFormFilterField('is_featured');
-    setFormFilterValue('');
+    setFormFilters([]);
     setFormMaxItems(8);
+    resetNewFilterForm();
     setDialogOpen(true);
   };
 
   const openEditDialog = (section: HomeSection) => {
     setEditingSection(section);
     setFormTitle(section.title);
-    setFormFilterType(section.filter_type);
-    setFormFilterField(section.filter_field || 'is_featured');
-    setFormFilterValue(section.filter_value || '');
+    
+    // Load existing filters
+    if (section.filters && section.filters.length > 0) {
+      setFormFilters([...section.filters]);
+    } else if (section.filter_type && (section.filter_field || section.filter_value)) {
+      // Convert legacy to new format
+      setFormFilters([{
+        type: section.filter_type as SectionFilter['type'],
+        field: section.filter_field,
+        value: section.filter_value || '',
+      }]);
+    } else {
+      setFormFilters([]);
+    }
+    
     setFormMaxItems(section.max_items);
+    resetNewFilterForm();
     setDialogOpen(true);
+  };
+
+  const resetNewFilterForm = () => {
+    setNewFilterType('boolean_field');
+    setNewFilterField('is_featured');
+    setNewFilterValue('');
+  };
+
+  const handleAddFilter = () => {
+    let filter: SectionFilter;
+
+    if (newFilterType === 'boolean_field') {
+      filter = { type: 'boolean_field', field: newFilterField, value: 'true' };
+    } else {
+      if (!newFilterValue.trim()) {
+        toast.error('Selecione ou digite um valor para o filtro');
+        return;
+      }
+      filter = { type: newFilterType, field: null, value: newFilterValue.trim() };
+    }
+
+    setFormFilters([...formFilters, filter]);
+    resetNewFilterForm();
+  };
+
+  const handleRemoveFilter = (index: number) => {
+    setFormFilters(formFilters.filter((_, i) => i !== index));
   };
 
   const handleSave = async () => {
@@ -234,12 +327,31 @@ const HomeSectionManager: React.FC = () => {
       return;
     }
 
+    if (formFilters.length === 0) {
+      toast.error('Adicione pelo menos um filtro');
+      return;
+    }
+
+    // Build legacy fields from first filter for backward compatibility
+    const firstFilter = formFilters[0];
+    const legacyFilterType = firstFilter.type;
+    const legacyFilterField = firstFilter.type === 'boolean_field' ? firstFilter.field : null;
+    const legacyFilterValue = firstFilter.type !== 'boolean_field' ? firstFilter.value : null;
+
+    // Cast filters to JSON-compatible format
+    const filtersAsJson = formFilters.map(f => ({
+      type: f.type,
+      field: f.field,
+      value: f.value,
+    }));
+
     const sectionData = {
       tenant_id: effectiveTenantId,
       title: formTitle.trim(),
-      filter_type: formFilterType,
-      filter_field: formFilterType === 'boolean_field' ? formFilterField : null,
-      filter_value: ['tag', 'property_type', 'city', 'purpose'].includes(formFilterType) ? formFilterValue : null,
+      filters: filtersAsJson,
+      filter_type: legacyFilterType,
+      filter_field: legacyFilterField,
+      filter_value: legacyFilterValue,
       max_items: formMaxItems,
       display_order: editingSection ? editingSection.display_order : sections.length + 1,
       is_active: true,
@@ -280,7 +392,7 @@ const HomeSectionManager: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold">Seções da Home Page</h3>
-          <p className="text-sm text-muted-foreground">Arraste para reordenar. Crie seções com diferentes filtros.</p>
+          <p className="text-sm text-muted-foreground">Arraste para reordenar. Combine múltiplos filtros.</p>
         </div>
         <Button onClick={openCreateDialog}>
           <Plus className="h-4 w-4 mr-2" />
@@ -309,133 +421,152 @@ const HomeSectionManager: React.FC = () => {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingSection ? 'Editar Seção' : 'Nova Seção'}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-6 py-4">
             <div className="space-y-2">
               <Label>Título da Seção</Label>
               <Input
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
-                placeholder="Ex: Imóveis de Alto Padrão"
+                placeholder="Ex: Casas de Luxo em Balneário"
               />
             </div>
 
+            {/* Current Filters */}
             <div className="space-y-2">
-              <Label>Tipo de Filtro</Label>
-              <Select value={formFilterType} onValueChange={setFormFilterType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="boolean_field">Campo Booleano</SelectItem>
-                  <SelectItem value="tag">Por Tag</SelectItem>
-                  <SelectItem value="property_type">Tipo de Imóvel</SelectItem>
-                  <SelectItem value="city">Por Cidade</SelectItem>
-                  <SelectItem value="purpose">Finalidade</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Filtros Ativos (combinados com AND)</Label>
+              {formFilters.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-2">Nenhum filtro adicionado</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {formFilters.map((filter, index) => (
+                    <Badge key={index} variant="secondary" className="px-3 py-1.5 gap-2">
+                      <span>{FILTER_TYPE_LABELS[filter.type]}: {getFilterLabel(filter)}</span>
+                      <button onClick={() => handleRemoveFilter(index)} className="hover:text-destructive">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {formFilterType === 'boolean_field' && (
-              <div className="space-y-2">
-                <Label>Campo</Label>
-                <Select value={formFilterField} onValueChange={setFormFilterField}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="is_featured">Em Destaque</SelectItem>
-                    <SelectItem value="is_beachfront">Frente Mar</SelectItem>
-                    <SelectItem value="is_near_beach">Quadra Mar</SelectItem>
-                    <SelectItem value="is_development">Empreendimento</SelectItem>
-                    <SelectItem value="accepts_exchange">Aceita Permuta</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {formFilterType === 'tag' && (
-              <div className="space-y-2">
-                <Label>Selecione a Tag</Label>
-                {availableTags && availableTags.length > 0 ? (
-                  <Select value={formFilterValue} onValueChange={setFormFilterValue}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma tag" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableTags.map((tag) => (
-                        <SelectItem key={tag.id} value={tag.slug}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: tag.color }}
-                            />
-                            {tag.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="text-sm text-muted-foreground p-2 border rounded">
-                    Nenhuma tag cadastrada. Crie tags na aba "Tags".
+            {/* Add New Filter */}
+            <Card>
+              <CardContent className="p-4 space-y-4">
+                <Label className="text-sm font-medium">Adicionar Filtro</Label>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Tipo de Filtro</Label>
+                    <Select value={newFilterType} onValueChange={(v) => setNewFilterType(v as SectionFilter['type'])}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="boolean_field">Campo Booleano</SelectItem>
+                        <SelectItem value="tag">Por Tag</SelectItem>
+                        <SelectItem value="property_type">Tipo de Imóvel</SelectItem>
+                        <SelectItem value="city">Por Cidade</SelectItem>
+                        <SelectItem value="purpose">Finalidade</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
-              </div>
-            )}
 
-            {formFilterType === 'property_type' && (
-              <div className="space-y-2">
-                <Label>Tipo de Imóvel</Label>
-                <Select value={formFilterValue} onValueChange={setFormFilterValue}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="apartamento">Apartamento</SelectItem>
-                    <SelectItem value="apartamento_diferenciado">Apartamento Diferenciado</SelectItem>
-                    <SelectItem value="casa">Casa</SelectItem>
-                    <SelectItem value="cobertura">Cobertura</SelectItem>
-                    <SelectItem value="lote">Lote</SelectItem>
-                    <SelectItem value="studio">Studio</SelectItem>
-                    <SelectItem value="loft">Loft</SelectItem>
-                    <SelectItem value="sala_comercial">Sala Comercial</SelectItem>
-                    <SelectItem value="construcao">Construção/Planta</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Valor</Label>
+                    
+                    {newFilterType === 'boolean_field' && (
+                      <Select value={newFilterField} onValueChange={setNewFilterField}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="is_featured">Em Destaque</SelectItem>
+                          <SelectItem value="is_beachfront">Frente Mar</SelectItem>
+                          <SelectItem value="is_near_beach">Quadra Mar</SelectItem>
+                          <SelectItem value="is_development">Empreendimento</SelectItem>
+                          <SelectItem value="accepts_exchange">Aceita Permuta</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
 
-            {formFilterType === 'city' && (
-              <div className="space-y-2">
-                <Label>Nome da Cidade</Label>
-                <Input
-                  value={formFilterValue}
-                  onChange={(e) => setFormFilterValue(e.target.value)}
-                  placeholder="Ex: Balneário Camboriú, Itapema"
-                />
-              </div>
-            )}
+                    {newFilterType === 'tag' && (
+                      availableTags && availableTags.length > 0 ? (
+                        <Select value={newFilterValue} onValueChange={setNewFilterValue}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableTags.map((tag) => (
+                              <SelectItem key={tag.id} value={tag.slug}>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tag.color }} />
+                                  {tag.name}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="text-sm text-muted-foreground p-2 border rounded">
+                          Nenhuma tag cadastrada
+                        </div>
+                      )
+                    )}
 
-            {formFilterType === 'purpose' && (
-              <div className="space-y-2">
-                <Label>Finalidade</Label>
-                <Select value={formFilterValue} onValueChange={setFormFilterValue}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a finalidade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="venda">Venda</SelectItem>
-                    <SelectItem value="aluguel">Aluguel</SelectItem>
-                    <SelectItem value="temporada">Temporada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+                    {newFilterType === 'property_type' && (
+                      <Select value={newFilterValue} onValueChange={setNewFilterValue}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="apartamento">Apartamento</SelectItem>
+                          <SelectItem value="apartamento_diferenciado">Apartamento Diferenciado</SelectItem>
+                          <SelectItem value="casa">Casa</SelectItem>
+                          <SelectItem value="cobertura">Cobertura</SelectItem>
+                          <SelectItem value="lote">Lote</SelectItem>
+                          <SelectItem value="studio">Studio</SelectItem>
+                          <SelectItem value="loft">Loft</SelectItem>
+                          <SelectItem value="sala_comercial">Sala Comercial</SelectItem>
+                          <SelectItem value="construcao">Construção/Planta</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {newFilterType === 'city' && (
+                      <Input
+                        value={newFilterValue}
+                        onChange={(e) => setNewFilterValue(e.target.value)}
+                        placeholder="Ex: Balneário Camboriú"
+                      />
+                    )}
+
+                    {newFilterType === 'purpose' && (
+                      <Select value={newFilterValue} onValueChange={setNewFilterValue}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="venda">Venda</SelectItem>
+                          <SelectItem value="aluguel">Aluguel</SelectItem>
+                          <SelectItem value="temporada">Temporada</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </div>
+
+                <Button type="button" variant="outline" size="sm" onClick={handleAddFilter}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Filtro
+                </Button>
+              </CardContent>
+            </Card>
 
             <div className="space-y-2">
               <Label>Limite de Imóveis</Label>
