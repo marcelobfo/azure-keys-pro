@@ -18,22 +18,28 @@ serve(async (req) => {
   }
 
   try {
-    const { message, context, sessionId, chatHistory, systemInstruction, temperature, topP, maxOutputTokens, model, ...otherParams } = await req.json();
-    console.log('Gemini Chat Enhanced - Received request:', { message, sessionId, chatHistory: chatHistory?.length || 0, temperature, topP, maxOutputTokens, model });
+    const { message, context, sessionId, chatHistory, systemInstruction, temperature, topP, maxOutputTokens, model, tenant_id, ...otherParams } = await req.json();
+    console.log('Gemini Chat Enhanced - Received request:', { message, sessionId, chatHistory: chatHistory?.length || 0, temperature, topP, maxOutputTokens, model, tenant_id });
 
     // Try to get API key from database first, fallback to env
     let geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     
     try {
-      const { data: config } = await supabase
+      let query = supabase
         .from('chat_configurations')
         .select('gemini_api_key')
-        .eq('active', true)
-        .single();
+        .eq('active', true);
+      
+      // Filter by tenant if provided
+      if (tenant_id) {
+        query = query.eq('tenant_id', tenant_id);
+      }
+      
+      const { data: config } = await query.single();
       
       if (config?.gemini_api_key) {
         geminiApiKey = config.gemini_api_key;
-        console.log('Using Gemini API key from database');
+        console.log('Using Gemini API key from database for tenant:', tenant_id || 'default');
       }
     } catch (error) {
       console.warn('Could not fetch API key from database, using env variable:', error);

@@ -23,7 +23,8 @@ serve(async (req) => {
       temperature = 1.0, // Gemini 3 recommendation
       topP = 0.95,
       maxOutputTokens = 800,
-      model = 'gemini-2.5-pro' // Updated to stable version
+      model = 'gemini-2.5-pro', // Updated to stable version
+      tenant_id // Add tenant_id parameter
     } = await req.json();
     
     console.log('Gemini chat - Processing:', {
@@ -33,7 +34,8 @@ serve(async (req) => {
       temperature,
       topP,
       maxOutputTokens,
-      hasSystemInstruction: !!systemInstruction
+      hasSystemInstruction: !!systemInstruction,
+      tenant_id
     });
 
     // Try to get API key from database first, fallback to env
@@ -43,7 +45,13 @@ serve(async (req) => {
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
       
-      const configResponse = await fetch(`${supabaseUrl}/rest/v1/chat_configurations?active=eq.true&select=gemini_api_key`, {
+      // Build query with tenant filter if provided
+      let queryUrl = `${supabaseUrl}/rest/v1/chat_configurations?active=eq.true&select=gemini_api_key`;
+      if (tenant_id) {
+        queryUrl += `&tenant_id=eq.${tenant_id}`;
+      }
+      
+      const configResponse = await fetch(queryUrl, {
         headers: {
           'apikey': supabaseKey,
           'Authorization': `Bearer ${supabaseKey}`
@@ -54,7 +62,7 @@ serve(async (req) => {
         const configs = await configResponse.json();
         if (configs && configs.length > 0 && configs[0].gemini_api_key) {
           apiKey = configs[0].gemini_api_key;
-          console.log('Using Gemini API key from database');
+          console.log('Using Gemini API key from database for tenant:', tenant_id || 'default');
         }
       }
     } catch (error) {

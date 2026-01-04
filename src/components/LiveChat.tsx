@@ -17,10 +17,12 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { processBotMessage } from '@/utils/chatUtils';
 import { updateMessageStatus, getMessageStatusIcon, getMessageStatusColor } from '@/utils/messageStatusUtils';
+import { useTenantContext } from '@/contexts/TenantContext';
 
 const LiveChat = () => {
   const { toast } = useToast();
   const { playNotificationSound } = useChatSounds();
+  const { currentTenant } = useTenantContext();
   const { 
     createChatSession, 
     sendMessage, 
@@ -334,7 +336,7 @@ const LiveChat = () => {
     try {
       console.log('🚀 LiveChat: Iniciando nova sessão de chat...', formData);
       
-      const session = await createChatSession(formData);
+      const session = await createChatSession(formData, currentTenant?.id);
       
       console.log('✅ LiveChat: Sessão criada com sucesso:', session);
       setSessionId(session.id);
@@ -425,7 +427,7 @@ const LiveChat = () => {
     setNewMessage('');
 
     try {
-      await sendMessage(sessionId, messageText, 'lead');
+      await sendMessage(sessionId, messageText, 'lead', currentTenant?.id);
       console.log('✅ LiveChat: Mensagem de visitante enviada com sucesso');
 
       // Remove temp message on success - real message will come via realtime

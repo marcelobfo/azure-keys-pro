@@ -21,9 +21,14 @@ interface KnowledgeBaseArticle {
   published: boolean;
   created_at: string;
   updated_at: string;
+  tenant_id?: string;
 }
 
-const KnowledgeBaseManager = () => {
+interface KnowledgeBaseManagerProps {
+  tenantId?: string;
+}
+
+const KnowledgeBaseManager = ({ tenantId }: KnowledgeBaseManagerProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<KnowledgeBaseArticle | null>(null);
@@ -36,14 +41,19 @@ const KnowledgeBaseManager = () => {
 
   const queryClient = useQueryClient();
 
-  // Fetch articles
+  // Fetch articles filtered by tenant
   const { data: articles, isLoading } = useQuery({
-    queryKey: ['knowledge-base-articles', searchTerm],
+    queryKey: ['knowledge-base-articles', searchTerm, tenantId],
     queryFn: async () => {
       let query = supabase
         .from('knowledge_base_articles')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Filter by tenant if provided
+      if (tenantId) {
+        query = query.eq('tenant_id', tenantId);
+      }
 
       if (searchTerm) {
         query = query.textSearch('title,content', searchTerm);
@@ -75,14 +85,21 @@ const KnowledgeBaseManager = () => {
         if (error) throw error;
         return data;
       } else {
+        // Include tenant_id when creating new article
+        const insertData: any = {
+          title: articleData.title,
+          content: articleData.content,
+          tags: tagsArray,
+          published: articleData.published
+        };
+        
+        if (tenantId) {
+          insertData.tenant_id = tenantId;
+        }
+        
         const { data, error } = await supabase
           .from('knowledge_base_articles')
-          .insert({
-            title: articleData.title,
-            content: articleData.content,
-            tags: tagsArray,
-            published: articleData.published
-          })
+          .insert(insertData)
           .select()
           .single();
         if (error) throw error;
