@@ -67,6 +67,36 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
+				// Cores de status
+				success: 'hsl(var(--success))',
+				warning: 'hsl(var(--warning))',
+				// Paleta de marca - Ocean Blue
+				brand: {
+					ocean: {
+						50: '#E6F3FA',
+						100: '#CCE7F5',
+						200: '#99CFEB',
+						300: '#66B7E1',
+						400: '#33A0D7',
+						500: '#0088CC',
+						600: '#006FA5',
+						700: '#00567E',
+						800: '#003D57',
+						900: '#002530',
+					},
+					sunset: {
+						50: '#FEF3E6',
+						100: '#FDE7CC',
+						200: '#FBCF99',
+						300: '#F9B766',
+						400: '#F79F33',
+						500: '#F58700',
+						600: '#C46C00',
+						700: '#935100',
+						800: '#623600',
+						900: '#311B00',
+					},
+				},
 				// Custom blue theme colors
 				blue: {
 					50: '#eff6ff',
@@ -148,6 +178,11 @@ export default {
 			boxShadow: {
 				'blue': '0 4px 14px 0 rgba(59, 130, 246, 0.15)',
 				'blue-lg': '0 10px 25px 0 rgba(59, 130, 246, 0.2)',
+				'brand': '0 4px 14px 0 rgba(0, 136, 204, 0.15)',
+				'brand-lg': '0 10px 25px 0 rgba(0, 136, 204, 0.2)',
+				'dark-brand': '0 4px 14px 0 rgba(56, 189, 248, 0.1)',
+				'dark-brand-lg': '0 10px 25px 0 rgba(56, 189, 248, 0.15)',
+				'warm': '0 4px 14px 0 rgba(245, 135, 0, 0.15)',
 			}
 		}
 	},
