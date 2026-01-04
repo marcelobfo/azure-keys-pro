@@ -1,21 +1,26 @@
-
 import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Skeleton } from './ui/skeleton';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 
 interface HomeHeroProps {
   settings: Record<string, string>;
+  loading?: boolean;
 }
 
-const HomeHero: React.FC<HomeHeroProps> = ({ settings }) => {
+const HomeHero: React.FC<HomeHeroProps> = ({ settings, loading = false }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [purpose, setPurpose] = useState('all');
+  
+  // Use translations as instant fallbacks
+  const title = settings['home_banner_title'] || t('home.hero.title');
+  const subtitle = settings['home_banner_subtitle'] || t('home.hero.subtitle');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,13 +101,18 @@ const HomeHero: React.FC<HomeHeroProps> = ({ settings }) => {
   return (
     <section className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white py-20">
       <div className="absolute inset-0 bg-black opacity-20"></div>
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h1 className="text-4xl md:text-6xl font-bold mb-6">
-          {settings['home_banner_title'] || t('home.hero.title')}
-        </h1>
-        <p className="text-xl md:text-2xl mb-8 text-blue-100">
-          {settings['home_banner_subtitle'] || t('home.hero.subtitle')}
-        </p>
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
+        {loading ? (
+          <>
+            <Skeleton className="h-12 w-96 max-w-full mx-auto mb-6 bg-white/20" />
+            <Skeleton className="h-6 w-64 max-w-full mx-auto mb-8 bg-white/20" />
+          </>
+        ) : (
+          <>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">{title}</h1>
+            <p className="text-xl md:text-2xl mb-8 text-blue-100">{subtitle}</p>
+          </>
+        )}
         
         <SearchBar />
       </div>

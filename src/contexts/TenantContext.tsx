@@ -29,6 +29,37 @@ const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'selectedTenantId';
 const GLOBAL_VIEW_KEY = 'tenantGlobalView';
+const TENANT_CACHE_KEY = 'detected_tenant_cache';
+
+// Cache helpers for instant tenant detection
+const getCachedTenant = (): { tenant: any; timestamp: number; hostname: string } | null => {
+  try {
+    const cached = sessionStorage.getItem(TENANT_CACHE_KEY);
+    if (cached) {
+      const data = JSON.parse(cached);
+      const hostname = window.location.hostname;
+      // Cache valid for 5 minutes and same hostname
+      if (Date.now() - data.timestamp < 300000 && data.hostname === hostname) {
+        return data;
+      }
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return null;
+};
+
+const setCachedTenant = (tenant: any) => {
+  try {
+    sessionStorage.setItem(TENANT_CACHE_KEY, JSON.stringify({
+      tenant,
+      timestamp: Date.now(),
+      hostname: window.location.hostname
+    }));
+  } catch {
+    // Ignore storage errors
+  }
+};
 
 // Detect tenant from URL/domain
 const detectTenantFromUrl = async (): Promise<Tenant | null> => {
@@ -111,11 +142,39 @@ export const TenantProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [isGlobalView, setIsGlobalView] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Detect tenant from URL/domain on mount
+  // Detect tenant from URL/domain on mount - with cache for instant load
   useEffect(() => {
     const detectTenant = async () => {
+      // Check cache first for instant display
+      const cached = getCachedTenant();
+      if (cached?.tenant) {
+        setCurrentTenant(cached.tenant);
+        if (!user) {
+          setSelectedTenantId(cached.tenant.id);
+          setSelectedTenantState(cached.tenant);
+        }
+        // Still revalidate in background
+        detectTenantFromUrl().then(fresh => {
+          if (fresh && fresh.id !== cached.tenant.id) {
+            setCurrentTenant(fresh);
+            setCachedTenant(fresh);
+            if (!user) {
+              setSelectedTenantId(fresh.id);
+              setSelectedTenantState(fresh);
+            }
+          } else if (fresh) {
+            setCachedTenant(fresh);
+          }
+        });
+        return;
+      }
+      
+      // No cache - detect and cache
       const detected = await detectTenantFromUrl();
       setCurrentTenant(detected);
+      if (detected) {
+        setCachedTenant(detected);
+      }
       
       // If tenant detected and no user logged in, use it as selected
       if (detected && !user) {
