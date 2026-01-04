@@ -42,7 +42,7 @@ const HomeHero: React.FC<HomeHeroProps> = ({ settings, loading = false }) => {
           <SelectTrigger className="w-full sm:w-40 border-none bg-gray-50 text-gray-900">
             <SelectValue placeholder="Finalidade" />
           </SelectTrigger>
-          <SelectContent className="bg-white">
+          <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="sale">Venda</SelectItem>
             <SelectItem value="rent">Aluguel</SelectItem>
