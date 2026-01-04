@@ -161,12 +161,54 @@ export const useNotifications = () => {
     }
   };
 
+  const deleteNotification = async (notificationId: string) => {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId)
+        .eq('user_id', user.id);
+
+      if (!error) {
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        setUnreadCount(prev => {
+          const wasUnread = notifications.find(n => n.id === notificationId)?.read === false;
+          return wasUnread ? Math.max(0, prev - 1) : prev;
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  const deleteAllNotifications = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (!error) {
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error('Error deleting all notifications:', error);
+    }
+  };
+
   return {
     notifications,
     loading,
     unreadCount,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
+    deleteAllNotifications,
     refetch: fetchNotifications,
   };
 };
