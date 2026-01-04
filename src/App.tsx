@@ -48,6 +48,7 @@ import AnalyticsTracker from '@/components/AnalyticsTracker';
 import Team from '@/pages/Team';
 import OwnersManagement from '@/pages/OwnersManagement';
 import AdminIntegrationsOverview from '@/pages/AdminIntegrationsOverview';
+import BrandColorApplier from '@/components/BrandColorApplier';
 import { useEffect } from 'react';
 
 // Create QueryClient outside component to prevent recreation
@@ -83,6 +84,7 @@ function App() {
         <TenantProvider>
           <LanguageProvider>
             <ThemeProvider>
+              <BrandColorApplier />
               <SEOUpdater />
               <AnalyticsTracker />
               <Router>
