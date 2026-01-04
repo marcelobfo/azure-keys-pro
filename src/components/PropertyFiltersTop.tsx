@@ -36,6 +36,24 @@ interface PropertyFiltersTopProps {
   setIsExpanded: (expanded: boolean) => void;
 }
 
+const PROPERTY_TYPES = [
+  { value: 'apartamento', label: 'Apartamento' },
+  { value: 'apartamento_diferenciado', label: 'Apartamento Diferenciado' },
+  { value: 'casa', label: 'Casa' },
+  { value: 'cobertura', label: 'Cobertura' },
+  { value: 'construcao', label: 'Construção/Planta' },
+  { value: 'loft', label: 'Loft' },
+  { value: 'lote', label: 'Lote' },
+  { value: 'sala_comercial', label: 'Sala Comercial' },
+  { value: 'studio', label: 'Studio' },
+  { value: 'terreno', label: 'Terreno' },
+  { value: 'sobrado', label: 'Sobrado' },
+  { value: 'galpao', label: 'Galpão' },
+  { value: 'fazenda', label: 'Fazenda' },
+  { value: 'sitio', label: 'Sítio' },
+  { value: 'chacara', label: 'Chácara' },
+];
+
 const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
   filters,
   setFilters,
@@ -47,7 +65,6 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
   const { currentTenant, selectedTenantId } = useTenantContext();
   const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
   
-  const [propertyTypes, setPropertyTypes] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
 
   useEffect(() => {
@@ -55,18 +72,6 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
       if (!effectiveTenantId) return;
 
       try {
-        // Buscar tipos únicos
-        const { data: typesData } = await supabase
-          .from('properties')
-          .select('property_type')
-          .eq('status', 'active')
-          .eq('tenant_id', effectiveTenantId)
-          .not('property_type', 'is', null);
-
-        if (typesData) {
-          const uniqueTypes = [...new Set(typesData.map(t => t.property_type).filter(Boolean))];
-          setPropertyTypes(uniqueTypes.sort());
-        }
 
         // Buscar cidades únicas
         const { data: citiesData } = await supabase
@@ -190,9 +195,9 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-slate-800">
                 <SelectItem value="all">Todos os Tipos</SelectItem>
-                {propertyTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {formatPropertyType(type)}
+                {PROPERTY_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
                   </SelectItem>
                 ))}
               </SelectContent>
