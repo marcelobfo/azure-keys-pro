@@ -67,9 +67,11 @@ const PROPERTY_TYPE_LABELS: Record<string, string> = {
 };
 
 const PURPOSE_LABELS: Record<string, string> = {
-  venda: 'Venda',
-  aluguel: 'Aluguel',
-  temporada: 'Temporada',
+  sale: 'Venda',
+  rent: 'Aluguel',
+  rent_annual: 'Aluguel Anual',
+  rent_seasonal: 'Aluguel Temporada',
+  both: 'Venda e Aluguel',
 };
 
 const getFilterLabel = (filter: SectionFilter): string => {
@@ -552,9 +554,11 @@ const HomeSectionManager: React.FC = () => {
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="venda">Venda</SelectItem>
-                          <SelectItem value="aluguel">Aluguel</SelectItem>
-                          <SelectItem value="temporada">Temporada</SelectItem>
+                          <SelectItem value="sale">Venda</SelectItem>
+                          <SelectItem value="rent">Aluguel</SelectItem>
+                          <SelectItem value="rent_annual">Aluguel Anual</SelectItem>
+                          <SelectItem value="rent_seasonal">Aluguel Temporada</SelectItem>
+                          <SelectItem value="both">Venda e Aluguel</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
