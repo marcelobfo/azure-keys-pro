@@ -172,9 +172,17 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
             {!isSidebarExpanded ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center cursor-pointer">
-                    <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  </div>
+                  {profile?.avatar_url ? (
+                    <img 
+                      src={profile.avatar_url} 
+                      alt={profile?.full_name || 'Usuário'} 
+                      className="w-10 h-10 rounded-full object-cover cursor-pointer"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center cursor-pointer">
+                      <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  )}
                 </TooltipTrigger>
                 <TooltipContent side="right">
                   <p>{profile?.full_name || 'Usuário'}</p>
@@ -183,9 +191,17 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
               </Tooltip>
             ) : (
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
+                {profile?.avatar_url ? (
+                  <img 
+                    src={profile.avatar_url} 
+                    alt={profile?.full_name || 'Usuário'} 
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                )}
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">
                     {profile?.full_name || 'Usuário'}
