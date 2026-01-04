@@ -15,6 +15,9 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import HomeSectionManager from '@/components/HomeSectionManager';
 import TagManager from '@/components/TagManager';
+import BrandColorPreview from '@/components/BrandColorPreview';
+import { COLOR_PRESETS, DEFAULT_BRAND_COLORS } from '@/hooks/useBrandColors';
+import { Palette, Check } from 'lucide-react';
 
 // Configurações das seções da home
 const HOME_SECTIONS_SETTINGS = [
@@ -284,6 +287,39 @@ const ANALYTICS_TOGGLES = [
   { key: 'facebook_pixel_enabled', label: 'Ativar Facebook Pixel' },
 ];
 
+const BRAND_COLOR_FIELDS = [
+  {
+    key: 'brand_primary_color',
+    label: 'Cor Primária (Tema Claro)',
+    defaultValue: '#0088CC',
+    help: 'Cor principal para botões, links e elementos de destaque',
+  },
+  {
+    key: 'brand_primary_dark',
+    label: 'Cor Primária (Tema Escuro)',
+    defaultValue: '#38BDF8',
+    help: 'Versão mais vibrante para o tema escuro',
+  },
+  {
+    key: 'brand_accent_color',
+    label: 'Cor de Destaque (Tema Claro)',
+    defaultValue: '#F58700',
+    help: 'Cor secundária para CTAs importantes e badges',
+  },
+  {
+    key: 'brand_accent_dark',
+    label: 'Cor de Destaque (Tema Escuro)',
+    defaultValue: '#FB923C',
+    help: 'Versão de destaque para o tema escuro',
+  },
+  {
+    key: 'brand_success_color',
+    label: 'Cor de Sucesso',
+    defaultValue: '#10B981',
+    help: 'Usada para indicar estados positivos e confirmações',
+  },
+];
+
 const AdminSiteSettings = () => {
   const { profile, loading, hasRole } = useProfile();
   const { toast } = useToast();
@@ -299,12 +335,14 @@ const AdminSiteSettings = () => {
     if (!profile || !hasRole('admin')) return;
 
     async function fetchSettings() {
-      // Incluir keys das seções da home
+      // Incluir keys das seções da home e cores da marca
       const sectionKeys = HOME_SECTIONS_SETTINGS.flatMap(s => [s.key, s.titleKey]);
+      const brandColorKeys = BRAND_COLOR_FIELDS.map(f => f.key);
       const keys = ALL_FIELDS.map(s => s.key)
         .concat(['home_layout'])
         .concat(ANALYTICS_TOGGLES.map(t => t.key))
-        .concat(sectionKeys);
+        .concat(sectionKeys)
+        .concat(brandColorKeys);
       
       let query = supabase
         .from('site_settings')
@@ -401,6 +439,12 @@ const AdminSiteSettings = () => {
       const value = values[toggle.key] || 'false';
       if (!await saveSetting(toggle.key, value)) isOk = false;
     }
+    
+    // Salva cores da marca
+    for (const field of BRAND_COLOR_FIELDS) {
+      const value = values[field.key] || field.defaultValue;
+      if (!await saveSetting(field.key, value)) isOk = false;
+    }
 
     setIsSaving(false);
     toast({
@@ -458,8 +502,12 @@ const AdminSiteSettings = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="home">
-              <TabsList className="mb-4 grid grid-cols-6 w-full">
+              <TabsList className="mb-4 grid grid-cols-7 w-full">
                 <TabsTrigger value="home">Home</TabsTrigger>
+                <TabsTrigger value="cores" className="flex items-center gap-1">
+                  <Palette className="w-3 h-3" />
+                  Cores
+                </TabsTrigger>
                 <TabsTrigger value="tags">Tags</TabsTrigger>
                 <TabsTrigger value="footer">Rodapé</TabsTrigger>
                 <TabsTrigger value="contact">Contato</TabsTrigger>
@@ -541,6 +589,116 @@ const AdminSiteSettings = () => {
                   </div>
                   <Button type="submit" className="w-full mt-6" disabled={isSaving}>
                     {isSaving ? "Salvando..." : "Salvar Configurações"}
+                  </Button>
+                </form>
+              </TabsContent>
+
+              {/* CORES TAB */}
+              <TabsContent value="cores">
+                <form
+                  className="space-y-6"
+                  onSubmit={e => {
+                    e.preventDefault();
+                    saveSettings();
+                  }}
+                >
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-6">
+                    <h3 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                      <Palette className="w-4 h-4" />
+                      Cores da Marca
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Personalize as cores do seu site para refletir a identidade visual da sua imobiliária. As cores serão aplicadas automaticamente em todo o sistema.
+                    </p>
+                  </div>
+
+                  {/* Presets de Cores */}
+                  <div className="space-y-3">
+                    <Label>Presets de Cores</Label>
+                    <p className="text-xs text-muted-foreground">Escolha um preset ou personalize as cores abaixo</p>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      {Object.entries(COLOR_PRESETS).map(([key, preset]) => {
+                        const isSelected = 
+                          (values.brand_primary_color || DEFAULT_BRAND_COLORS.primaryColor) === preset.primaryColor &&
+                          (values.brand_accent_color || DEFAULT_BRAND_COLORS.accentColor) === preset.accentColor;
+                        
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => {
+                              handleChange('brand_primary_color', preset.primaryColor);
+                              handleChange('brand_primary_dark', preset.primaryColorDark);
+                              handleChange('brand_accent_color', preset.accentColor);
+                              handleChange('brand_accent_dark', preset.accentColorDark);
+                            }}
+                            className={`relative p-3 rounded-lg border-2 transition-all ${
+                              isSelected 
+                                ? 'border-primary ring-2 ring-primary/30' 
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            <div className="flex gap-1 mb-2">
+                              <div 
+                                className="w-6 h-6 rounded-full"
+                                style={{ backgroundColor: preset.primaryColor }}
+                              />
+                              <div 
+                                className="w-6 h-6 rounded-full"
+                                style={{ backgroundColor: preset.accentColor }}
+                              />
+                            </div>
+                            <span className="text-xs font-medium">{preset.name}</span>
+                            {isSelected && (
+                              <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                                <Check className="w-3 h-3" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Color Pickers */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {BRAND_COLOR_FIELDS.map(field => (
+                      <div key={field.key} className="space-y-2">
+                        <Label htmlFor={field.key}>{field.label}</Label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            id={field.key}
+                            value={values[field.key] || field.defaultValue}
+                            onChange={e => handleChange(field.key, e.target.value)}
+                            className="w-12 h-12 rounded-lg cursor-pointer border-2 border-border hover:border-primary transition-colors"
+                          />
+                          <Input
+                            value={values[field.key] || field.defaultValue}
+                            onChange={e => handleChange(field.key, e.target.value)}
+                            placeholder="#000000"
+                            className="font-mono uppercase"
+                            maxLength={7}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">{field.help}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator />
+
+                  {/* Preview */}
+                  <BrandColorPreview
+                    primaryColor={values.brand_primary_color || DEFAULT_BRAND_COLORS.primaryColor}
+                    accentColor={values.brand_accent_color || DEFAULT_BRAND_COLORS.accentColor}
+                    successColor={values.brand_success_color || DEFAULT_BRAND_COLORS.successColor}
+                  />
+
+                  <Button type="submit" className="w-full mt-6" disabled={isSaving}>
+                    {isSaving ? "Salvando..." : "Salvar Cores da Marca"}
                   </Button>
                 </form>
               </TabsContent>
