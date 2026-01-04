@@ -270,10 +270,16 @@ const CreateProperty = () => {
                       <SelectItem value="casa">Casa</SelectItem>
                       <SelectItem value="cobertura">Cobertura</SelectItem>
                       <SelectItem value="construcao">Construção/Planta</SelectItem>
-                      <SelectItem value="lote">Lote</SelectItem>
                       <SelectItem value="loft">Loft</SelectItem>
+                      <SelectItem value="lote">Lote</SelectItem>
                       <SelectItem value="sala_comercial">Sala Comercial</SelectItem>
                       <SelectItem value="studio">Studio</SelectItem>
+                      <SelectItem value="terreno">Terreno</SelectItem>
+                      <SelectItem value="sobrado">Sobrado</SelectItem>
+                      <SelectItem value="galpao">Galpão</SelectItem>
+                      <SelectItem value="fazenda">Fazenda</SelectItem>
+                      <SelectItem value="sitio">Sítio</SelectItem>
+                      <SelectItem value="chacara">Chácara</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
