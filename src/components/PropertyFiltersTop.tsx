@@ -198,7 +198,7 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
               <SelectTrigger className="w-full xs:w-40">
                 <SelectValue placeholder="Finalidade" />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-slate-800">
+              <SelectContent>
                 <SelectItem value="all">Todas Finalidades</SelectItem>
                 <SelectItem value="sale">Venda</SelectItem>
                 <SelectItem value="rent">Aluguel</SelectItem>
@@ -212,7 +212,7 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
               <SelectTrigger className="w-full xs:w-40">
                 <SelectValue placeholder="Tipo" />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-slate-800">
+              <SelectContent>
                 <SelectItem value="all">Todos os Tipos</SelectItem>
                 {PROPERTY_TYPES
                   .filter(type => typeCounts[type.value] > 0)
@@ -270,7 +270,7 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a cidade" />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-slate-800">
+                <SelectContent>
                   <SelectItem value="all">Todas as Cidades</SelectItem>
                   {cities.map((city) => (
                     <SelectItem key={city} value={city}>
@@ -322,7 +322,7 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Qualquer" />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-slate-800">
+                <SelectContent>
                   <SelectItem value="any">Qualquer</SelectItem>
                   <SelectItem value="1">1+</SelectItem>
                   <SelectItem value="2">2+</SelectItem>
@@ -340,7 +340,7 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Qualquer" />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-slate-800">
+                <SelectContent>
                   <SelectItem value="any">Qualquer</SelectItem>
                   <SelectItem value="1">1+</SelectItem>
                   <SelectItem value="2">2+</SelectItem>
