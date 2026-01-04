@@ -109,13 +109,12 @@ export const useHomeSections = () => {
     }
 
     setLoading(true);
-    const propertiesBySection: Record<string, HomeSectionProperty[]> = {};
 
     try {
-      for (const section of sections) {
+      // Build all queries in parallel for much faster loading
+      const buildQueryForSection = (section: HomeSection) => {
         const filters = getEffectiveFilters(section);
         
-        // Build query with all filters applied (AND logic)
         let query = supabase
           .from('properties')
           .select('*')
@@ -145,15 +144,30 @@ export const useHomeSections = () => {
           }
         }
 
-        const { data, error } = await query
+        return query
           .order('created_at', { ascending: false })
           .limit(section.max_items || 8);
+      };
 
-        if (error) {
-          console.error(`Error fetching properties for section ${section.id}:`, error);
-          propertiesBySection[section.id] = [];
+      // Execute ALL section queries in parallel
+      const queryPromises = sections.map(section => 
+        buildQueryForSection(section).then(({ data, error }) => ({
+          sectionId: section.id,
+          data,
+          error
+        }))
+      );
+
+      const results = await Promise.all(queryPromises);
+
+      const propertiesBySection: Record<string, HomeSectionProperty[]> = {};
+
+      for (const result of results) {
+        if (result.error) {
+          console.error(`Error fetching properties for section ${result.sectionId}:`, result.error);
+          propertiesBySection[result.sectionId] = [];
         } else {
-          propertiesBySection[section.id] = (data || []).map((p: any) => ({
+          propertiesBySection[result.sectionId] = (result.data || []).map((p: any) => ({
             id: p.id,
             title: p.title,
             price: p.price ? Number(p.price) : 0,
