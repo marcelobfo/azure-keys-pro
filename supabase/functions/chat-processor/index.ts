@@ -35,23 +35,34 @@ serve(async (req) => {
     const { action, data } = await req.json();
     console.log('Chat processor - Action:', action, 'Data:', data);
 
-    // Get active chat configuration for AI settings
-    const getChatConfig = async () => {
-      const { data: chatConfig } = await supabase
+    // Get active chat configuration for AI settings (filtered by tenant_id if provided)
+    const getChatConfig = async (tenantId?: string) => {
+      let query = supabase
         .from('chat_configurations')
         .select('*')
-        .eq('active', true)
-        .single();
+        .eq('active', true);
+      
+      if (tenantId) {
+        query = query.eq('tenant_id', tenantId);
+      }
+      
+      const { data: chatConfig } = await query.single();
       return chatConfig;
     };
 
-    // Search knowledge base for relevant content
-    const searchKnowledgeBase = async (query: string) => {
-      const { data: articles } = await supabase
+    // Search knowledge base for relevant content (filtered by tenant_id if provided)
+    const searchKnowledgeBase = async (queryText: string, tenantId?: string) => {
+      let query = supabase
         .from('knowledge_base_articles')
         .select('title, content')
-        .eq('published', true)
-        .textSearch('title,content', query, {
+        .eq('published', true);
+      
+      if (tenantId) {
+        query = query.eq('tenant_id', tenantId);
+      }
+      
+      const { data: articles } = await query
+        .textSearch('title,content', queryText, {
           type: 'websearch',
           config: 'portuguese'
         })
@@ -65,8 +76,8 @@ serve(async (req) => {
 
     switch (action) {
       case 'create_chat_session': {
-        const { leadData } = data;
-        console.log('Criando nova sessão de chat...', leadData);
+        const { leadData, tenant_id } = data;
+        console.log('Criando nova sessão de chat...', leadData, 'tenant_id:', tenant_id);
 
         // Inserir ou atualizar lead
         const { data: existingLead } = await supabase
@@ -96,16 +107,22 @@ serve(async (req) => {
           }
           leadResult = data;
         } else {
-          // Criar novo lead
+          // Criar novo lead with tenant_id
+          const insertData: any = {
+            name: leadData.name,
+            email: leadData.email,
+            phone: leadData.phone,
+            message: leadData.message,
+            status: 'new'
+          };
+          
+          if (tenant_id) {
+            insertData.tenant_id = tenant_id;
+          }
+          
           const { data, error: insertError } = await supabase
             .from('leads')
-            .insert({
-              name: leadData.name,
-              email: leadData.email,
-              phone: leadData.phone,
-              message: leadData.message,
-              status: 'new'
-            })
+            .insert(insertData)
             .select()
             .single();
           
@@ -169,7 +186,7 @@ serve(async (req) => {
           }
 
           // Verificar se há configuração de AI ativa
-          const chatConfig = await getChatConfig();
+          const chatConfig = await getChatConfig(tenant_id);
 
           if (chatConfig?.ai_chat_enabled) {
             console.log('AI Chat habilitado, enviando resposta automática...');
@@ -187,7 +204,7 @@ serve(async (req) => {
               let knowledgeContext = '';
               if (chatConfig.knowledge_base_enabled) {
                 console.log('Buscando na base de conhecimento...');
-                const kbContent = await searchKnowledgeBase(leadData.message);
+                const kbContent = await searchKnowledgeBase(leadData.message, tenant_id);
                 if (kbContent) {
                   knowledgeContext = `\n\nContexto da Base de Conhecimento:\n${kbContent}`;
                   console.log('Conhecimento encontrado:', kbContent.substring(0, 200) + '...');
@@ -231,7 +248,8 @@ serve(async (req) => {
                   temperature: chatConfig.temperature,
                   topP: chatConfig.top_p,
                   maxOutputTokens: chatConfig.max_tokens,
-                  model: chatConfig.provider_model || 'gemini-2.5-pro'
+                  model: chatConfig.provider_model || 'gemini-2.5-pro',
+                  tenant_id: tenant_id
                 }
               });
               const aiResponse = response;
@@ -290,12 +308,13 @@ serve(async (req) => {
       }
 
       case 'send_message': {
-        const { sessionId, message, senderType, senderId } = data;
+        const { sessionId, message, senderType, senderId, tenant_id } = data;
         
         console.log('Enviando mensagem:', {
           sessionId,
           senderType,
-          messageLength: message.length
+          messageLength: message.length,
+          tenant_id
         });
 
         // Para leads, sempre usar null como senderId
@@ -334,7 +353,18 @@ serve(async (req) => {
 
         // Se a mensagem é de um lead e AI está habilitada, gerar resposta automática
         if (senderType === 'lead') {
-          const chatConfig = await getChatConfig();
+          // Get tenant_id from lead via session if not provided
+          let effectiveTenantId = tenant_id;
+          if (!effectiveTenantId) {
+            const { data: sessionData } = await supabase
+              .from('chat_sessions')
+              .select('leads!inner(tenant_id)')
+              .eq('id', sessionId)
+              .single();
+            effectiveTenantId = (sessionData?.leads as any)?.tenant_id;
+          }
+          
+          const chatConfig = await getChatConfig(effectiveTenantId);
 
           // Verificar se a sessão não tem atendente ativo
           const { data: session } = await supabase
@@ -359,7 +389,7 @@ serve(async (req) => {
               let knowledgeContext = '';
               if (chatConfig.knowledge_base_enabled) {
                 console.log('Buscando na base de conhecimento...');
-                const kbContent = await searchKnowledgeBase(message);
+                const kbContent = await searchKnowledgeBase(message, effectiveTenantId);
                 if (kbContent) {
                   knowledgeContext = `\n\nContexto da Base de Conhecimento:\n${kbContent}`;
                   console.log('Conhecimento encontrado:', kbContent.substring(0, 200) + '...');
@@ -415,7 +445,8 @@ serve(async (req) => {
                   temperature: chatConfig.temperature,
                   topP: chatConfig.top_p,
                   maxOutputTokens: chatConfig.max_tokens,
-                  model: chatConfig.provider_model || 'gemini-2.5-pro'
+                  model: chatConfig.provider_model || 'gemini-2.5-pro',
+                  tenant_id: effectiveTenantId
                 }
               });
               const aiResponse = response;

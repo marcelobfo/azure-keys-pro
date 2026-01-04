@@ -251,15 +251,16 @@ export const useLiveChat = () => {
     phone?: string;
     message?: string;
     subject?: string;
-  }) => {
+  }, tenantId?: string) => {
     try {
-      console.log('Criando nova sessão de chat via Edge Function...', leadData);
+      console.log('Criando nova sessão de chat via Edge Function...', leadData, 'tenant_id:', tenantId);
       
       const { data, error } = await supabase.functions.invoke('chat-processor', {
         body: {
           action: 'create_chat_session',
           data: {
-            leadData: leadData
+            leadData: leadData,
+            tenant_id: tenantId
           }
         }
       });
@@ -395,10 +396,11 @@ export const useLiveChat = () => {
   const sendMessage = async (
     sessionId: string, 
     message: string, 
-    senderType: 'lead' | 'attendant' | 'bot' = 'attendant'
+    senderType: 'lead' | 'attendant' | 'bot' = 'attendant',
+    tenantId?: string
   ) => {
     try {
-      console.log('Enviando mensagem via Edge Function:', { sessionId, message, senderType, userId: user?.id });
+      console.log('Enviando mensagem via Edge Function:', { sessionId, message, senderType, userId: user?.id, tenantId });
       
       const { data, error } = await supabase.functions.invoke('chat-processor', {
         body: {
@@ -407,7 +409,8 @@ export const useLiveChat = () => {
             sessionId: sessionId,
             message: message,
             senderType: senderType,
-            senderId: senderType === 'attendant' ? user?.id : null
+            senderId: senderType === 'attendant' ? user?.id : null,
+            tenant_id: tenantId
           }
         }
       });

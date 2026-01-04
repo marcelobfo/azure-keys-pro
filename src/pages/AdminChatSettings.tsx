@@ -17,19 +17,27 @@ import AIParametersSettings from '@/components/AIParametersSettings';
 import KnowledgeBaseManager from '@/components/KnowledgeBaseManager';
 import ApiKeyTester from '@/components/ApiKeyTester';
 import { EvolutionApiSettings } from '@/components/EvolutionApiSettings';
+import { useTenantContext } from '@/contexts/TenantContext';
 
 const AdminChatSettings = () => {
   const [config, setConfig] = useState<any>({});
   const queryClient = useQueryClient();
+  const { selectedTenantId, currentTenant } = useTenantContext();
+  
+  // Determine effective tenant ID
+  const effectiveTenantId = selectedTenantId || currentTenant?.id;
 
-  // Fetch current configuration
+  // Fetch current configuration filtered by tenant
   const { data: chatConfig, isLoading } = useQuery({
-    queryKey: ['chat-configuration'],
+    queryKey: ['chat-configuration', effectiveTenantId],
     queryFn: async () => {
+      if (!effectiveTenantId) return null;
+      
       const { data, error } = await supabase
         .from('chat_configurations')
         .select('*')
         .eq('active', true)
+        .eq('tenant_id', effectiveTenantId)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -40,7 +48,8 @@ const AdminChatSettings = () => {
       }
       
       return data;
-    }
+    },
+    enabled: !!effectiveTenantId
   });
 
   // Sync fetched config into local state when it becomes available
@@ -53,6 +62,10 @@ const AdminChatSettings = () => {
   // Save configuration mutation
   const saveConfigMutation = useMutation({
     mutationFn: async (configData: any) => {
+      if (!effectiveTenantId) {
+        throw new Error('Nenhum tenant selecionado');
+      }
+      
       // Remove id from configData to avoid conflicts
       const { id, ...dataWithoutId } = configData;
       
@@ -67,16 +80,17 @@ const AdminChatSettings = () => {
         if (error) throw error;
         return data;
       } else {
-        // Create new configuration - first deactivate any existing
+        // Create new configuration - first deactivate any existing for this tenant
         await supabase
           .from('chat_configurations')
           .update({ active: false })
-          .eq('active', true);
+          .eq('active', true)
+          .eq('tenant_id', effectiveTenantId);
           
-        // Then create new one
+        // Then create new one with tenant_id
         const { data, error } = await supabase
           .from('chat_configurations')
-          .insert({ ...dataWithoutId, active: true })
+          .insert({ ...dataWithoutId, active: true, tenant_id: effectiveTenantId })
           .select()
           .single();
         if (error) throw error;
@@ -84,7 +98,7 @@ const AdminChatSettings = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['chat-configuration'] });
+      queryClient.invalidateQueries({ queryKey: ['chat-configuration', effectiveTenantId] });
       toast.success('Configurações salvas com sucesso!');
     },
     onError: (error) => {
@@ -337,7 +351,7 @@ const AdminChatSettings = () => {
           </TabsContent>
 
           <TabsContent value="knowledge-base">
-            <KnowledgeBaseManager />
+            <KnowledgeBaseManager tenantId={effectiveTenantId} />
           </TabsContent>
 
           <TabsContent value="responses" className="space-y-6">

@@ -37,19 +37,27 @@ serve(async (req) => {
   }
 
   try {
-    const { leadData } = await req.json();
+    const { leadData, tenant_id } = await req.json();
     
-    console.log('WhatsApp Notification - Processing lead:', JSON.stringify(leadData, null, 2));
+    console.log('WhatsApp Notification - Processing lead:', JSON.stringify(leadData, null, 2), 'tenant_id:', tenant_id);
 
     // Buscar configurações da Evolution API do banco
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data: config, error: configError } = await supabase
+    // Build query with tenant filter
+    let query = supabase
       .from('chat_configurations')
       .select('evolution_api_url, evolution_api_key, evolution_instance, whatsapp_notification_number, company, whatsapp_lead_welcome_message')
-      .eq('active', true)
+      .eq('active', true);
+    
+    // Filter by tenant if provided
+    if (tenant_id) {
+      query = query.eq('tenant_id', tenant_id);
+    }
+    
+    const { data: config, error: configError } = await query
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle();

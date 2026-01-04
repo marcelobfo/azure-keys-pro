@@ -7,6 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Card } from './ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { processBotMessage } from '@/utils/chatUtils';
+import { useTenantContext } from '@/contexts/TenantContext';
 
 interface Message {
   id: string;
@@ -43,6 +44,7 @@ const AIChat = () => {
     message: ''
   });
   const { t } = useLanguage();
+  const { currentTenant } = useTenantContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -147,7 +149,8 @@ const AIChat = () => {
             temperature: chatConfig.temperature,
             topP: chatConfig.top_p,
             maxOutputTokens: chatConfig.max_tokens,
-            model: chatConfig.provider_model
+            model: chatConfig.provider_model,
+            tenant_id: currentTenant?.id
           }
         });
       } else {
@@ -167,7 +170,8 @@ const AIChat = () => {
             systemInstruction: chatConfig?.system_instruction,
             temperature: chatConfig?.temperature,
             maxTokens: chatConfig?.max_tokens,
-            model: chatConfig?.provider_model
+            model: chatConfig?.provider_model,
+            tenant_id: currentTenant?.id
           }
         });
       }

@@ -15,6 +15,7 @@ interface ChatRequest {
   temperature?: number;
   maxTokens?: number;
   model?: string;
+  tenant_id?: string;
 }
 
 serve(async (req) => {
@@ -23,18 +24,44 @@ serve(async (req) => {
   }
 
   try {
-    const { message, sessionId, context, systemInstruction: customSystemInstruction, temperature, maxTokens, model }: ChatRequest = await req.json();
-    console.log('AI Chat Enhanced - Received request:', { message, sessionId });
+    const { message, sessionId, context, systemInstruction: customSystemInstruction, temperature, maxTokens, model, tenant_id }: ChatRequest = await req.json();
+    console.log('AI Chat Enhanced - Received request:', { message, sessionId, tenant_id });
 
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!openaiApiKey || !supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error('Missing required environment variables');
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Try to get OpenAI API key from database first (filtered by tenant), fallback to env
+    let openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    try {
+      let query = supabase
+        .from('chat_configurations')
+        .select('openai_api_key')
+        .eq('active', true);
+      
+      if (tenant_id) {
+        query = query.eq('tenant_id', tenant_id);
+      }
+      
+      const { data: config } = await query.single();
+      
+      if (config?.openai_api_key) {
+        openaiApiKey = config.openai_api_key;
+        console.log('Using OpenAI API key from database for tenant:', tenant_id || 'default');
+      }
+    } catch (error) {
+      console.warn('Could not fetch API key from database, using env variable:', error);
+    }
+
+    if (!openaiApiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
 
     // Get site context and search for relevant properties
     const { data: siteContext } = await supabase.rpc('get_site_context_for_ai');
