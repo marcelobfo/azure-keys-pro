@@ -47,6 +47,7 @@ import SEOUpdater from '@/components/SEOUpdater';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
 import Team from '@/pages/Team';
 import OwnersManagement from '@/pages/OwnersManagement';
+import AdminIntegrationsOverview from '@/pages/AdminIntegrationsOverview';
 import { useEffect } from 'react';
 
 // Create QueryClient outside component to prevent recreation
@@ -140,6 +141,7 @@ function App() {
                 <Route path="/admin/olx-settings" element={<AdminOLXSettings />} />
                 <Route path="/admin/tenants" element={<AdminTenants />} />
                 <Route path="/admin/owners" element={<OwnersManagement />} />
+                <Route path="/admin/integrations-overview" element={<AdminIntegrationsOverview />} />
                 <Route path="/onboarding/:tenantId" element={<TenantOnboarding />} />
                 <Route path="/olx-callback" element={<OLXCallback />} />
 

@@ -3,7 +3,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, Home, MessageSquare, TrendingUp, Settings, Webhook, BarChart3, UserCheck, MessageCircle } from 'lucide-react';
+import { Users, Home, MessageSquare, TrendingUp, Settings, BarChart3, MessageCircle, Loader2, ArrowUpRight } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +16,6 @@ const AdminDashboard = () => {
   const { isSuperAdmin } = useRoles();
   const navigate = useNavigate();
 
-  // States for counts
   const [userCounts, setUserCounts] = useState({ total: 0, admin: 0, corretor: 0, user: 0 });
   const [propertyCount, setPropertyCount] = useState(0);
   const [leadsCounts, setLeadsCounts] = useState({ total: 0, new: 0, progressing: 0, converted: 0 });
@@ -27,12 +26,9 @@ const AdminDashboard = () => {
   const [salesThisMonth, setSalesThisMonth] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
 
-  // Fetch Dashboard Data based on tenant
   const fetchDashboardData = useCallback(async () => {
-    // Users query
     let usersQuery = supabase.from('profiles').select('role, tenant_id');
     if (!isSuperAdmin) {
-      // Non-super admin sees only their tenant
     } else if (!isGlobalView && selectedTenantId) {
       usersQuery = usersQuery.eq('tenant_id', selectedTenantId);
     }
@@ -50,10 +46,8 @@ const AdminDashboard = () => {
       setCorretorActive(0);
     }
 
-    // Properties query
     let propertiesQuery = supabase.from('properties').select('id, tenant_id').eq('status', 'active');
     if (!isSuperAdmin) {
-      // Non-super admin sees only their tenant
     } else if (!isGlobalView && selectedTenantId) {
       propertiesQuery = propertiesQuery.eq('tenant_id', selectedTenantId);
     }
@@ -61,10 +55,8 @@ const AdminDashboard = () => {
     const { data: propertiesData } = await propertiesQuery;
     setPropertyCount(propertiesData ? propertiesData.length : 0);
 
-    // Leads query
     let leadsQuery = supabase.from('leads').select('status, tenant_id');
     if (!isSuperAdmin) {
-      // Non-super admin sees only their tenant
     } else if (!isGlobalView && selectedTenantId) {
       leadsQuery = leadsQuery.eq('tenant_id', selectedTenantId);
     }
@@ -82,7 +74,6 @@ const AdminDashboard = () => {
       setConversionRate(0);
     }
 
-    // Chat Sessions - don't have tenant_id directly, but can be linked via leads
     const { data: chatData } = await supabase.from('chat_sessions').select('status');
     if (chatData) {
       const total = chatData.length;
@@ -93,7 +84,6 @@ const AdminDashboard = () => {
       setChatStats({ active: 0, waiting: 0, total: 0 });
     }
 
-    // Webhooks (simulado)
     setWebhookStats({ active: 0, failures: 0 });
     setSalesThisMonth(0);
     setTotalRevenue(0);
@@ -107,7 +97,7 @@ const AdminDashboard = () => {
     return (
       <DashboardLayout title="Dashboard Administrativo" userRole="admin">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <Loader2 className="w-12 h-12 animate-spin text-primary" />
         </div>
       </DashboardLayout>
     );
@@ -120,268 +110,198 @@ const AdminDashboard = () => {
   return (
     <DashboardLayout title="Dashboard Administrativo" userRole="admin">
       <div className="space-y-8">
-        {/* Welcome Message */}
-        <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-6 text-white">
-          <h2 className="text-2xl font-bold mb-2">
-            Painel Administrativo
-          </h2>
-          <p className="text-red-100">
-            Gerencie usuários, métricas e configurações do sistema.
-          </p>
+        {/* Welcome Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 p-8 text-white shadow-xl">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-30"></div>
+          <div className="relative">
+            <h2 className="text-3xl font-bold mb-2">Painel Administrativo</h2>
+            <p className="text-blue-100 text-lg">Gerencie usuários, métricas e configurações do sistema.</p>
+          </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
+          <Card className="group relative overflow-hidden border-0 bg-card shadow-sm hover:shadow-lg transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total de Usuários</CardTitle>
+              <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30 group-hover:scale-110 transition-transform duration-300">
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{userCounts.total}</div>
-              <p className="text-xs text-muted-foreground">+0% em relação ao mês passado</p>
+              <div className="text-3xl font-bold text-foreground">{userCounts.total}</div>
+              <div className="flex items-center gap-1 mt-1">
+                <TrendingUp className="w-3 h-3 text-emerald-500" />
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">+0% este mês</p>
+              </div>
             </CardContent>
           </Card>
-          <Card>
+
+          <Card className="group relative overflow-hidden border-0 bg-card shadow-sm hover:shadow-lg transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Imóveis Ativos</CardTitle>
-              <Home className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Imóveis Ativos</CardTitle>
+              <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 group-hover:scale-110 transition-transform duration-300">
+                <Home className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{propertyCount}</div>
-              <p className="text-xs text-muted-foreground">+0% em relação ao mês passado</p>
+              <div className="text-3xl font-bold text-foreground">{propertyCount}</div>
+              <div className="flex items-center gap-1 mt-1">
+                <TrendingUp className="w-3 h-3 text-emerald-500" />
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">+0% este mês</p>
+              </div>
             </CardContent>
           </Card>
-          <Card>
+
+          <Card className="group relative overflow-hidden border-0 bg-card shadow-sm hover:shadow-lg transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Chats Ativos</CardTitle>
-              <MessageCircle className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Chats Ativos</CardTitle>
+              <div className="p-2.5 rounded-xl bg-violet-100 dark:bg-violet-900/30 group-hover:scale-110 transition-transform duration-300">
+                <MessageCircle className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{chatStats.active}</div>
-              <p className="text-xs text-muted-foreground">{chatStats.waiting} aguardando atendimento</p>
+              <div className="text-3xl font-bold text-foreground">{chatStats.active}</div>
+              <p className="text-xs text-muted-foreground mt-1">{chatStats.waiting} aguardando</p>
             </CardContent>
           </Card>
-          <Card>
+
+          <Card className="group relative overflow-hidden border-0 bg-card shadow-sm hover:shadow-lg transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Taxa de Conversão</CardTitle>
+              <div className="p-2.5 rounded-xl bg-orange-100 dark:bg-orange-900/30 group-hover:scale-110 transition-transform duration-300">
+                <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{conversionRate.toFixed(1)}%</div>
-              <p className="text-xs text-muted-foreground">+0% em relação ao mês passado</p>
+              <div className="text-3xl font-bold text-foreground">{conversionRate.toFixed(1)}%</div>
+              <div className="flex items-center gap-1 mt-1">
+                <TrendingUp className="w-3 h-3 text-emerald-500" />
+                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">+0% este mês</p>
+              </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Management Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/chat-attendant')}>
+          <Card 
+            className="group cursor-pointer border-0 bg-card shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1" 
+            onClick={() => navigate('/chat-attendant')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Central de Atendimento
-                <MessageCircle className="h-5 w-5" />
+                <span>Central de Atendimento</span>
+                <div className="p-2 rounded-lg bg-violet-100 dark:bg-violet-900/30 group-hover:bg-violet-200 dark:group-hover:bg-violet-900/50 transition-colors">
+                  <MessageCircle className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                </div>
               </CardTitle>
-              <CardDescription>
-                Gerencie chats ao vivo e atenda clientes em tempo real
-              </CardDescription>
+              <CardDescription>Gerencie chats ao vivo</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm">Chats Ativos</span>
-                  <Badge variant="default">{chatStats.active}</Badge>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                  <span className="text-sm text-muted-foreground">Chats Ativos</span>
+                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0">{chatStats.active}</Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Aguardando Atendimento</span>
+                <div className="flex justify-between items-center p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                  <span className="text-sm text-muted-foreground">Aguardando</span>
                   <Badge variant="secondary">{chatStats.waiting}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Total de Conversas</span>
-                  <Badge>{chatStats.total}</Badge>
                 </div>
               </div>
               <Button className="w-full mt-4">
-                Acessar Central de Atendimento
+                Acessar Central
+                <ArrowUpRight className="w-4 h-4 ml-2" />
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/users')}>
+          <Card 
+            className="group cursor-pointer border-0 bg-card shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1" 
+            onClick={() => navigate('/admin/users')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Gerenciamento de Usuários
-                <Users className="h-5 w-5" />
+                <span>Gerenciamento de Usuários</span>
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+                  <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
               </CardTitle>
-              <CardDescription>
-                Gerencie roles, permissões e dados dos usuários
-              </CardDescription>
+              <CardDescription>Gerencie roles e permissões</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm">Administradores</span>
-                  <Badge variant="destructive">{userCounts.admin}</Badge>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                  <span className="text-sm text-muted-foreground">Admins</span>
+                  <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-0">{userCounts.admin}</Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Corretores</span>
-                  <Badge variant="default">{userCounts.corretor}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Usuários</span>
-                  <Badge variant="secondary">{userCounts.user}</Badge>
+                <div className="flex justify-between items-center p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                  <span className="text-sm text-muted-foreground">Corretores</span>
+                  <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0">{userCounts.corretor}</Badge>
                 </div>
               </div>
               <Button className="w-full mt-4" variant="outline">
-                Gerenciar Usuários
+                Gerenciar
+                <ArrowUpRight className="w-4 h-4 ml-2" />
               </Button>
             </CardContent>
           </Card>
 
-          <Card className="cursor-not-allowed">
+          <Card className="border-0 bg-card shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Gerenciamento de Leads
-                <MessageSquare className="h-5 w-5" />
+                <span>Leads</span>
+                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                  <MessageSquare className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                </div>
               </CardTitle>
-              <CardDescription>
-                Visualize e gerencie todos os leads da plataforma
-              </CardDescription>
+              <CardDescription>Visualize todos os leads</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm">Novos Leads</span>
-                  <Badge variant="default">{leadsCounts.new}</Badge>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                  <span className="text-sm text-muted-foreground">Novos</span>
+                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-0">{leadsCounts.new}</Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Em Andamento</span>
-                  <Badge variant="secondary">{leadsCounts.progressing}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Convertidos</span>
-                  <Badge>{leadsCounts.converted}</Badge>
+                <div className="flex justify-between items-center p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                  <span className="text-sm text-muted-foreground">Convertidos</span>
+                  <Badge variant="outline">{leadsCounts.converted}</Badge>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/chat-settings')}>
+          <Card 
+            className="group cursor-pointer border-0 bg-card shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1" 
+            onClick={() => navigate('/admin/site-settings')}
+          >
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Configurações do Chat
-                <MessageCircle className="h-5 w-5" />
+                <span>Configurações</span>
+                <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-900/30 group-hover:bg-slate-200 dark:group-hover:bg-slate-900/50 transition-colors">
+                  <Settings className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                </div>
               </CardTitle>
-              <CardDescription>
-                Configure chat com IA e mensagens automáticas
-              </CardDescription>
+              <CardDescription>Configure o sistema</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm">Chat com IA</span>
-                  <Badge variant="default">Configurar</Badge>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                  <span className="text-sm text-muted-foreground">Webhooks</span>
+                  <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0">{webhookStats.active}</Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Integração WhatsApp</span>
-                  <Badge variant="secondary">Configurar</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Mensagens Automáticas</span>
-                  <Badge>Ativo</Badge>
+                <div className="flex justify-between items-center p-2 rounded-lg hover:bg-accent/50 transition-colors">
+                  <span className="text-sm text-muted-foreground">Site</span>
+                  <Badge variant="outline">Editar</Badge>
                 </div>
               </div>
               <Button className="w-full mt-4" variant="outline">
-                Configurar Chat
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/settings')}>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Configurações Gerais
-                <Settings className="h-5 w-5" />
-              </CardTitle>
-              <CardDescription>
-                Configure webhooks e parâmetros globais
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm">Webhooks Ativos</span>
-                  <Badge variant="default">{webhookStats.active}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Falhas nas últimas 24h</span>
-                  <Badge variant="destructive">{webhookStats.failures}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Configurações do Site</span>
-                  <Badge>Editar</Badge>
-                </div>
-              </div>
-              <Button className="w-full mt-4" variant="outline">
-                Acessar Configurações
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-default">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Análise de Performance
-                <BarChart3 className="h-5 w-5" />
-              </CardTitle>
-              <CardDescription>
-                Métricas detalhadas e relatórios de performance
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm">Corretores Ativos</span>
-                  <Badge variant="default">{corretorActive}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Vendas Este Mês</span>
-                  <Badge>{salesThisMonth}</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Receita Total</span>
-                  <Badge variant="secondary">{totalRevenue > 0 ? `R$ ${totalRevenue.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}` : "R$ 0"}</Badge>
-                </div>
-              </div>
-              <Button className="w-full mt-4" variant="outline" disabled>
-                Ver Relatórios
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/broker-management')}>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Gestão de Corretores
-                <UserCheck className="h-5 w-5" />
-              </CardTitle>
-              <CardDescription>
-                Acompanhe a produtividade de cada corretor
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm">Top Performer</span>
-                  <Badge>-</Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Vendas Este Mês</span>
-                  <Badge variant="secondary">0</Badge>
-                </div>
-              </div>
-              <Button className="w-full mt-4" variant="outline" disabled>
-                Ver Produtividade
+                Acessar
+                <ArrowUpRight className="w-4 h-4 ml-2" />
               </Button>
             </CardContent>
           </Card>
