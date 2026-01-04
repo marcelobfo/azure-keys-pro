@@ -66,14 +66,14 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
   const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
   
   const [cities, setCities] = useState<string[]>([]);
-  const [availableTypes, setAvailableTypes] = useState<string[]>([]);
+  const [typeCounts, setTypeCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchFilterOptions = async () => {
       if (!effectiveTenantId) return;
 
       try {
-        // Buscar tipos únicos com imóveis cadastrados
+        // Buscar tipos e contar imóveis por tipo
         const { data: typesData } = await supabase
           .from('properties')
           .select('property_type')
@@ -82,8 +82,14 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
           .not('property_type', 'is', null);
 
         if (typesData) {
-          const uniqueTypes = [...new Set(typesData.map(t => t.property_type).filter(Boolean))];
-          setAvailableTypes(uniqueTypes);
+          const counts: Record<string, number> = {};
+          typesData.forEach(item => {
+            const type = item.property_type;
+            if (type) {
+              counts[type] = (counts[type] || 0) + 1;
+            }
+          });
+          setTypeCounts(counts);
         }
 
         // Buscar cidades únicas
@@ -209,10 +215,10 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
               <SelectContent className="bg-white dark:bg-slate-800">
                 <SelectItem value="all">Todos os Tipos</SelectItem>
                 {PROPERTY_TYPES
-                  .filter(type => availableTypes.includes(type.value))
+                  .filter(type => typeCounts[type.value] > 0)
                   .map((type) => (
                     <SelectItem key={type.value} value={type.value}>
-                      {type.label}
+                      {type.label} ({typeCounts[type.value]})
                     </SelectItem>
                   ))}
               </SelectContent>
