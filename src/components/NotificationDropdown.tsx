@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Bell, Check, CheckCheck, ArrowRight } from 'lucide-react';
+import { Bell, Check, CheckCheck, ArrowRight, Trash2, Settings } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +17,7 @@ import { ptBR } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 
 const NotificationDropdown = () => {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, deleteAllNotifications } = useNotifications();
 
   const formatRelativeTime = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), {
@@ -40,19 +39,42 @@ const NotificationDropdown = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel className="flex items-center justify-between">
+        <DropdownMenuLabel className="flex items-center justify-between gap-2">
           <span>Notificações</span>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={markAllAsRead}
-              className="h-auto p-1 text-xs"
-            >
-              <CheckCheck className="h-3 w-3 mr-1" />
-              Marcar todas como lidas
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {notifications.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={deleteAllNotifications}
+                className="h-auto p-1 text-xs text-destructive hover:text-destructive"
+                title="Excluir todas"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={markAllAsRead}
+                className="h-auto p-1 text-xs"
+                title="Marcar todas como lidas"
+              >
+                <CheckCheck className="h-3 w-3" />
+              </Button>
+            )}
+            <Link to="/notifications">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-1 text-xs"
+                title="Gerenciar notificações"
+              >
+                <Settings className="h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
@@ -90,27 +112,41 @@ const NotificationDropdown = () => {
                         <span className="text-xs text-muted-foreground">
                           {formatRelativeTime(notification.created_at)}
                         </span>
-                        {!notification.read && (
+                        <div className="flex items-center gap-1">
+                          {!notification.read && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                markAsRead(notification.id);
+                              }}
+                              className="h-auto p-1"
+                              title="Marcar como lida"
+                            >
+                              <Check className="h-3 w-3" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              markAsRead(notification.id);
+                              deleteNotification(notification.id);
                             }}
-                            className="h-auto p-1"
+                            className="h-auto p-1 text-destructive hover:text-destructive"
+                            title="Excluir"
                           >
-                            <Check className="h-3 w-3" />
+                            <Trash2 className="h-3 w-3" />
                           </Button>
-                        )}
-                        {/* Link para lead, se for lead_assigned */}
-                        {notification.type === "lead_assigned" && notification.data?.lead_id && (
-                          <Link to={`/leads-management#lead-${notification.data.lead_id}`}>
-                            <Button variant="link" size="sm" className="h-auto p-1 text-xs">
-                              Ver Lead <ArrowRight className="w-3 h-3 ml-1" />
-                            </Button>
-                          </Link>
-                        )}
+                          {notification.type === "lead_assigned" && notification.data?.lead_id && (
+                            <Link to={`/leads-management#lead-${notification.data.lead_id}`}>
+                              <Button variant="link" size="sm" className="h-auto p-1 text-xs">
+                                Ver Lead <ArrowRight className="w-3 h-3 ml-1" />
+                              </Button>
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

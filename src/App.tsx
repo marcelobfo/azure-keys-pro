@@ -9,6 +9,7 @@ import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import ProfileSettings from '@/pages/ProfileSettings';
 import Alerts from '@/pages/Alerts';
+import NotificationsManagement from '@/pages/NotificationsManagement';
 import LeadsManagement from '@/pages/LeadsManagement';
 import AdminDashboard from '@/pages/AdminDashboard';
 import AdminUsers from '@/pages/AdminUsers';
@@ -128,6 +129,7 @@ function App() {
                 <Route path="/profile" element={<ProfileSettings />} />
                 <Route path="/profile-settings" element={<ProfileSettings />} />
                 <Route path="/alerts" element={<Alerts />} />
+                <Route path="/notifications" element={<NotificationsManagement />} />
                 <Route path="/leads-management" element={<LeadsManagement />} />
 
                 {/* Admin Routes */}
