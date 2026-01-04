@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, Phone, Mail, Building, Search, Eye } from 'lucide-react';
+import { User, Phone, Mail, Building, Search, Eye, LayoutGrid, List } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useProfile } from '@/hooks/useProfile';
@@ -41,6 +41,7 @@ const OwnersManagement = () => {
   const [owners, setOwners] = useState<Owner[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
 
@@ -97,11 +98,15 @@ const OwnersManagement = () => {
     owner.phone.includes(searchTerm)
   );
 
+  const getTotalValue = (owner: Owner) => {
+    return owner.properties.reduce((sum, p) => sum + (p.price || 0), 0);
+  };
+
   if (loading) {
     return (
       <DashboardLayout title="Proprietários" userRole={dashboardRole}>
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
         </div>
       </DashboardLayout>
     );
@@ -117,14 +122,35 @@ const OwnersManagement = () => {
             <p className="text-muted-foreground">Visualize os proprietários e seus imóveis</p>
           </div>
           
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar proprietário..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center border rounded-md overflow-hidden">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className="rounded-none"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="rounded-none"
+              >
+                <List className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar proprietário..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
         </div>
 
@@ -173,35 +199,113 @@ const OwnersManagement = () => {
               </p>
             </CardContent>
           </Card>
+        ) : viewMode === 'list' ? (
+          /* List View - Tabela Compacta */
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Proprietário</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>E-mail</TableHead>
+                    <TableHead className="text-center">Imóveis</TableHead>
+                    <TableHead className="text-right">Valor Total</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredOwners.map((owner, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                            <User className="w-4 h-4 text-primary" />
+                          </div>
+                          <span>{owner.name || 'Não informado'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {owner.phone ? (
+                          <a href={`tel:${owner.phone}`} className="flex items-center gap-1 hover:text-primary">
+                            <Phone className="w-3 h-3" /> {owner.phone}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {owner.email ? (
+                          <a href={`mailto:${owner.email}`} className="flex items-center gap-1 hover:text-primary">
+                            <Mail className="w-3 h-3" /> {owner.email}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="secondary">
+                          {owner.properties.length}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(getTotalValue(owner))}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const firstProperty = owner.properties[0];
+                            if (firstProperty) {
+                              navigate(`/edit-property/${firstProperty.id}`);
+                            }
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-1" /> Ver Imóveis
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         ) : (
+          /* Grid View - Cards Expandidos */
           <div className="space-y-6">
             {filteredOwners.map((owner, index) => (
               <Card key={index}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                        <User className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                        <User className="w-6 h-6 text-primary" />
                       </div>
                       <div>
                         <CardTitle className="text-lg">{owner.name || 'Nome não informado'}</CardTitle>
                         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mt-1">
                           {owner.phone && (
-                            <a href={`tel:${owner.phone}`} className="flex items-center gap-1 hover:text-blue-600">
+                            <a href={`tel:${owner.phone}`} className="flex items-center gap-1 hover:text-primary">
                               <Phone className="w-4 h-4" /> {owner.phone}
                             </a>
                           )}
                           {owner.email && (
-                            <a href={`mailto:${owner.email}`} className="flex items-center gap-1 hover:text-blue-600">
+                            <a href={`mailto:${owner.email}`} className="flex items-center gap-1 hover:text-primary">
                               <Mail className="w-4 h-4" /> {owner.email}
                             </a>
                           )}
                         </div>
                       </div>
                     </div>
-                    <Badge variant="secondary">
-                      {owner.properties.length} imóvel(is)
-                    </Badge>
+                    <div className="text-right">
+                      <Badge variant="secondary">
+                        {owner.properties.length} imóvel(is)
+                      </Badge>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Total: {formatCurrency(getTotalValue(owner))}
+                      </p>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
