@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { 
-  Home, User, Settings, LogOut, Bell, Moon, Sun, 
+  Home, User, Settings, LogOut, Bell, BellRing, Moon, Sun, 
   Menu, X, Heart, MessageSquare, Calendar,
   BarChart3, Users, Building, Building2, FileText, ChevronLeft, ChevronRight, DollarSign, Store, Shield, UserCircle, PlugZap, Monitor, Check
 } from 'lucide-react';
@@ -41,7 +41,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   const { profile } = useProfile();
   const { isSuperAdmin, isAdmin, isCorretor } = useRoles();
   const { hasFeature } = useTenantFeatures();
-  useNotifications(); // Keep hook for subscription
+  const { unreadCount } = useNotifications();
   const { selectedTenant, isGlobalView } = useTenant();
   const navigate = useNavigate();
   const location = useLocation();
@@ -87,10 +87,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   };
 
   const getMenuItems = () => {
-    const baseItems = [
+    const baseItems: { icon: React.ComponentType<{ className?: string }>; label: string; href: string; showBadge?: boolean }[] = [
       { icon: BarChart3, label: 'Dashboard', href: '/dashboard' },
       { icon: Heart, label: 'Favoritos', href: '/favorites' },
       { icon: Bell, label: 'Alertas', href: '/alerts' },
+      { icon: BellRing, label: 'Notificações', href: '/notifications', showBadge: true },
       { icon: User, label: 'Perfil', href: '/profile' },
     ];
 
@@ -261,7 +262,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
                     <Link
                       to={item.href}
                       className={cn(
-                        'flex items-center justify-center p-2.5 rounded-xl transition-all duration-200',
+                        'flex items-center justify-center p-2.5 rounded-xl transition-all duration-200 relative',
                         isActive 
                           ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25' 
                           : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -273,10 +274,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
                       }}
                     >
                       <item.icon className="w-5 h-5" />
+                      {item.showBadge && unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] flex items-center justify-center text-[9px] font-bold text-white bg-gradient-to-r from-red-500 to-rose-500 rounded-full animate-pulse shadow-lg">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </span>
+                      )}
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="bg-popover border-border font-medium">
                     {item.label}
+                    {item.showBadge && unreadCount > 0 && ` (${unreadCount})`}
                   </TooltipContent>
                 </Tooltip>
               ) : (
@@ -284,7 +291,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
                   key={item.href}
                   to={item.href}
                   className={cn(
-                    'flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                    'flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative',
                     isActive 
                       ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25' 
                       : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -295,8 +302,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
                     }
                   }}
                 >
-                  <item.icon className={cn('w-5 h-5', isActive && 'text-white')} />
-                  <span className={cn('font-medium', isActive && 'text-white')}>{item.label}</span>
+                  <div className="relative">
+                    <item.icon className={cn('w-5 h-5', isActive && 'text-white')} />
+                    {item.showBadge && unreadCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] flex items-center justify-center text-[9px] font-bold text-white bg-gradient-to-r from-red-500 to-rose-500 rounded-full animate-pulse shadow-lg">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className={cn('font-medium flex-1', isActive && 'text-white')}>{item.label}</span>
+                  {item.showBadge && unreadCount > 0 && (
+                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 font-semibold">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Badge>
+                  )}
                 </Link>
               );
             })}
