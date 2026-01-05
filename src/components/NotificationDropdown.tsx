@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Check, CheckCheck, ArrowRight, Trash2, Settings } from 'lucide-react';
+import { Bell, Check, CheckCheck, ArrowRight, Trash2, Settings, Building } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -146,11 +146,27 @@ const NotificationDropdown = () => {
                               </Button>
                             </Link>
                           )}
+                          {notification.data?.property_id && (
+                            <Link to={`/property/${notification.data.property_id}`}>
+                              <Button variant="link" size="sm" className="h-auto p-1 text-xs text-blue-600 hover:text-blue-800">
+                                <Building className="w-3 h-3 mr-1" />
+                                Ver Imóvel <ArrowRight className="w-3 h-3 ml-1" />
+                              </Button>
+                            </Link>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
-                  {notification.data?.property_image && (
+                  {notification.data?.property_image && notification.data?.property_id ? (
+                    <Link to={`/property/${notification.data.property_id}`} className="block mt-2">
+                      <img
+                        src={notification.data.property_image}
+                        alt={notification.data.property_title}
+                        className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-90 transition"
+                      />
+                    </Link>
+                  ) : notification.data?.property_image && (
                     <div className="mt-2">
                       <img
                         src={notification.data.property_image}
