@@ -10,7 +10,7 @@ import { Navigate } from 'react-router-dom';
 import { useNotifications } from '@/hooks/useNotifications';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Bell, Trash2, Check, CheckCheck, Search, Filter, ArrowRight } from 'lucide-react';
+import { Bell, Trash2, Check, CheckCheck, Search, Filter, ArrowRight, Building } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
   Select,
@@ -317,6 +317,15 @@ const NotificationsManagement = () => {
                                   Ver lead <ArrowRight className="w-3 h-3" />
                                 </Link>
                               )}
+                              {notification.data?.property_id && (
+                                <Link 
+                                  to={`/property/${notification.data.property_id}`}
+                                  className="text-blue-600 hover:underline flex items-center gap-1"
+                                >
+                                  <Building className="w-3 h-3" />
+                                  Ver imóvel <ArrowRight className="w-3 h-3" />
+                                </Link>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-1">
@@ -341,7 +350,16 @@ const NotificationsManagement = () => {
                             </Button>
                           </div>
                         </div>
-                        {notification.data?.property_image && (
+                        {notification.data?.property_image && notification.data?.property_id && (
+                          <Link to={`/property/${notification.data.property_id}`} className="block mt-3">
+                            <img
+                              src={notification.data.property_image}
+                              alt={notification.data.property_title || 'Imóvel'}
+                              className="w-full max-w-xs h-24 object-cover rounded-lg cursor-pointer hover:opacity-90 transition hover:shadow-md"
+                            />
+                          </Link>
+                        )}
+                        {notification.data?.property_image && !notification.data?.property_id && (
                           <div className="mt-3">
                             <img
                               src={notification.data.property_image}
