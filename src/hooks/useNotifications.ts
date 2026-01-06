@@ -165,21 +165,46 @@ export const useNotifications = () => {
     if (!user?.id) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('notifications')
         .delete()
         .eq('id', notificationId)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select();
 
-      if (!error) {
-        setNotifications(prev => prev.filter(n => n.id !== notificationId));
-        setUnreadCount(prev => {
-          const wasUnread = notifications.find(n => n.id === notificationId)?.read === false;
-          return wasUnread ? Math.max(0, prev - 1) : prev;
+      if (error) {
+        console.error('Error deleting notification:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível excluir a notificação.",
+          variant: "destructive",
         });
+        return;
       }
+
+      // Verificar se realmente deletou algo
+      if (!data || data.length === 0) {
+        console.error('Notification not deleted - no rows affected');
+        toast({
+          title: "Erro",
+          description: "Notificação não encontrada ou sem permissão.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setUnreadCount(prev => {
+        const wasUnread = notifications.find(n => n.id === notificationId)?.read === false;
+        return wasUnread ? Math.max(0, prev - 1) : prev;
+      });
     } catch (error) {
       console.error('Error deleting notification:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir notificação.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -192,12 +217,25 @@ export const useNotifications = () => {
         .delete()
         .eq('user_id', user.id);
 
-      if (!error) {
-        setNotifications([]);
-        setUnreadCount(0);
+      if (error) {
+        console.error('Error deleting all notifications:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível excluir as notificações.",
+          variant: "destructive",
+        });
+        return;
       }
+
+      setNotifications([]);
+      setUnreadCount(0);
     } catch (error) {
       console.error('Error deleting all notifications:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir notificações.",
+        variant: "destructive",
+      });
     }
   };
 

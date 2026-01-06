@@ -265,13 +265,19 @@ export const DeleteUserDialog: React.FC<{ userId: string; userName: string; onUs
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .delete()
-        .eq('id', userId);
+        .eq('id', userId)
+        .select();
 
       if (error) {
         throw error;
+      }
+
+      // Verificar se realmente deletou algo
+      if (!data || data.length === 0) {
+        throw new Error('Usuário não encontrado ou sem permissão para deletar');
       }
 
       toast({
