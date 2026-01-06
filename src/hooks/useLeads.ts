@@ -26,7 +26,7 @@ export interface Lead {
   } | null;
   assigned_profile?: {
     full_name: string | null;
-  }[] | null;
+  } | null;
 }
 
 export const useLeads = () => {
