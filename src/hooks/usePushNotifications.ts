@@ -18,6 +18,10 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
+// Helper to get typed supabase client for push_subscriptions table
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getPushSubscriptionsTable = () => (supabase as any).from('push_subscriptions');
+
 export const usePushNotifications = () => {
   const { user } = useAuth();
   const [isSupported, setIsSupported] = useState(false);
@@ -83,9 +87,10 @@ export const usePushNotifications = () => {
       const registration = await navigator.serviceWorker.ready;
 
       // Subscribe to push
+      const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: applicationServerKey as BufferSource,
       });
 
       const subscriptionJson = subscription.toJSON();
@@ -95,16 +100,17 @@ export const usePushNotifications = () => {
       }
 
       // Save to database
-      const { error } = await supabase.from('push_subscriptions').upsert({
+      const { error } = await getPushSubscriptionsTable().upsert({
         user_id: user.id,
         endpoint: subscriptionJson.endpoint,
         p256dh: subscriptionJson.keys.p256dh,
         auth: subscriptionJson.keys.auth,
-      }, {
-        onConflict: 'endpoint',
-      });
-
-      if (error) throw error;
+      }, { onConflict: 'endpoint' });
+      
+      if (error) {
+        console.error('Error saving subscription:', error);
+        throw error;
+      }
 
       setIsSubscribed(true);
       toast({
@@ -142,8 +148,7 @@ export const usePushNotifications = () => {
         // Remove from database
         const subscriptionJson = subscription.toJSON();
         if (subscriptionJson.endpoint) {
-          await supabase
-            .from('push_subscriptions')
+          await getPushSubscriptionsTable()
             .delete()
             .eq('endpoint', subscriptionJson.endpoint);
         }
