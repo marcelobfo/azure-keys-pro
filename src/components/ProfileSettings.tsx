@@ -9,10 +9,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useProfile } from '@/hooks/useProfile';
-import { User, Bell, Shield } from 'lucide-react';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { User, Bell, Shield, Loader2 } from 'lucide-react';
 
 const ProfileSettings = () => {
   const { profile, updateProfile, loading } = useProfile();
+  const { 
+    isSupported, 
+    isSubscribed, 
+    permission, 
+    isLoading: pushLoading, 
+    toggleSubscription 
+  } = usePushNotifications();
+  
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -50,6 +59,14 @@ const ProfileSettings = () => {
     const newNotifications = { ...notifications, [key]: value };
     setNotifications(newNotifications);
     await updateProfile({ notification_preferences: newNotifications });
+  };
+
+  const handlePushToggle = async () => {
+    const success = await toggleSubscription();
+    if (success) {
+      // Update local state to reflect actual subscription status
+      handleNotificationUpdate('push', !isSubscribed);
+    }
   };
 
   if (loading) {
@@ -202,17 +219,31 @@ const ProfileSettings = () => {
               </div>
 
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1">
                   <Label htmlFor="push-notifications">Notificações Push</Label>
                   <p className="text-sm text-muted-foreground">
-                    Receba notificações em tempo real no navegador
+                    Receba notificações em tempo real, mesmo com o navegador fechado
                   </p>
+                  {!isSupported && (
+                    <p className="text-xs text-orange-500 mt-1">
+                      Seu navegador não suporta notificações push
+                    </p>
+                  )}
+                  {permission === 'denied' && (
+                    <p className="text-xs text-destructive mt-1">
+                      Permissão bloqueada. Habilite nas configurações do navegador.
+                    </p>
+                  )}
                 </div>
-                <Switch
-                  id="push-notifications"
-                  checked={notifications.push}
-                  onCheckedChange={(checked) => handleNotificationUpdate('push', checked)}
-                />
+                <div className="flex items-center gap-2">
+                  {pushLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <Switch
+                    id="push-notifications"
+                    checked={isSubscribed}
+                    disabled={!isSupported || permission === 'denied' || pushLoading}
+                    onCheckedChange={handlePushToggle}
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-between">
