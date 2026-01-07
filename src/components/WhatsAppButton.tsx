@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTenant } from '@/hooks/useTenant';
 
 const WhatsAppButton = () => {
+  const { currentTenant, selectedTenantId } = useTenant();
+  const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
+  
   const [isEnabled, setIsEnabled] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [position, setPosition] = useState<'left' | 'right'>('left');
@@ -9,10 +13,13 @@ const WhatsAppButton = () => {
 
   useEffect(() => {
     const fetchSettings = async () => {
+      if (!effectiveTenantId) return;
+      
       const { data } = await supabase
         .from('chat_configurations')
         .select('whatsapp_enabled, whatsapp_number, whatsapp_position, whatsapp_icon_url')
         .eq('active', true)
+        .eq('tenant_id', effectiveTenantId)
         .maybeSingle();
 
       if (data) {
@@ -24,7 +31,7 @@ const WhatsAppButton = () => {
     };
 
     fetchSettings();
-  }, []);
+  }, [effectiveTenantId]);
 
   if (!isEnabled || !whatsappNumber) {
     return null;

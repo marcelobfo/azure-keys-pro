@@ -3,9 +3,13 @@ import React from 'react';
 import { Home, Phone, MapPin, Mail, Instagram, Facebook, MessageCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useTenant } from '@/hooks/useTenant';
 
 const Footer = () => {
   const { t } = useLanguage();
+  const { currentTenant, selectedTenantId } = useTenant();
+  const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
+  
   const [settings, setSettings] = React.useState<Record<string, string>>({});
   const [logoHeight, setLogoHeight] = React.useState<number>(32);
 
@@ -20,12 +24,22 @@ const Footer = () => {
         'footer_instagram',
         'footer_whatsapp',
         'footer_facebook',
-        'logo_size_footer'
+        'logo_size_footer',
+        'site_name'
       ];
-      const { data } = await supabase
+      
+      let query = supabase
         .from('site_settings')
         .select('key, value')
         .in('key', keys);
+      
+      if (effectiveTenantId) {
+        query = query.eq('tenant_id', effectiveTenantId);
+      } else {
+        query = query.is('tenant_id', null);
+      }
+      
+      const { data } = await query;
       const result: Record<string, string> = {};
       data?.forEach((item: any) => {
         result[item.key] = item.value ?? "";
@@ -34,10 +48,10 @@ const Footer = () => {
       
       // Configurar altura da logo do footer (padrão: 32px)
       const size = result.logo_size_footer ? parseInt(result.logo_size_footer) : 32;
-      setLogoHeight(size > 16 && size < 150 ? size : 32); // Limitar entre 16-150px
+      setLogoHeight(size > 16 && size < 150 ? size : 32);
     }
     fetchFooter();
-  }, []);
+  }, [effectiveTenantId]);
 
   const socials = [
     {
@@ -48,7 +62,7 @@ const Footer = () => {
     {
       key: 'footer_whatsapp',
       url: settings['footer_whatsapp'],
-      icon: <MessageCircle className="w-4 h-4" />, // Use generic message icon for WhatsApp
+      icon: <MessageCircle className="w-4 h-4" />,
     },
     {
       key: 'footer_facebook',
@@ -56,6 +70,8 @@ const Footer = () => {
       icon: <Facebook className="w-4 h-4" />,
     }
   ].filter(s => s.url);
+
+  const siteName = settings.site_name || currentTenant?.name || 'Imobiliária';
 
   return (
     <footer className="bg-slate-900 text-white py-12">
@@ -79,7 +95,7 @@ const Footer = () => {
                   <Home className="w-6 h-6 text-white" />
                 </div>
               )}
-              <span className="text-xl font-bold">Maresia Litoral</span>
+              <span className="text-xl font-bold">{siteName}</span>
             </div>
             <p className="text-gray-300 mb-4">
               {settings.footer_description || t('home.about.text')}
@@ -137,7 +153,7 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; 2024 Maresia Litoral. Todos os direitos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} {siteName}. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>
@@ -145,4 +161,3 @@ const Footer = () => {
 };
 
 export default Footer;
-
