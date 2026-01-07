@@ -42,7 +42,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   const { isSuperAdmin, isAdmin, isCorretor } = useRoles();
   const { hasFeature } = useTenantFeatures();
   const { unreadCount } = useNotifications();
-  const { selectedTenant, isGlobalView } = useTenant();
+  const { selectedTenant, currentTenant, isGlobalView } = useTenant();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -175,7 +175,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
               </div>
               {isSidebarExpanded && (
                 <span className="text-lg font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent whitespace-nowrap">
-                  Maresia Litoral
+                  {currentTenant?.name || selectedTenant?.name || 'Painel Admin'}
                 </span>
               )}
             </Link>
