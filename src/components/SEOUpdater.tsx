@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useTenant } from '@/hooks/useTenant';
 
 const SEOUpdater = () => {
   const { settings, loading } = useSiteSettings();
+  const { currentTenant } = useTenant();
 
   useEffect(() => {
     if (loading) return;
@@ -10,58 +12,65 @@ const SEOUpdater = () => {
     // Não sobrescrever SEO em páginas específicas que têm seu próprio SEO
     const isSpecificPage = window.location.pathname.startsWith('/imovel/');
     
+    // Fallbacks usando nome do tenant
+    const siteTitle = settings.site_title || 
+      (currentTenant?.name ? `${currentTenant.name} - Imóveis` : '');
+    const siteDescription = settings.site_description || 
+      (currentTenant?.name ? `Encontre o imóvel ideal com ${currentTenant.name}` : '');
+    const siteName = settings.site_name || currentTenant?.name || '';
+    
     if (!isSpecificPage) {
       // Atualizar título da página
-      if (settings.site_title) {
-        document.title = settings.site_title;
+      if (siteTitle) {
+        document.title = siteTitle;
       }
 
       // Atualizar meta description
-      if (settings.site_description) {
+      if (siteDescription) {
         const metaDescription = document.querySelector('meta[name="description"]');
         if (metaDescription) {
-          metaDescription.setAttribute('content', settings.site_description);
+          metaDescription.setAttribute('content', siteDescription);
         }
       }
 
       // Atualizar Open Graph title
-      if (settings.site_title) {
+      if (siteTitle) {
         const ogTitle = document.querySelector('meta[property="og:title"]');
         if (ogTitle) {
-          ogTitle.setAttribute('content', settings.site_title);
+          ogTitle.setAttribute('content', siteTitle);
         }
       }
 
       // Atualizar Open Graph description
-      if (settings.site_description) {
+      if (siteDescription) {
         const ogDescription = document.querySelector('meta[property="og:description"]');
         if (ogDescription) {
-          ogDescription.setAttribute('content', settings.site_description);
+          ogDescription.setAttribute('content', siteDescription);
         }
       }
 
       // Atualizar Twitter Card title
-      if (settings.site_title) {
+      if (siteTitle) {
         const twitterTitle = document.querySelector('meta[name="twitter:title"]');
         if (twitterTitle) {
-          twitterTitle.setAttribute('content', settings.site_title);
+          twitterTitle.setAttribute('content', siteTitle);
         }
       }
 
       // Atualizar Twitter Card description
-      if (settings.site_description) {
+      if (siteDescription) {
         const twitterDescription = document.querySelector('meta[name="twitter:description"]');
         if (twitterDescription) {
-          twitterDescription.setAttribute('content', settings.site_description);
+          twitterDescription.setAttribute('content', siteDescription);
         }
       }
     }
 
     // Atualizar meta author (sempre)
-    if (settings.site_name) {
+    if (siteName) {
       const metaAuthor = document.querySelector('meta[name="author"]');
       if (metaAuthor) {
-        metaAuthor.setAttribute('content', settings.site_name);
+        metaAuthor.setAttribute('content', siteName);
       }
     }
 
@@ -75,14 +84,14 @@ const SEOUpdater = () => {
     }
 
     // Atualizar structured data apenas em páginas gerais
-    if (!isSpecificPage && settings.site_name) {
+    if (!isSpecificPage && siteName) {
       const structuredDataScript = document.querySelector('script[type="application/ld+json"]');
       if (structuredDataScript) {
         try {
           const data = JSON.parse(structuredDataScript.textContent || '{}');
-          data.name = settings.site_name;
-          if (settings.site_description) {
-            data.description = settings.site_description;
+          data.name = siteName;
+          if (siteDescription) {
+            data.description = siteDescription;
           }
           structuredDataScript.textContent = JSON.stringify(data, null, 2);
         } catch (error) {
@@ -90,7 +99,7 @@ const SEOUpdater = () => {
         }
       }
     }
-  }, [settings, loading]);
+  }, [settings, loading, currentTenant]);
 
   return null;
 };
