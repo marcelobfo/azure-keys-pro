@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Configure your base domain here
+const BASE_DOMAIN = 'techmoveis.com.br';
+
 interface Tenant {
   id: string;
   name: string;
@@ -20,7 +23,9 @@ export const useTenantByDomain = () => {
     const detectTenant = async () => {
       try {
         setLoading(true);
-        const hostname = window.location.hostname;
+        // Normalize hostname: remove www. prefix
+        const rawHostname = window.location.hostname;
+        const hostname = rawHostname.replace(/^www\./, '');
         const pathname = window.location.pathname;
 
         // 1. Check for path-based tenant: /t/tenant-slug/...
@@ -41,31 +46,11 @@ export const useTenantByDomain = () => {
           }
         }
 
-        // 2. Check for custom domain
-        // Skip localhost and lovableproject domains
-        if (!hostname.includes('localhost') && 
-            !hostname.includes('lovableproject.com') &&
-            !hostname.includes('lovable.app')) {
-          const { data, error: err } = await supabase
-            .from('tenants')
-            .select('*')
-            .eq('domain', hostname)
-            .single();
-
-          if (err && err.code !== 'PGRST116') throw err;
-          if (data) {
-            setTenant(data);
-            setLoading(false);
-            return;
-          }
-        }
-
-        // 3. Check for subdomain: tenant-slug.domain.com
-        const subdomainParts = hostname.split('.');
-        if (subdomainParts.length >= 3) {
-          const subdomain = subdomainParts[0];
-          // Skip www and common subdomains
-          if (subdomain !== 'www' && subdomain !== 'app' && subdomain !== 'api') {
+        // 2. Check for subdomain: tenant-slug.techmoveis.com.br
+        if (hostname.endsWith(`.${BASE_DOMAIN}`) || hostname.endsWith(`.${BASE_DOMAIN.replace(/^www\./, '')}`)) {
+          const subdomain = hostname.replace(`.${BASE_DOMAIN}`, '').replace(`.${BASE_DOMAIN.replace(/^www\./, '')}`, '');
+          
+          if (subdomain && subdomain !== 'www' && subdomain !== 'app' && subdomain !== 'api') {
             const { data, error: err } = await supabase
               .from('tenants')
               .select('*')
@@ -78,6 +63,40 @@ export const useTenantByDomain = () => {
               setLoading(false);
               return;
             }
+          }
+        }
+
+        // 3. Check for custom domain (not localhost, not lovable domains, not base domain)
+        const isLocalhost = hostname.includes('localhost');
+        const isLovable = hostname.includes('lovableproject.com') || hostname.includes('lovable.app');
+        const isBaseDomain = hostname === BASE_DOMAIN || hostname === `www.${BASE_DOMAIN}`;
+        
+        if (!isLocalhost && !isLovable && !isBaseDomain) {
+          const { data, error: err } = await supabase
+            .from('tenants')
+            .select('*')
+            .eq('domain', hostname)
+            .single();
+
+          if (err && err.code !== 'PGRST116') throw err;
+          if (data) {
+            setTenant(data);
+            setLoading(false);
+            return;
+          }
+          
+          // Try with www prefix if not found
+          const { data: dataWithWww, error: errWithWww } = await supabase
+            .from('tenants')
+            .select('*')
+            .eq('domain', `www.${hostname}`)
+            .single();
+
+          if (errWithWww && errWithWww.code !== 'PGRST116') throw errWithWww;
+          if (dataWithWww) {
+            setTenant(dataWithWww);
+            setLoading(false);
+            return;
           }
         }
 

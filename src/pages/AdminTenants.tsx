@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { 
   Building2, Plus, Edit, Trash2, Users, Settings, 
-  MessageSquare, Store, DollarSign, Phone, Loader2, UserMinus 
+  MessageSquare, Store, DollarSign, Phone, Loader2, UserMinus, Globe, ExternalLink 
 } from 'lucide-react';
 import {
   Select,
@@ -77,12 +77,31 @@ const AdminTenants: React.FC = () => {
   const [isUsersOpen, setIsUsersOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Base domain for subdomains
+  const BASE_DOMAIN = 'techmoveis.com.br';
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
     domain: '',
   });
+
+  // Auto-generate slug from name
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-z0-9]+/g, '-')     // Replace spaces/special chars with hyphen
+      .replace(/^-|-$/g, '');          // Remove leading/trailing hyphens
+  };
+
+  // Handle name change with auto-slug generation
+  const handleNameChange = (value: string) => {
+    const newSlug = generateSlug(value);
+    setFormData({ ...formData, name: value, slug: newSlug });
+  };
 
   useEffect(() => {
     if (!rolesLoading && !isSuperAdmin) {
@@ -517,46 +536,92 @@ const AdminTenants: React.FC = () => {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome</Label>
+                  <Label htmlFor="name">Nome da Imobiliária</Label>
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Nome da imobiliária"
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    placeholder="Ex: Maresia Litoral Imóveis"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="slug">Slug (identificador único)</Label>
+                  <Label htmlFor="slug">Slug (gerado automaticamente)</Label>
                   <Input
                     id="slug"
                     value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
-                    placeholder="minha-imobiliaria"
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/--+/g, '-')
+                    })}
+                    placeholder="maresia-litoral"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Usado para criar o subdomínio automático
+                  </p>
                 </div>
+
+                {/* Subdomain Preview */}
+                {formData.slug && (
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Globe className="w-4 h-4" />
+                      Subdomínio Automático
+                    </Label>
+                    <div className="flex items-center gap-2 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                      <span className="text-sm font-mono font-medium text-primary">
+                        {formData.slug}.{BASE_DOMAIN}
+                      </span>
+                      <a 
+                        href={`https://${formData.slug}.${BASE_DOMAIN}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary/80"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Este subdomínio será criado automaticamente via Cloudflare
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="domain">Domínio Personalizado (opcional)</Label>
                   <Input
                     id="domain"
                     value={formData.domain}
-                    onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, domain: e.target.value.toLowerCase().replace(/^https?:\/\//, '') })}
                     placeholder="www.minhaimobiliaria.com.br"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Para usar um domínio personalizado, configure o DNS:
+                    Para usar um domínio próprio da imobiliária, configure o DNS:
                   </p>
                   <div className="text-xs bg-muted p-2 rounded space-y-1">
-                    <p><strong>Registro A:</strong> Aponte para o IP do servidor</p>
-                    <p><strong>Registro CNAME:</strong> www → seu-dominio.com</p>
+                    <p><strong>Registro CNAME:</strong> @ ou www → {BASE_DOMAIN}</p>
                     <p className="text-muted-foreground">A propagação pode levar até 48h</p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>URLs de Acesso</Label>
-                  <div className="text-xs bg-muted p-2 rounded space-y-1">
-                    <p><strong>URL por slug:</strong> /t/{formData.slug || 'seu-slug'}/</p>
+
+                {/* Access URLs Summary */}
+                <div className="space-y-2 pt-2 border-t">
+                  <Label>Resumo de Acesso</Label>
+                  <div className="text-xs bg-muted p-3 rounded space-y-2">
+                    {formData.slug && (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">Subdomínio</Badge>
+                        <span className="font-mono">{formData.slug}.{BASE_DOMAIN}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">Path</Badge>
+                      <span className="font-mono">/t/{formData.slug || 'slug'}/</span>
+                    </div>
                     {formData.domain && (
-                      <p><strong>Domínio:</strong> https://{formData.domain}</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">Custom</Badge>
+                        <span className="font-mono">{formData.domain}</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -603,9 +668,28 @@ const AdminTenants: React.FC = () => {
                   <TableRow key={tenant.id}>
                     <TableCell className="font-medium">{tenant.name}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{tenant.slug}</Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant="outline">{tenant.slug}</Badge>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {tenant.slug}.{BASE_DOMAIN}
+                        </span>
+                      </div>
                     </TableCell>
-                    <TableCell>{tenant.domain || '-'}</TableCell>
+                    <TableCell>
+                      {tenant.domain ? (
+                        <a 
+                          href={`https://${tenant.domain}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline flex items-center gap-1"
+                        >
+                          {tenant.domain}
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {new Date(tenant.created_at).toLocaleDateString('pt-BR')}
                     </TableCell>

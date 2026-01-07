@@ -154,6 +154,17 @@ const Footer = () => {
 
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
           <p>&copy; {new Date().getFullYear()} {siteName}. Todos os direitos reservados.</p>
+          <p className="mt-2 text-sm">
+            Desenvolvido por{' '}
+            <a 
+              href="https://technedigital.com.br/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              Techne Digital
+            </a>
+          </p>
         </div>
       </div>
     </footer>
