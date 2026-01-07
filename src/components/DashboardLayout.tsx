@@ -20,6 +20,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useRoles } from '@/hooks/useRoles';
 import { useTenantFeatures } from '@/hooks/useTenantFeatures';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import NotificationDropdown from './NotificationDropdown';
 import TenantSelector from './TenantSelector';
 import { useTenant } from '@/hooks/useTenant';
@@ -43,6 +44,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   const { hasFeature } = useTenantFeatures();
   const { unreadCount } = useNotifications();
   const { selectedTenant, currentTenant, isGlobalView } = useTenant();
+  const { settings } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -51,6 +53,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
   
   // Determine if sidebar should be expanded (collapsed but hovered = expanded)
   const isSidebarExpanded = !sidebarCollapsed || sidebarHovered;
+
+  // Determine logo URL with fallback hierarchy
+  const tenantLogoUrl = currentTenant?.logo_url || 
+    selectedTenant?.logo_url ||
+    settings.header_logo_dark || 
+    settings.header_logo_light || 
+    settings.footer_logo;
 
   // Check if a route is active
   const isActiveRoute = (href: string) => {
@@ -170,9 +179,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, title, user
             !isSidebarExpanded ? 'justify-center' : 'justify-between'
           )}>
             <Link to="/" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/25 group-hover:shadow-blue-500/40 transition-all duration-300">
-                <Home className="w-5 h-5 text-white" />
-              </div>
+              {tenantLogoUrl ? (
+                <img 
+                  src={tenantLogoUrl} 
+                  alt={currentTenant?.name || selectedTenant?.name || 'Logo'}
+                  className={cn(
+                    "object-contain rounded-lg flex-shrink-0 transition-all duration-300",
+                    isSidebarExpanded ? "w-10 h-10" : "w-8 h-8"
+                  )}
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/25 group-hover:shadow-blue-500/40 transition-all duration-300">
+                  <Home className="w-5 h-5 text-white" />
+                </div>
+              )}
               {isSidebarExpanded && (
                 <span className="text-lg font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent whitespace-nowrap">
                   {currentTenant?.name || selectedTenant?.name || 'Painel Admin'}

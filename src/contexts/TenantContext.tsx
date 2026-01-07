@@ -9,6 +9,8 @@ interface Tenant {
   name: string;
   slug: string;
   domain: string | null;
+  logo_url: string | null;
+  favicon_url: string | null;
   settings: unknown;
   created_at: string;
   updated_at: string;
