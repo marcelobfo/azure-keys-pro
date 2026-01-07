@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -227,27 +228,28 @@ const SITE_FIELDS = [
   {
     key: 'site_name',
     label: 'Nome do Site',
-    placeholder: 'Maresia Litoral',
-    help: 'Nome principal do site que aparecerá no título e meta tags.',
+    placeholder: 'Nome da sua Imobiliária',
+    help: 'Nome principal do site que aparecerá no rodapé e em meta tags.',
   },
   {
     key: 'site_title',
-    label: 'Título do Site',
-    placeholder: 'Maresia Litoral - Encontre o Imóvel dos Seus Sonhos',
-    help: 'Título completo que aparecerá na aba do navegador.',
+    label: 'Título do Site (SEO)',
+    placeholder: 'Sua Imobiliária - Encontre o Imóvel dos Seus Sonhos',
+    help: 'Título completo que aparecerá na aba do navegador e resultados de busca.',
   },
   {
     key: 'site_description',
-    label: 'Descrição do Site',
-    placeholder: 'Encontre o imóvel dos seus sonhos com a Maresia Litoral.',
-    help: 'Descrição para SEO e meta tags.',
+    label: 'Descrição do Site (SEO)',
+    placeholder: 'Descrição da sua imobiliária para aparecer nos resultados de busca do Google.',
+    type: 'textarea',
+    help: 'Descrição para SEO e meta tags. Recomendado: 150-160 caracteres.',
   },
   {
     key: 'site_favicon_url',
-    label: 'URL do favicon (.png ou .jpg)',
+    label: 'URL do Favicon (.png ou .jpg)',
     placeholder: 'https://exemplo.com/favicon.png',
     type: 'image',
-    help: 'Indique a URL da imagem PNG/JPG para ser usada como favicon do site. Não suporte .ico no momento.',
+    help: 'Indique a URL da imagem PNG/JPG para ser usada como favicon do site.',
   },
 ];
 
@@ -777,6 +779,15 @@ const AdminSiteSettings = () => {
 
               {/* SITE/FAVICON TAB */}
               <TabsContent value="site">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                  <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    🌐 Configurações de SEO e Identidade
+                  </h3>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    Estas configurações definem como seu site aparece na aba do navegador, 
+                    nos resultados de busca do Google e nas redes sociais.
+                  </p>
+                </div>
                 <form
                   className="space-y-6"
                   onSubmit={e => {
@@ -787,15 +798,25 @@ const AdminSiteSettings = () => {
                   {SITE_FIELDS.map(field => (
                     <div key={field.key} className="space-y-2">
                       <Label htmlFor={field.key}>{field.label}</Label>
-                      <Input
-                        id={field.key}
-                        type={field.type === 'image' ? 'url' : 'text'}
-                        value={values[field.key] || ''}
-                        onChange={e => handleChange(field.key, e.target.value)}
-                        placeholder={field.placeholder}
-                      />
+                      {field.type === 'textarea' ? (
+                        <Textarea
+                          id={field.key}
+                          value={values[field.key] || ''}
+                          onChange={e => handleChange(field.key, e.target.value)}
+                          placeholder={field.placeholder}
+                          rows={3}
+                        />
+                      ) : (
+                        <Input
+                          id={field.key}
+                          type={field.type === 'image' ? 'url' : 'text'}
+                          value={values[field.key] || ''}
+                          onChange={e => handleChange(field.key, e.target.value)}
+                          placeholder={field.placeholder}
+                        />
+                      )}
                       {field.help && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{field.help}</div>
+                        <div className="text-xs text-muted-foreground">{field.help}</div>
                       )}
                       {field.type === 'image' && values[field.key] && (
                         <img
