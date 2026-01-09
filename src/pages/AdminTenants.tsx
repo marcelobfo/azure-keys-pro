@@ -16,8 +16,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { 
   Building2, Plus, Edit, Trash2, Users, Settings, 
-  MessageSquare, Store, DollarSign, Phone, Loader2, UserMinus, Globe, ExternalLink 
+  MessageSquare, Store, DollarSign, Phone, Loader2, UserMinus, Globe, ExternalLink,
+  Search, CheckCircle, XCircle, Clock, AlertCircle
 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -77,6 +79,11 @@ const AdminTenants: React.FC = () => {
   const [isUsersOpen, setIsUsersOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // DNS validation state
+  const [dnsStatus, setDnsStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid' | 'pending'>('idle');
+  const [dnsDetails, setDnsDetails] = useState<string>('');
+  const [dnsRecords, setDnsRecords] = useState<Array<{ type: string; value: string }>>([]);
+
   // Base domain for subdomains
   const BASE_DOMAIN = 'techmoveis.com.br';
 
@@ -86,6 +93,40 @@ const AdminTenants: React.FC = () => {
     slug: '',
     domain: '',
   });
+
+  // DNS verification function
+  const verifyDomainDNS = async () => {
+    if (!formData.domain) return;
+    
+    setDnsStatus('checking');
+    setDnsDetails('');
+    setDnsRecords([]);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-domain-dns', {
+        body: { domain: formData.domain }
+      });
+      
+      if (error) throw error;
+      
+      setDnsStatus(data.status);
+      setDnsDetails(data.details);
+      setDnsRecords(data.records || []);
+    } catch (error: any) {
+      console.error('DNS verification error:', error);
+      setDnsStatus('invalid');
+      setDnsDetails('Erro ao verificar DNS. Tente novamente.');
+    }
+  };
+
+  // Reset DNS status when domain changes
+  const handleDomainChange = (value: string) => {
+    const cleanValue = value.toLowerCase().replace(/^https?:\/\//, '');
+    setFormData({ ...formData, domain: cleanValue });
+    setDnsStatus('idle');
+    setDnsDetails('');
+    setDnsRecords([]);
+  };
 
   // Auto-generate slug from name
   const generateSlug = (name: string) => {
@@ -214,6 +255,16 @@ const AdminTenants: React.FC = () => {
       return;
     }
 
+    // Block if domain exists but DNS is not valid
+    if (formData.domain && dnsStatus !== 'valid' && dnsStatus !== 'idle') {
+      toast({ 
+        title: 'Verifique o DNS primeiro', 
+        description: 'O domínio customizado precisa estar configurado corretamente antes de salvar.',
+        variant: 'destructive' 
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const { data, error } = await supabase
@@ -300,6 +351,16 @@ const AdminTenants: React.FC = () => {
 
   const handleUpdateTenant = async () => {
     if (!selectedTenant) return;
+
+    // Block if domain exists but DNS is not valid
+    if (formData.domain && dnsStatus !== 'valid' && dnsStatus !== 'idle') {
+      toast({ 
+        title: 'Verifique o DNS primeiro', 
+        description: 'O domínio customizado precisa estar configurado corretamente antes de salvar.',
+        variant: 'destructive' 
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -424,6 +485,10 @@ const AdminTenants: React.FC = () => {
       slug: tenant.slug,
       domain: tenant.domain || '',
     });
+    // Reset DNS status when opening edit form
+    setDnsStatus('idle');
+    setDnsDetails('');
+    setDnsRecords([]);
     setIsFormOpen(true);
   };
 
@@ -523,6 +588,9 @@ const AdminTenants: React.FC = () => {
               <Button onClick={() => {
                 setSelectedTenant(null);
                 setFormData({ name: '', slug: '', domain: '' });
+                setDnsStatus('idle');
+                setDnsDetails('');
+                setDnsRecords([]);
               }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Imobiliária
@@ -588,12 +656,50 @@ const AdminTenants: React.FC = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="domain">Domínio Personalizado (opcional)</Label>
-                  <Input
-                    id="domain"
-                    value={formData.domain}
-                    onChange={(e) => setFormData({ ...formData, domain: e.target.value.toLowerCase().replace(/^https?:\/\//, '') })}
-                    placeholder="www.minhaimobiliaria.com.br"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="domain"
+                      value={formData.domain}
+                      onChange={(e) => handleDomainChange(e.target.value)}
+                      placeholder="www.minhaimobiliaria.com.br"
+                      className="flex-1"
+                    />
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      onClick={verifyDomainDNS}
+                      disabled={!formData.domain || dnsStatus === 'checking'}
+                    >
+                      {dnsStatus === 'checking' ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Search className="w-4 h-4" />
+                      )}
+                      <span className="ml-2 hidden sm:inline">Verificar</span>
+                    </Button>
+                  </div>
+                  
+                  {/* DNS Status Alert */}
+                  {dnsStatus !== 'idle' && dnsStatus !== 'checking' && (
+                    <Alert variant={dnsStatus === 'valid' ? 'default' : 'destructive'} className="mt-2">
+                      <div className="flex items-start gap-2">
+                        {dnsStatus === 'valid' && <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />}
+                        {dnsStatus === 'invalid' && <XCircle className="h-4 w-4 mt-0.5" />}
+                        {dnsStatus === 'pending' && <Clock className="h-4 w-4 text-yellow-600 mt-0.5" />}
+                        <AlertDescription className="flex-1">
+                          <p className={dnsStatus === 'valid' ? 'text-green-700' : dnsStatus === 'pending' ? 'text-yellow-700' : ''}>
+                            {dnsDetails}
+                          </p>
+                          {dnsRecords.length > 0 && (
+                            <p className="mt-1 text-xs opacity-70">
+                              Registros: {dnsRecords.map(r => `${r.type}: ${r.value}`).join(', ')}
+                            </p>
+                          )}
+                        </AlertDescription>
+                      </div>
+                    </Alert>
+                  )}
+                  
                   <p className="text-xs text-muted-foreground">
                     Para usar um domínio próprio da imobiliária, configure o DNS:
                   </p>
