@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Eye, Edit, Trash2, MapPin, Bed, Toilet, Square, LayoutGrid, List, Search } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, MapPin, Bed, Toilet, Square, LayoutGrid, List, Search, QrCode } from 'lucide-react';
+import QRCode from 'qrcode';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -125,6 +126,37 @@ const ManageProperties = () => {
       toast({
         title: "Erro",
         description: "Erro ao excluir propriedade",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generatePropertyQR = async (propertyId: string, propertyTitle: string) => {
+    try {
+      const propertyUrl = `${window.location.origin}/property/${propertyId}`;
+      const qrDataUrl = await QRCode.toDataURL(propertyUrl, {
+        width: 400,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+      });
+      
+      const link = document.createElement('a');
+      link.download = `qr-${propertyTitle.replace(/[^a-zA-Z0-9]/g, '-')}.png`;
+      link.href = qrDataUrl;
+      link.click();
+      
+      toast({
+        title: "QR Code gerado!",
+        description: "O download do QR Code foi iniciado.",
+      });
+    } catch (error) {
+      console.error('Erro ao gerar QR:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível gerar o QR Code.",
         variant: "destructive",
       });
     }
@@ -328,7 +360,7 @@ const ManageProperties = () => {
                       {property.area || 0}m²
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center flex-wrap gap-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -342,6 +374,14 @@ const ManageProperties = () => {
                       onClick={() => navigate(`/edit-property/${property.id}`)}>
                       <Edit className="h-4 w-4 mr-1" />
                       Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generatePropertyQR(property.id, property.title)}
+                      title="Gerar QR Code">
+                      <QrCode className="h-4 w-4 mr-1" />
+                      QR
                     </Button>
                     <Button
                       variant="outline"
@@ -403,6 +443,13 @@ const ManageProperties = () => {
                           size="icon"
                           onClick={() => navigate(`/edit-property/${property.id}`)}>
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => generatePropertyQR(property.id, property.title)}
+                          title="Gerar QR Code">
+                          <QrCode className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
