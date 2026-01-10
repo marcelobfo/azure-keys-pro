@@ -32,8 +32,8 @@ Allow: /imovel/
 Allow: /contact
 Allow: /nossa-equipe
 
-# Sitemap location
-Sitemap: ${baseUrl}/sitemap.xml
+# Sitemap location (XML format for crawlers)
+Sitemap: ${baseUrl}/sitemap.xml?format=xml
 
 # Crawl-delay (optional - be nice to servers)
 Crawl-delay: 1
