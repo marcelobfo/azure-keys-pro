@@ -325,9 +325,10 @@ function escapeXml(unsafe: string): string {
 }
 
 function renderXmlInBrowser(xmlContent: string): void {
-  document.open('text/xml');
-  document.write(xmlContent);
-  document.close();
+  // Create a blob with XML content type and redirect to it
+  const blob = new Blob([xmlContent], { type: 'application/xml' });
+  const url = URL.createObjectURL(blob);
+  window.location.replace(url);
 }
 
 export default Sitemap;
