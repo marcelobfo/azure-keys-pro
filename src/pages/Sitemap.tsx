@@ -1,28 +1,86 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTenantByDomain } from '@/hooks/useTenantByDomain';
+
+interface Property {
+  slug: string;
+  updated_at: string;
+  images: string[] | null;
+  title: string;
+}
 
 const Sitemap = () => {
+  const { tenant, loading: tenantLoading } = useTenantByDomain();
+  const [generated, setGenerated] = useState(false);
+
   useEffect(() => {
-    const generateSitemap = async () => {
+    if (tenantLoading || generated) return;
+
+    const generateAndRenderSitemap = async () => {
       try {
         const baseUrl = window.location.origin;
         const currentDate = new Date().toISOString().split('T')[0];
         
-        // Buscar todas as propriedades ativas
-        const { data: properties, error } = await supabase
+        // Build query for properties
+        let query = supabase
           .from('properties')
-          .select('slug, updated_at')
+          .select('slug, updated_at, images, title')
           .eq('status', 'active')
           .not('slug', 'is', null);
+
+        // Filter by tenant if detected
+        if (tenant?.id) {
+          query = query.eq('tenant_id', tenant.id);
+        }
+
+        const { data: properties, error } = await query;
 
         if (error) {
           console.error('Erro ao buscar propriedades:', error);
           return;
         }
 
-        // Gerar XML do sitemap
-        const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        // Generate XML sitemap with images
+        const sitemapXml = generateSitemapXml(baseUrl, currentDate, properties || []);
+
+        // Render pure XML in browser
+        renderXmlInBrowser(sitemapXml);
+        setGenerated(true);
+        
+      } catch (error) {
+        console.error('Erro ao gerar sitemap:', error);
+      }
+    };
+
+    generateAndRenderSitemap();
+  }, [tenant, tenantLoading, generated]);
+
+  // Loading state
+  if (tenantLoading || !generated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Gerando sitemap...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+function escapeXml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function generateSitemapXml(baseUrl: string, currentDate: string, properties: Property[]): string {
+  const staticPages = `
   <url>
     <loc>${baseUrl}/</loc>
     <lastmod>${currentDate}</lastmod>
@@ -65,53 +123,46 @@ const Sitemap = () => {
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
-${properties?.map(property => `  <url>
+  <url>
+    <loc>${baseUrl}/nossa-equipe</loc>
+    <lastmod>${currentDate}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>`;
+
+  const propertyUrls = properties.map(property => {
+    const lastmod = new Date(property.updated_at).toISOString().split('T')[0];
+    const images = property.images || [];
+    
+    // Generate image:image tags for SEO
+    const imagesTags = images.slice(0, 5).map(img => `
+    <image:image>
+      <image:loc>${escapeXml(img)}</image:loc>
+      <image:title>${escapeXml(property.title)}</image:title>
+    </image:image>`).join('');
+
+    return `
+  <url>
     <loc>${baseUrl}/imovel/${property.slug}</loc>
-    <lastmod>${new Date(property.updated_at).toISOString().split('T')[0]}</lastmod>
+    <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>`).join('\n')}
+    <priority>0.7</priority>${imagesTags}
+  </url>`;
+  }).join('');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${staticPages}
+${propertyUrls}
 </urlset>`;
+}
 
-        // Definir content type e retornar XML
-        const response = new Response(sitemapXml, {
-          headers: {
-            'Content-Type': 'application/xml',
-          },
-        });
-        
-        // Criar download do sitemap
-        const blob = new Blob([sitemapXml], { type: 'application/xml' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'sitemap.xml';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-      } catch (error) {
-        console.error('Erro ao gerar sitemap:', error);
-      }
-    };
-
-    generateSitemap();
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          Gerando Sitemap
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300 mb-6">
-          O sitemap.xml está sendo gerado automaticamente...
-        </p>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-      </div>
-    </div>
-  );
-};
+function renderXmlInBrowser(xmlContent: string): void {
+  // Replace document content with pure XML
+  document.open('text/xml');
+  document.write(xmlContent);
+  document.close();
+}
 
 export default Sitemap;
