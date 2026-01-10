@@ -1,76 +1,58 @@
 import { useEffect, useState } from 'react';
 import { useTenantByDomain } from '@/hooks/useTenantByDomain';
+import { supabase } from '@/integrations/supabase/client';
 
 const RobotsTxt = () => {
-  const { loading: tenantLoading } = useTenantByDomain();
-  const [generated, setGenerated] = useState(false);
+  const { tenant } = useTenantByDomain();
+  const [rendered, setRendered] = useState(false);
 
   useEffect(() => {
-    if (tenantLoading || generated) return;
+    if (rendered) return;
 
-    const generateAndRenderRobots = () => {
-      try {
-        const baseUrl = window.location.origin;
-        
-        const robotsTxt = `# Robots.txt for ${baseUrl}
-# Generated dynamically per tenant
+    // Construir URL base do tenant
+    let baseUrl = window.location.origin;
+    
+    // Se tiver domínio customizado no tenant, usar ele
+    if (tenant?.domain) {
+      baseUrl = `https://${tenant.domain.replace(/^www\./, '')}`;
+    }
+
+    // URL da Edge Function para o sitemap XML
+    const supabaseUrl = 'https://vmlnzfodeubthlhjahpc.supabase.co';
+    const sitemapUrl = `${supabaseUrl}/functions/v1/sitemap?domain=${encodeURIComponent(window.location.hostname)}`;
+
+    const robotsTxt = `# Robots.txt - ${tenant?.name || 'Site'}
+# Generated dynamically for multi-tenant SEO
 
 User-agent: *
 Allow: /
 
-# Disallow admin and private areas
-Disallow: /admin/
-Disallow: /dashboard/
-Disallow: /auth
+# Bloquear áreas administrativas
+Disallow: /admin/*
+Disallow: /dashboard/*
 Disallow: /login
-Disallow: /profile
-Disallow: /api/
+Disallow: /auth
 
-# Allow search engines to access all public content
-Allow: /imoveis
-Allow: /imovel/
-Allow: /contact
-Allow: /nossa-equipe
+# Bloquear rotas de API e funcionalidades internas
+Disallow: /api/*
+Disallow: /*.json$
 
-# Sitemap location (XML format for crawlers)
-Sitemap: ${baseUrl}/sitemap.xml?format=xml
+# Sitemap - Edge Function (XML puro para crawlers)
+Sitemap: ${sitemapUrl}
 
-# Crawl-delay (optional - be nice to servers)
+# Crawl-delay para não sobrecarregar o servidor
 Crawl-delay: 1
 `;
 
-        // Render plain text in browser
-        renderTextInBrowser(robotsTxt);
-        setGenerated(true);
-        
-      } catch (error) {
-        console.error('Erro ao gerar robots.txt:', error);
-      }
-    };
-
-    generateAndRenderRobots();
-  }, [tenantLoading, generated]);
-
-  // Loading state
-  if (tenantLoading || !generated) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Gerando robots.txt...</p>
-        </div>
-      </div>
-    );
-  }
+    // Renderizar como texto puro
+    document.open('text/plain');
+    document.write(robotsTxt);
+    document.close();
+    
+    setRendered(true);
+  }, [tenant, rendered]);
 
   return null;
 };
-
-function renderTextInBrowser(textContent: string): void {
-  // Replace document content with plain text
-  document.open('text/plain');
-  document.write(textContent);
-  document.close();
-}
 
 export default RobotsTxt;
