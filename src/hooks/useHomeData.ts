@@ -61,6 +61,15 @@ export const useHomeData = () => {
       'home_section_beachfront_title',
       'home_section_near_beach_title',
       'home_section_developments_title',
+      // Configurações da barra de busca
+      'search_bar_bg_color',
+      'search_bar_input_bg_color',
+      'search_bar_input_text_color',
+      'search_bar_button_color',
+      'search_bar_button_text_color',
+      'search_bar_border_color',
+      'search_bar_border_radius',
+      'search_bar_shadow',
     ];
     
     let query = supabase

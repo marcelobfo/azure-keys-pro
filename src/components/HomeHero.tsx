@@ -64,13 +64,16 @@ const HomeHero: React.FC<HomeHeroProps> = ({ settings, loading = false }) => {
           >
             <SelectValue placeholder="Finalidade" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="sale">Venda</SelectItem>
-            <SelectItem value="rent">Aluguel</SelectItem>
-            <SelectItem value="rent_annual">Aluguel Anual</SelectItem>
-            <SelectItem value="rent_seasonal">Aluguel Temporada</SelectItem>
-            <SelectItem value="both">Venda e Aluguel</SelectItem>
+          <SelectContent 
+            className="z-[100]"
+            style={{ backgroundColor: barBgColor, color: inputTextColor }}
+          >
+            <SelectItem value="all" style={{ color: inputTextColor }} className="focus:bg-black/10">Todos</SelectItem>
+            <SelectItem value="sale" style={{ color: inputTextColor }} className="focus:bg-black/10">Venda</SelectItem>
+            <SelectItem value="rent" style={{ color: inputTextColor }} className="focus:bg-black/10">Aluguel</SelectItem>
+            <SelectItem value="rent_annual" style={{ color: inputTextColor }} className="focus:bg-black/10">Aluguel Anual</SelectItem>
+            <SelectItem value="rent_seasonal" style={{ color: inputTextColor }} className="focus:bg-black/10">Aluguel Temporada</SelectItem>
+            <SelectItem value="both" style={{ color: inputTextColor }} className="focus:bg-black/10">Venda e Aluguel</SelectItem>
           </SelectContent>
         </Select>
         <Input
