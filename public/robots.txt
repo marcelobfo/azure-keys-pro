@@ -13,7 +13,11 @@ Allow: /
 User-agent: *
 Allow: /
 
-# Sitemap dinâmico - configure proxy no seu servidor para apontar para a Edge Function
-# Nginx: proxy_pass https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/sitemap
-# Apache: RewriteRule ^sitemap\.xml$ https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/sitemap [P,L]
+# Disallow admin and auth pages
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /auth
+Disallow: /login
+
+# Sitemap - dynamically generated per tenant domain
 Sitemap: /sitemap.xml

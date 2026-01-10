@@ -5,11 +5,27 @@
       "destination": "https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/sitemap"
     },
     {
+      "source": "/sitemap-pages.xml",
+      "destination": "https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/sitemap?type=pages"
+    },
+    {
+      "source": "/sitemap-properties.xml",
+      "destination": "https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/sitemap?type=properties"
+    },
+    {
+      "source": "/sitemap-index.xml",
+      "destination": "https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/sitemap?type=index"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
       "source": "/share/:slug",
       "destination": "https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/og-meta?slug=:slug"
     },
     {
-      "source": "/((?!api|share|sitemap).*)",
+      "source": "/((?!api|share|sitemap|robots).*)",
       "destination": "/index.html"
     }
   ]
