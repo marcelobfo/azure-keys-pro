@@ -27,14 +27,18 @@ const Sitemap = () => {
   const { tenant, loading: tenantLoading } = useTenantByDomain();
   const [urls, setUrls] = useState<SitemapUrl[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isXmlMode, setIsXmlMode] = useState(false);
-  const [properties, setProperties] = useState<Property[]>([]);
+  
+  
 
   useEffect(() => {
-    // Check if XML format is requested (for bots)
+    // Check if XML format is requested (for bots) - redirect to Edge Function
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get('format') === 'xml') {
-      setIsXmlMode(true);
+      // Redirect to Edge Function that serves proper XML
+      const supabaseUrl = 'https://vmlnzfodeubthlhjahpc.supabase.co';
+      const domain = window.location.hostname;
+      window.location.replace(`${supabaseUrl}/functions/v1/sitemap?domain=${encodeURIComponent(domain)}`);
+      return;
     }
   }, []);
 
@@ -60,7 +64,7 @@ const Sitemap = () => {
         const { data: propertiesData, error } = await query;
         if (error) throw error;
 
-        setProperties(propertiesData || []);
+        
 
         // Build URLs list
         const sitemapUrls: SitemapUrl[] = [
@@ -89,12 +93,6 @@ const Sitemap = () => {
 
         setUrls(sitemapUrls);
 
-        // If XML mode, render XML and exit
-        if (isXmlMode && propertiesData) {
-          const xmlContent = generateXmlContent(sitemapUrls, propertiesData);
-          renderXmlInBrowser(xmlContent);
-        }
-
       } catch (error) {
         console.error('Erro ao gerar sitemap:', error);
       } finally {
@@ -103,45 +101,13 @@ const Sitemap = () => {
     };
 
     generateSitemap();
-  }, [tenant, tenantLoading, isXmlMode]);
+  }, [tenant, tenantLoading]);
 
-  const generateXmlContent = (sitemapUrls: SitemapUrl[], propertiesData: Property[]): string => {
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">`;
 
-    sitemapUrls.forEach(url => {
-      xml += `
-  <url>
-    <loc>${escapeXml(url.loc)}</loc>
-    <lastmod>${url.lastmod}</lastmod>
-    <changefreq>${url.changefreq}</changefreq>
-    <priority>${url.priority}</priority>`;
-
-      // Add images for properties
-      const property = propertiesData.find(p => url.loc.includes(p.slug));
-      if (property?.images) {
-        property.images.forEach(imageUrl => {
-          xml += `
-    <image:image>
-      <image:loc>${escapeXml(imageUrl)}</image:loc>
-      <image:title>${escapeXml(property.title)}</image:title>
-    </image:image>`;
-        });
-      }
-
-      xml += `
-  </url>`;
-    });
-
-    xml += `
-</urlset>`;
-
-    return xml;
-  };
-
-  const downloadXml = () => {
-    window.open(`${window.location.origin}/sitemap.xml?format=xml`, '_blank');
+  const openXmlInNewTab = () => {
+    const supabaseUrl = 'https://vmlnzfodeubthlhjahpc.supabase.co';
+    const domain = window.location.hostname;
+    window.open(`${supabaseUrl}/functions/v1/sitemap?domain=${encodeURIComponent(domain)}`, '_blank');
   };
 
   const getPriorityColor = (priority: number) => {
@@ -151,11 +117,6 @@ const Sitemap = () => {
   };
 
   const totalImages = urls.reduce((acc, url) => acc + url.images, 0);
-
-  // If XML mode, show nothing (XML is rendered directly)
-  if (isXmlMode) {
-    return null;
-  }
 
   // Loading state
   if (loading || tenantLoading) {
@@ -231,7 +192,7 @@ const Sitemap = () => {
             <FileText className="h-5 w-5" />
             <span>Lista de todas as páginas indexáveis</span>
           </div>
-          <Button onClick={downloadXml} className="gap-2">
+          <Button onClick={openXmlInNewTab} className="gap-2">
             <Download className="h-4 w-4" />
             Download XML
           </Button>
@@ -314,21 +275,5 @@ const Sitemap = () => {
     </div>
   );
 };
-
-function escapeXml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
-
-function renderXmlInBrowser(xmlContent: string): void {
-  // Create a blob with XML content type and redirect to it
-  const blob = new Blob([xmlContent], { type: 'application/xml' });
-  const url = URL.createObjectURL(blob);
-  window.location.replace(url);
-}
 
 export default Sitemap;
