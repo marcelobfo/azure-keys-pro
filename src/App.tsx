@@ -35,6 +35,7 @@ import AdminSiteSettings from '@/pages/AdminSiteSettings';
 import ApiTokens from '@/pages/ApiTokens';
 import Analytics from './pages/Analytics';
 import Sitemap from './pages/Sitemap';
+import RobotsTxt from './pages/RobotsTxt';
 import Atendimento from '@/pages/Atendimento';
 import AttendantChat from '@/pages/AttendantChat';
 import AdminProtocols from '@/pages/AdminProtocols';
@@ -123,6 +124,7 @@ function App() {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/sitemap.xml" element={<Sitemap />} />
+                <Route path="/robots.txt" element={<RobotsTxt />} />
 
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={<Dashboard />} />
