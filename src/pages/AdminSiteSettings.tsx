@@ -290,6 +290,79 @@ const ANALYTICS_TOGGLES = [
   { key: 'facebook_pixel_enabled', label: 'Ativar Facebook Pixel' },
 ];
 
+const SEARCH_BAR_PRESETS = [
+  {
+    name: 'Clássico',
+    description: 'Barra branca com campo preto',
+    values: {
+      search_bar_bg_color: '#FFFFFF',
+      search_bar_input_bg_color: '#000000',
+      search_bar_input_text_color: '#FFFFFF',
+      search_bar_button_color: '#2563EB',
+      search_bar_button_text_color: '#FFFFFF',
+      search_bar_border_color: '#3B82F6',
+      search_bar_border_radius: 'rounded',
+      search_bar_shadow: 'true',
+    }
+  },
+  {
+    name: 'Escuro',
+    description: 'Visual escuro elegante',
+    values: {
+      search_bar_bg_color: '#1F2937',
+      search_bar_input_bg_color: '#111827',
+      search_bar_input_text_color: '#FFFFFF',
+      search_bar_button_color: '#3B82F6',
+      search_bar_button_text_color: '#FFFFFF',
+      search_bar_border_color: '#374151',
+      search_bar_border_radius: 'rounded',
+      search_bar_shadow: 'true',
+    }
+  },
+  {
+    name: 'Minimalista',
+    description: 'Clean e moderno',
+    values: {
+      search_bar_bg_color: '#FFFFFF',
+      search_bar_input_bg_color: '#F3F4F6',
+      search_bar_input_text_color: '#111827',
+      search_bar_button_color: '#111827',
+      search_bar_button_text_color: '#FFFFFF',
+      search_bar_border_color: '#E5E7EB',
+      search_bar_border_radius: 'full',
+      search_bar_shadow: 'false',
+    }
+  },
+  {
+    name: 'Gradiente Azul',
+    description: 'Visual vibrante',
+    values: {
+      search_bar_bg_color: '#EFF6FF',
+      search_bar_input_bg_color: '#FFFFFF',
+      search_bar_input_text_color: '#1E40AF',
+      search_bar_button_color: '#2563EB',
+      search_bar_button_text_color: '#FFFFFF',
+      search_bar_border_color: '#3B82F6',
+      search_bar_border_radius: 'full',
+      search_bar_shadow: 'true',
+    }
+  },
+  {
+    name: 'Transparente',
+    description: 'Fundo semi-transparente',
+    values: {
+      search_bar_bg_color: 'rgba(255,255,255,0.9)',
+      search_bar_input_bg_color: 'rgba(0,0,0,0.8)',
+      search_bar_input_text_color: '#FFFFFF',
+      search_bar_button_color: '#10B981',
+      search_bar_button_text_color: '#FFFFFF',
+      search_bar_border_color: '#10B981',
+      search_bar_border_radius: 'rounded',
+      search_bar_shadow: 'true',
+    }
+  },
+];
+
 const SEARCH_BAR_SETTINGS = [
   {
     key: 'search_bar_bg_color',
@@ -630,6 +703,56 @@ const AdminSiteSettings = () => {
                       </p>
                     </div>
 
+                    {/* Presets da Barra de Busca */}
+                    <div className="space-y-3">
+                      <Label>Presets Rápidos</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        {SEARCH_BAR_PRESETS.map((preset) => (
+                          <button
+                            key={preset.name}
+                            type="button"
+                            onClick={() => {
+                              Object.entries(preset.values).forEach(([key, value]) => {
+                                handleChange(key, value);
+                              });
+                            }}
+                            className="p-3 rounded-lg border-2 border-border hover:border-blue-500 transition-all text-left bg-background"
+                          >
+                            {/* Mini preview visual */}
+                            <div 
+                              className={`h-8 mb-2 flex items-center p-1 gap-1 ${
+                                preset.values.search_bar_border_radius === 'full' ? 'rounded-full' :
+                                preset.values.search_bar_border_radius === 'none' ? 'rounded-none' : 'rounded-md'
+                              }`}
+                              style={{ backgroundColor: preset.values.search_bar_bg_color }}
+                            >
+                              <div 
+                                className={`flex-1 h-5 ${
+                                  preset.values.search_bar_border_radius === 'full' ? 'rounded-full' :
+                                  preset.values.search_bar_border_radius === 'none' ? 'rounded-none' : 'rounded-sm'
+                                }`}
+                                style={{ 
+                                  backgroundColor: preset.values.search_bar_input_bg_color,
+                                  borderColor: preset.values.search_bar_border_color,
+                                  borderWidth: '1px',
+                                  borderStyle: 'solid',
+                                }}
+                              />
+                              <div 
+                                className={`w-8 h-5 ${
+                                  preset.values.search_bar_border_radius === 'full' ? 'rounded-full' :
+                                  preset.values.search_bar_border_radius === 'none' ? 'rounded-none' : 'rounded-sm'
+                                }`}
+                                style={{ backgroundColor: preset.values.search_bar_button_color }}
+                              />
+                            </div>
+                            <p className="font-medium text-sm">{preset.name}</p>
+                            <p className="text-xs text-muted-foreground">{preset.description}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Preview da Barra de Busca */}
                     <div className="bg-slate-700 p-6 rounded-lg">
                       <p className="text-white text-center mb-4 text-sm opacity-70">Preview da Barra de Busca</p>
@@ -640,6 +763,20 @@ const AdminSiteSettings = () => {
                         } ${values['search_bar_shadow'] !== 'false' ? 'shadow-lg' : ''}`}
                         style={{ backgroundColor: values['search_bar_bg_color'] || '#FFFFFF' }}
                       >
+                        {/* Mini dropdown preview */}
+                        <div 
+                          className={`w-24 px-2 py-2 text-xs flex items-center justify-between ${
+                            values['search_bar_border_radius'] === 'full' ? 'rounded-full' :
+                            values['search_bar_border_radius'] === 'none' ? 'rounded-none' : 'rounded-lg'
+                          }`}
+                          style={{ 
+                            backgroundColor: values['search_bar_bg_color'] || '#FFFFFF',
+                            color: values['search_bar_input_text_color'] || '#FFFFFF',
+                          }}
+                        >
+                          <span>Todos</span>
+                          <span>▼</span>
+                        </div>
                         <div 
                           className={`flex-1 px-4 py-2 text-sm ${
                             values['search_bar_border_radius'] === 'full' ? 'rounded-full' :
