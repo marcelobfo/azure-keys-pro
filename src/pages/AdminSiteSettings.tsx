@@ -18,7 +18,8 @@ import HomeSectionManager from '@/components/HomeSectionManager';
 import TagManager from '@/components/TagManager';
 import BrandColorPreview from '@/components/BrandColorPreview';
 import { COLOR_PRESETS, DEFAULT_BRAND_COLORS } from '@/hooks/useBrandColors';
-import { Palette, Check } from 'lucide-react';
+import { Palette, Check, Search } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Configurações das seções da home
 const HOME_SECTIONS_SETTINGS = [
@@ -289,6 +290,62 @@ const ANALYTICS_TOGGLES = [
   { key: 'facebook_pixel_enabled', label: 'Ativar Facebook Pixel' },
 ];
 
+const SEARCH_BAR_SETTINGS = [
+  {
+    key: 'search_bar_bg_color',
+    label: 'Cor de Fundo da Barra',
+    defaultValue: '#FFFFFF',
+    help: 'Cor de fundo geral da barra de busca',
+  },
+  {
+    key: 'search_bar_input_bg_color',
+    label: 'Cor de Fundo do Campo de Busca',
+    defaultValue: '#000000',
+    help: 'Cor de fundo do campo de texto',
+  },
+  {
+    key: 'search_bar_input_text_color',
+    label: 'Cor do Texto do Campo',
+    defaultValue: '#FFFFFF',
+    help: 'Cor do texto digitado e placeholder',
+  },
+  {
+    key: 'search_bar_button_color',
+    label: 'Cor do Botão Buscar',
+    defaultValue: '#2563EB',
+    help: 'Cor de fundo do botão de busca',
+  },
+  {
+    key: 'search_bar_button_text_color',
+    label: 'Cor do Texto do Botão',
+    defaultValue: '#FFFFFF',
+    help: 'Cor do ícone e texto do botão',
+  },
+  {
+    key: 'search_bar_border_color',
+    label: 'Cor da Borda',
+    defaultValue: '#3B82F6',
+    help: 'Cor da borda ao redor do campo de busca',
+  },
+  {
+    key: 'search_bar_border_radius',
+    label: 'Formato dos Cantos',
+    type: 'select',
+    options: [
+      { value: 'none', label: 'Quadrado' },
+      { value: 'rounded', label: 'Arredondado' },
+      { value: 'full', label: 'Pílula' },
+    ],
+    defaultValue: 'rounded',
+  },
+  {
+    key: 'search_bar_shadow',
+    label: 'Mostrar Sombra',
+    type: 'toggle',
+    defaultValue: 'true',
+  },
+];
+
 const BRAND_COLOR_FIELDS = [
   {
     key: 'brand_primary_color',
@@ -337,14 +394,16 @@ const AdminSiteSettings = () => {
     if (!profile || !hasRole('admin')) return;
 
     async function fetchSettings() {
-      // Incluir keys das seções da home e cores da marca
+      // Incluir keys das seções da home, cores da marca e barra de busca
       const sectionKeys = HOME_SECTIONS_SETTINGS.flatMap(s => [s.key, s.titleKey]);
       const brandColorKeys = BRAND_COLOR_FIELDS.map(f => f.key);
+      const searchBarKeys = SEARCH_BAR_SETTINGS.map(f => f.key);
       const keys = ALL_FIELDS.map(s => s.key)
         .concat(['home_layout'])
         .concat(ANALYTICS_TOGGLES.map(t => t.key))
         .concat(sectionKeys)
-        .concat(brandColorKeys);
+        .concat(brandColorKeys)
+        .concat(searchBarKeys);
       
       let query = supabase
         .from('site_settings')
@@ -444,6 +503,12 @@ const AdminSiteSettings = () => {
     
     // Salva cores da marca
     for (const field of BRAND_COLOR_FIELDS) {
+      const value = values[field.key] || field.defaultValue;
+      if (!await saveSetting(field.key, value)) isOk = false;
+    }
+    
+    // Salva configurações da barra de busca
+    for (const field of SEARCH_BAR_SETTINGS) {
       const value = values[field.key] || field.defaultValue;
       if (!await saveSetting(field.key, value)) isOk = false;
     }
@@ -551,6 +616,120 @@ const AdminSiteSettings = () => {
                       )}
                     </div>
                   ))}
+
+                  {/* Personalização da Barra de Busca */}
+                  <Separator className="my-6" />
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                        <Search className="w-4 h-4" />
+                        Personalizar Barra de Busca
+                      </h3>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        Configure cores, formato e estilo da barra de busca do hero.
+                      </p>
+                    </div>
+
+                    {/* Preview da Barra de Busca */}
+                    <div className="bg-slate-700 p-6 rounded-lg">
+                      <p className="text-white text-center mb-4 text-sm opacity-70">Preview da Barra de Busca</p>
+                      <div 
+                        className={`flex flex-col sm:flex-row p-2 gap-2 mx-auto max-w-xl ${
+                          values['search_bar_border_radius'] === 'full' ? 'rounded-full' :
+                          values['search_bar_border_radius'] === 'none' ? 'rounded-none' : 'rounded-lg'
+                        } ${values['search_bar_shadow'] !== 'false' ? 'shadow-lg' : ''}`}
+                        style={{ backgroundColor: values['search_bar_bg_color'] || '#FFFFFF' }}
+                      >
+                        <div 
+                          className={`flex-1 px-4 py-2 text-sm ${
+                            values['search_bar_border_radius'] === 'full' ? 'rounded-full' :
+                            values['search_bar_border_radius'] === 'none' ? 'rounded-none' : 'rounded-lg'
+                          }`}
+                          style={{ 
+                            backgroundColor: values['search_bar_input_bg_color'] || '#000000',
+                            color: values['search_bar_input_text_color'] || '#FFFFFF',
+                            borderColor: values['search_bar_border_color'] || '#3B82F6',
+                            borderWidth: '2px',
+                            borderStyle: 'solid',
+                          }}
+                        >
+                          Buscar imóveis...
+                        </div>
+                        <button 
+                          className={`px-6 py-2 text-sm font-medium ${
+                            values['search_bar_border_radius'] === 'full' ? 'rounded-full' :
+                            values['search_bar_border_radius'] === 'none' ? 'rounded-none' : 'rounded-lg'
+                          }`}
+                          style={{ 
+                            backgroundColor: values['search_bar_button_color'] || '#2563EB',
+                            color: values['search_bar_button_text_color'] || '#FFFFFF',
+                          }}
+                        >
+                          Buscar
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Cores da Barra */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {SEARCH_BAR_SETTINGS.filter(f => f.type !== 'select' && f.type !== 'toggle').map(field => (
+                        <div key={field.key} className="space-y-2">
+                          <Label htmlFor={field.key}>{field.label}</Label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="color"
+                              id={field.key}
+                              value={values[field.key] || field.defaultValue}
+                              onChange={e => handleChange(field.key, e.target.value)}
+                              className="w-10 h-10 rounded-lg cursor-pointer border-2 border-border hover:border-primary transition-colors"
+                            />
+                            <Input
+                              value={values[field.key] || field.defaultValue}
+                              onChange={e => handleChange(field.key, e.target.value)}
+                              placeholder="#000000"
+                              className="font-mono uppercase"
+                              maxLength={7}
+                            />
+                          </div>
+                          {field.help && (
+                            <p className="text-xs text-muted-foreground">{field.help}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Formato e Sombra */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Formato dos Cantos</Label>
+                        <Select 
+                          value={values['search_bar_border_radius'] || 'rounded'}
+                          onValueChange={(val) => handleChange('search_bar_border_radius', val)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Quadrado</SelectItem>
+                            <SelectItem value="rounded">Arredondado</SelectItem>
+                            <SelectItem value="full">Pílula</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Mostrar Sombra</Label>
+                        <div className="flex items-center gap-3 pt-2">
+                          <Switch
+                            checked={values['search_bar_shadow'] !== 'false'}
+                            onCheckedChange={(checked) => handleChange('search_bar_shadow', checked ? 'true' : 'false')}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {values['search_bar_shadow'] !== 'false' ? 'Ativada' : 'Desativada'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Seções da Home - Gerenciador Dinâmico */}
                   <Separator className="my-6" />

@@ -35,11 +35,33 @@ const HomeHero: React.FC<HomeHeroProps> = ({ settings, loading = false }) => {
   const bannerImage = settings['home_banner_image'] || 'https://images.unsplash.com/photo-1496307653780-42ee777d4833?w=1200&h=500&fit=crop';
   const bannerVideo = settings['home_banner_video_url'] || '';
 
+  // Configurações personalizáveis da barra de busca
+  const barBgColor = settings['search_bar_bg_color'] || '#FFFFFF';
+  const inputBgColor = settings['search_bar_input_bg_color'] || '#000000';
+  const inputTextColor = settings['search_bar_input_text_color'] || '#FFFFFF';
+  const buttonColor = settings['search_bar_button_color'] || '#2563EB';
+  const buttonTextColor = settings['search_bar_button_text_color'] || '#FFFFFF';
+  const borderColor = settings['search_bar_border_color'] || '#3B82F6';
+  const borderRadius = settings['search_bar_border_radius'] || 'rounded';
+  const showShadow = settings['search_bar_shadow'] !== 'false';
+
+  const radiusClass = {
+    none: 'rounded-none',
+    rounded: 'rounded-lg',
+    full: 'rounded-full',
+  }[borderRadius] || 'rounded-lg';
+
   const SearchBar = () => (
     <form onSubmit={handleSearch} className="max-w-3xl mx-auto mt-8">
-      <div className="flex flex-col sm:flex-row bg-white rounded-lg shadow-lg p-2 gap-2">
+      <div 
+        className={`flex flex-col sm:flex-row p-2 gap-2 ${radiusClass} ${showShadow ? 'shadow-lg' : ''}`}
+        style={{ backgroundColor: barBgColor }}
+      >
         <Select value={purpose} onValueChange={setPurpose}>
-          <SelectTrigger className="w-full sm:w-40 border-none bg-gray-50 text-gray-900">
+          <SelectTrigger 
+            className={`w-full sm:w-40 border-none ${radiusClass}`}
+            style={{ backgroundColor: barBgColor, color: inputTextColor }}
+          >
             <SelectValue placeholder="Finalidade" />
           </SelectTrigger>
           <SelectContent>
@@ -56,9 +78,22 @@ const HomeHero: React.FC<HomeHeroProps> = ({ settings, loading = false }) => {
           placeholder={t('home.search.placeholder')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 border-none text-gray-900 text-lg"
+          className={`flex-1 text-lg ${radiusClass}`}
+          style={{ 
+            backgroundColor: inputBgColor, 
+            color: inputTextColor,
+            borderColor: borderColor,
+            borderWidth: '2px',
+          }}
         />
-        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 px-8">
+        <Button 
+          type="submit" 
+          className={`px-8 ${radiusClass} hover:opacity-90`}
+          style={{ 
+            backgroundColor: buttonColor, 
+            color: buttonTextColor,
+          }}
+        >
           <Search className="w-5 h-5 mr-2" />
           {t('home.search.button')}
         </Button>
