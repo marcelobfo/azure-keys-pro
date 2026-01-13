@@ -10,16 +10,12 @@ const RobotsTxt = () => {
     if (rendered) return;
 
     // Construir URL base do tenant
-    let baseUrl = window.location.origin;
-    
-    // Se tiver domínio customizado no tenant, usar ele
-    if (tenant?.domain) {
-      baseUrl = `https://${tenant.domain.replace(/^www\./, '')}`;
-    }
+    // Construir URL base do tenant
+    const hostname = window.location.hostname.replace(/^www\./, '');
+    const baseUrl = `https://${hostname}`;
 
-    // URL da Edge Function para o sitemap XML
-    const supabaseUrl = 'https://vmlnzfodeubthlhjahpc.supabase.co';
-    const sitemapUrl = `${supabaseUrl}/functions/v1/sitemap?domain=${encodeURIComponent(window.location.hostname)}`;
+    // Sitemap URL limpa no próprio domínio (servida via Vercel rewrite)
+    const sitemapUrl = `${baseUrl}/sitemap.xml`;
 
     const robotsTxt = `# Robots.txt - ${tenant?.name || 'Site'}
 # Generated dynamically for multi-tenant SEO

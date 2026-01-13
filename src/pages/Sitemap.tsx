@@ -31,13 +31,12 @@ const Sitemap = () => {
   
 
   useEffect(() => {
-    // Check if XML format is requested (for bots) - redirect to Edge Function
+    // Check if XML format is requested (for bots) - redirect to clean URL
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get('format') === 'xml') {
-      // Redirect to Edge Function that serves proper XML
-      const supabaseUrl = 'https://vmlnzfodeubthlhjahpc.supabase.co';
-      const domain = window.location.hostname;
-      window.location.replace(`${supabaseUrl}/functions/v1/sitemap?domain=${encodeURIComponent(domain)}`);
+      // Redirect to clean sitemap.xml URL (served via Vercel rewrite)
+      const hostname = window.location.hostname.replace(/^www\./, '');
+      window.location.replace(`https://${hostname}/sitemap.xml`);
       return;
     }
   }, []);
@@ -105,9 +104,9 @@ const Sitemap = () => {
 
 
   const openXmlInNewTab = () => {
-    const supabaseUrl = 'https://vmlnzfodeubthlhjahpc.supabase.co';
-    const domain = window.location.hostname;
-    window.open(`${supabaseUrl}/functions/v1/sitemap?domain=${encodeURIComponent(domain)}`, '_blank');
+    // Opens clean sitemap.xml URL (served via Vercel rewrite)
+    const hostname = window.location.hostname.replace(/^www\./, '');
+    window.open(`https://${hostname}/sitemap.xml`, '_blank');
   };
 
   const getPriorityColor = (priority: number) => {
@@ -264,10 +263,10 @@ const Sitemap = () => {
           <p className="mt-1">
             Para uso em mecanismos de busca, acesse:{' '}
             <a 
-              href={`${window.location.origin}/sitemap.xml?format=xml`}
+              href={`https://${window.location.hostname.replace(/^www\./, '')}/sitemap.xml`}
               className="text-primary hover:underline"
             >
-              {window.location.origin}/sitemap.xml?format=xml
+              {window.location.hostname.replace(/^www\./, '')}/sitemap.xml
             </a>
           </p>
         </div>

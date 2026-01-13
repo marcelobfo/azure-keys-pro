@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/sitemap.xml",
+      "destination": "https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/sitemap"
+    },
+    {
       "source": "/share/:slug",
       "destination": "https://vmlnzfodeubthlhjahpc.supabase.co/functions/v1/og-meta?slug=:slug"
     },

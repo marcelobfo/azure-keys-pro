@@ -22,9 +22,10 @@ serve(async (req) => {
     const url = new URL(req.url);
     const type = url.searchParams.get('type') || 'full';
     
-    // Detectar domínio: query param > X-Forwarded-Host > Origin > Referer
-    let domain = url.searchParams.get('domain') || 
-                 req.headers.get('x-forwarded-host') ||
+    // Detectar domínio: X-Forwarded-Host (Vercel rewrite) > query param > host
+    // Vercel automaticamente envia X-Forwarded-Host com o domínio original durante rewrites
+    let domain = req.headers.get('x-forwarded-host') ||
+                 url.searchParams.get('domain') ||
                  req.headers.get('host') ||
                  '';
     
