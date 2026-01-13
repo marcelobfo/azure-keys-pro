@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.verify-domain-dns]
 verify_jwt = false
+
+[functions.og-home]
+verify_jwt = false
