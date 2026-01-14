@@ -22,6 +22,8 @@ interface Property {
   id: string;
   title: string;
   price: number;
+  rental_price: number | null;
+  purpose: string | null;
   location: string;
   city: string;
   area: number | null;
@@ -87,6 +89,8 @@ const ManageProperties = () => {
       setProperties((data || []).map(item => ({
         ...item,
         price: (item.price != null && Number(item.price) > 0) ? Number(item.price) : 0,
+        rental_price: (item.rental_price != null && Number(item.rental_price) > 0) ? Number(item.rental_price) : null,
+        purpose: item.purpose || null,
         is_featured: Boolean(item.is_featured),
         is_beachfront: Boolean(item.is_beachfront),
         is_near_beach: Boolean(item.is_near_beach),
@@ -337,11 +341,32 @@ const ManageProperties = () => {
                 </div>
                 <CardContent className="p-4">
                   <h3 className="font-semibold text-lg mb-2">{property.title}</h3>
-                  <p className="text-2xl font-bold text-blue-600 mb-2">
-                    {property.price > 0
-                      ? `R$ ${property.price.toLocaleString('pt-BR')}`
-                      : 'Preço não informado'}
-                  </p>
+                  {['rent', 'rent_annual', 'rent_seasonal'].includes(property.purpose || '') && property.rental_price ? (
+                    <p className="text-2xl font-bold text-green-600 mb-2">
+                      R$ {property.rental_price.toLocaleString('pt-BR')}/mês
+                    </p>
+                  ) : property.purpose === 'both' ? (
+                    <div className="mb-2">
+                      {property.price > 0 && (
+                        <p className="text-lg font-bold text-blue-600">
+                          Venda: R$ {property.price.toLocaleString('pt-BR')}
+                        </p>
+                      )}
+                      {property.rental_price && (
+                        <p className="text-sm font-semibold text-green-600">
+                          Aluguel: R$ {property.rental_price.toLocaleString('pt-BR')}/mês
+                        </p>
+                      )}
+                    </div>
+                  ) : property.price > 0 ? (
+                    <p className="text-2xl font-bold text-blue-600 mb-2">
+                      R$ {property.price.toLocaleString('pt-BR')}
+                    </p>
+                  ) : (
+                    <p className="text-2xl font-bold text-muted-foreground mb-2">
+                      Preço não informado
+                    </p>
+                  )}
                   <div className="flex items-center text-sm text-muted-foreground mb-3">
                     <MapPin className="h-4 w-4 mr-1" />
                     {property.location}
@@ -421,10 +446,21 @@ const ManageProperties = () => {
                       />
                     </TableCell>
                     <TableCell className="font-medium max-w-[200px] truncate">{property.title}</TableCell>
-                    <TableCell className="font-bold text-blue-600">
-                      {property.price > 0
-                        ? `R$ ${property.price.toLocaleString('pt-BR')}`
-                        : '-'}
+                    <TableCell className="font-bold">
+                      {['rent', 'rent_annual', 'rent_seasonal'].includes(property.purpose || '') && property.rental_price ? (
+                        <span className="text-green-600">R$ {property.rental_price.toLocaleString('pt-BR')}/mês</span>
+                      ) : property.purpose === 'both' ? (
+                        <div className="flex flex-col">
+                          {property.price > 0 && <span className="text-blue-600">R$ {property.price.toLocaleString('pt-BR')}</span>}
+                          {property.rental_price && (
+                            <span className="text-green-600 text-xs">+ R$ {property.rental_price.toLocaleString('pt-BR')}/mês</span>
+                          )}
+                        </div>
+                      ) : property.price > 0 ? (
+                        <span className="text-blue-600">R$ {property.price.toLocaleString('pt-BR')}</span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{property.location}</TableCell>
                     <TableCell className="hidden lg:table-cell">{property.bedrooms || 0}</TableCell>
