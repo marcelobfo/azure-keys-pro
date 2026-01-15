@@ -12,27 +12,32 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url)
-    const slug = url.searchParams.get('slug')
-    
-    if (!slug) {
+    const identifier = url.searchParams.get('slug')
+
+    if (!identifier) {
       return new Response('Slug is required', { status: 400, headers: corsHeaders })
+    }
+
+    const isUUID = (value: string) => {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      return uuidRegex.test(value)
     }
 
     // Detectar o domínio dinamicamente
     const forwardedHost = req.headers.get('x-forwarded-host')
     const host = req.headers.get('host')
     const origin = req.headers.get('origin')
-    
+
     // Determinar o domínio base para redirecionamento
     let baseDomain = forwardedHost || host || ''
-    
+
     // Remover porta se presente
     if (baseDomain.includes(':')) {
       baseDomain = baseDomain.split(':')[0]
     }
-    
+
     // Se não tiver domínio válido, usar origin ou fallback
-    if (!baseDomain || baseDomain.includes('supabase')) {
+    if (!baseDomain || baseDomain.includes('supabase') || baseDomain.includes('edge-runtime')) {
       if (origin) {
         try {
           baseDomain = new URL(origin).hostname
@@ -43,7 +48,7 @@ Deno.serve(async (req) => {
         baseDomain = 'localhost'
       }
     }
-    
+
     // Determinar protocolo
     const protocol = baseDomain === 'localhost' ? 'http' : 'https'
 
@@ -51,16 +56,21 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Buscar dados do imóvel
-    const { data: property, error } = await supabase
+    // Buscar dados do imóvel (aceita slug OU uuid)
+    const selectFields =
+      'id, title, description, price, city, location, property_type, images, bedrooms, bathrooms, area, slug, tenant_id'
+
+    let propQuery = supabase
       .from('properties')
-      .select('id, title, description, price, city, location, property_type, images, bedrooms, bathrooms, area, slug, tenant_id')
-      .eq('slug', slug)
+      .select(selectFields)
       .eq('status', 'active')
-      .single()
+
+    propQuery = isUUID(identifier) ? propQuery.eq('id', identifier) : propQuery.eq('slug', identifier)
+
+    const { data: property, error } = await propQuery.single()
 
     if (error || !property) {
-      console.error('Property not found:', error)
+      console.error('Property not found:', { identifier, error })
       return new Response('Property not found', { status: 404, headers: corsHeaders })
     }
 
@@ -91,8 +101,8 @@ Deno.serve(async (req) => {
     if (property.bedrooms) specs.push(`${property.bedrooms} quarto${property.bedrooms > 1 ? 's' : ''}`)
     if (property.bathrooms) specs.push(`${property.bathrooms} banheiro${property.bathrooms > 1 ? 's' : ''}`)
     if (property.area) specs.push(`${property.area}m²`)
-    
-    const description = property.description 
+
+    const description = property.description
       ? property.description.substring(0, 155) + '...'
       : `${property.property_type} em ${property.location}, ${property.city}. ${specs.join(', ')}. ${formattedPrice}`
 
@@ -126,9 +136,22 @@ Deno.serve(async (req) => {
       if (resolved) spaBaseUrl = resolved
     }
 
-    const spaUrl = `${spaBaseUrl.replace(/\/+$/, '')}/imovel/${slug}`
+    // Sempre redirecionar para um identificador válido (slug preferencialmente)
+    const redirectIdentifier = property.slug || property.id
+    const spaUrl = `${spaBaseUrl.replace(/\/+$/, '')}/imovel/${redirectIdentifier}`
 
-    console.log('Share redirect resolved:', { forwardedHost, host, origin, baseDomain, protocol, spaBaseUrl, spaUrl, tenant_id: property.tenant_id })
+    console.log('Share redirect resolved:', {
+      identifier,
+      redirectIdentifier,
+      forwardedHost,
+      host,
+      origin,
+      baseDomain,
+      protocol,
+      spaBaseUrl,
+      spaUrl,
+      tenant_id: property.tenant_id,
+    })
     
     // Imagem (usar primeira imagem do imóvel ou logo do site)
     const ogImage = property.images && property.images.length > 0 
@@ -188,7 +211,7 @@ Deno.serve(async (req) => {
 </body>
 </html>`
 
-    console.log('Serving OG meta for:', slug, '- Title:', title)
+    console.log('Serving OG meta for:', identifier, '- Redirect:', spaUrl, '- Title:', title)
 
     return new Response(html, {
       headers: {

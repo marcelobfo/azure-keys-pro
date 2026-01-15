@@ -30,6 +30,7 @@ import ScheduleVisit from '@/pages/ScheduleVisit';
 import AdminChatSettings from '@/pages/AdminChatSettings';
 import Index from '@/pages/Index';
 import PropertyDetail from '@/pages/PropertyDetail';
+import ShareRedirect from '@/pages/ShareRedirect';
 import VisitsManagement from '@/pages/VisitsManagement';
 import AdminSiteSettings from '@/pages/AdminSiteSettings';
 import ApiTokens from '@/pages/ApiTokens';
@@ -107,6 +108,9 @@ function App() {
                 <Route path="/home" element={<Home />} />
                 <Route path="/properties" element={<PropertiesPage />} />
                 <Route path="/imoveis" element={<PropertiesPage />} />
+
+                {/* Share Route (SPA fallback) */}
+                <Route path="/share/:identifier" element={<ShareRedirect />} />
                 
                 {/* Property Detail Routes - SEO Friendly */}
                 <Route path="/imovel/:identifier" element={<PropertyDetail />} />
