@@ -405,8 +405,9 @@ ${propertyUrl}
       // Gerar caption otimizada para Instagram
       const caption = generateInstagramCaption(property);
 
-      // Gerar URL de compartilhamento com meta tags dinâmicas (usando domínio fixo)
-      const propertyUrl = `https://maresialitoral.com.br/share/${property.slug || property.id}`;
+      // Gerar URL de compartilhamento com meta tags dinâmicas
+      // Usa o domínio atual para evitar 404 quando o app roda em outro domínio/preview.
+      const propertyUrl = `${window.location.origin}/share/${property.slug || property.id}`;
 
       setShareData({
         imageUrl,

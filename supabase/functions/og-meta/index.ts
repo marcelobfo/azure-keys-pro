@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     // Buscar dados do imóvel
     const { data: property, error } = await supabase
       .from('properties')
-      .select('id, title, description, price, city, location, property_type, images, bedrooms, bathrooms, area, slug')
+      .select('id, title, description, price, city, location, property_type, images, bedrooms, bathrooms, area, slug, tenant_id')
       .eq('slug', slug)
       .eq('status', 'active')
       .single()
@@ -96,10 +96,39 @@ Deno.serve(async (req) => {
       ? property.description.substring(0, 155) + '...'
       : `${property.property_type} em ${property.location}, ${property.city}. ${specs.join(', ')}. ${formattedPrice}`
 
-    // URL do imóvel (redireciona para a SPA) - AGORA DINÂMICO
-    const spaUrl = `${protocol}://${baseDomain}/imovel/${slug}`
-    
-    console.log('Domain detection:', { forwardedHost, host, origin, baseDomain, spaUrl })
+    // URL do imóvel (redireciona para a SPA)
+    // Importante: quando /share/:slug é um rewrite (Vercel), o host visto aqui pode ser o domínio do Supabase.
+    // Então resolvemos o domínio real via tenant do imóvel (quando disponível).
+    const normalizeBaseUrl = (input: string): string | null => {
+      const trimmed = input.trim().replace(/\/+$/, '')
+      try {
+        return new URL(trimmed).origin
+      } catch {
+        try {
+          return new URL(`https://${trimmed}`).origin
+        } catch {
+          return null
+        }
+      }
+    }
+
+    let spaBaseUrl = `${protocol}://${baseDomain}`
+
+    if (property.tenant_id) {
+      const { data: tenant } = await supabase
+        .from('tenants')
+        .select('domain, redirect_url')
+        .eq('id', property.tenant_id)
+        .maybeSingle()
+
+      const candidate = tenant?.redirect_url || tenant?.domain || ''
+      const resolved = candidate ? normalizeBaseUrl(candidate) : null
+      if (resolved) spaBaseUrl = resolved
+    }
+
+    const spaUrl = `${spaBaseUrl.replace(/\/+$/, '')}/imovel/${slug}`
+
+    console.log('Share redirect resolved:', { forwardedHost, host, origin, baseDomain, protocol, spaBaseUrl, spaUrl, tenant_id: property.tenant_id })
     
     // Imagem (usar primeira imagem do imóvel ou logo do site)
     const ogImage = property.images && property.images.length > 0 
