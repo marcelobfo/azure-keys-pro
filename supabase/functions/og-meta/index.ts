@@ -18,6 +18,35 @@ Deno.serve(async (req) => {
       return new Response('Slug is required', { status: 400, headers: corsHeaders })
     }
 
+    // Detectar o domínio dinamicamente
+    const forwardedHost = req.headers.get('x-forwarded-host')
+    const host = req.headers.get('host')
+    const origin = req.headers.get('origin')
+    
+    // Determinar o domínio base para redirecionamento
+    let baseDomain = forwardedHost || host || ''
+    
+    // Remover porta se presente
+    if (baseDomain.includes(':')) {
+      baseDomain = baseDomain.split(':')[0]
+    }
+    
+    // Se não tiver domínio válido, usar origin ou fallback
+    if (!baseDomain || baseDomain.includes('supabase')) {
+      if (origin) {
+        try {
+          baseDomain = new URL(origin).hostname
+        } catch {
+          baseDomain = 'localhost'
+        }
+      } else {
+        baseDomain = 'localhost'
+      }
+    }
+    
+    // Determinar protocolo
+    const protocol = baseDomain === 'localhost' ? 'http' : 'https'
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
@@ -67,8 +96,10 @@ Deno.serve(async (req) => {
       ? property.description.substring(0, 155) + '...'
       : `${property.property_type} em ${property.location}, ${property.city}. ${specs.join(', ')}. ${formattedPrice}`
 
-    // URL do imóvel (redireciona para a SPA)
-    const spaUrl = `https://maresialitoral.com.br/imovel/${slug}`
+    // URL do imóvel (redireciona para a SPA) - AGORA DINÂMICO
+    const spaUrl = `${protocol}://${baseDomain}/imovel/${slug}`
+    
+    console.log('Domain detection:', { forwardedHost, host, origin, baseDomain, spaUrl })
     
     // Imagem (usar primeira imagem do imóvel ou logo do site)
     const ogImage = property.images && property.images.length > 0 
