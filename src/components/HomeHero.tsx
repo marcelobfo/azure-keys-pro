@@ -6,6 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Skeleton } from './ui/skeleton';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
+import { useTenantContext } from '@/contexts/TenantContext';
+import LocationAutocomplete from './LocationAutocomplete';
 
 interface HomeHeroProps {
   settings: Record<string, string>;
@@ -15,18 +17,31 @@ interface HomeHeroProps {
 const HomeHero: React.FC<HomeHeroProps> = ({ settings, loading = false }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { currentTenant } = useTenantContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [purpose, setPurpose] = useState('all');
+  const [city, setCity] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
   
   // Use translations as instant fallbacks
   const title = settings['home_banner_title'] || t('home.hero.title');
   const subtitle = settings['home_banner_subtitle'] || t('home.hero.subtitle');
+
+  // Reset neighborhood when city changes
+  const handleCityChange = (newCity: string) => {
+    setCity(newCity);
+    if (newCity !== city) {
+      setNeighborhood('');
+    }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
     if (searchTerm) params.set('search', searchTerm);
     if (purpose && purpose !== 'all') params.set('purpose', purpose);
+    if (city) params.set('city', city);
+    if (neighborhood) params.set('neighborhood', neighborhood);
     navigate(`/properties?${params.toString()}`);
   };
 
@@ -51,15 +66,22 @@ const HomeHero: React.FC<HomeHeroProps> = ({ settings, loading = false }) => {
     full: 'rounded-full',
   }[borderRadius] || 'rounded-lg';
 
+  const autocompleteStyles = {
+    backgroundColor: barBgColor,
+    color: inputTextColor,
+    borderColor: borderColor,
+  };
+
   const SearchBar = () => (
-    <form onSubmit={handleSearch} className="max-w-3xl mx-auto mt-8">
+    <form onSubmit={handleSearch} className="max-w-5xl mx-auto mt-8">
       <div 
-        className={`flex flex-col sm:flex-row p-2 gap-2 ${radiusClass} ${showShadow ? 'shadow-lg' : ''}`}
+        className={`flex flex-col lg:flex-row p-2 gap-2 ${radiusClass} ${showShadow ? 'shadow-lg' : ''}`}
         style={{ backgroundColor: barBgColor }}
       >
+        {/* Finalidade */}
         <Select value={purpose} onValueChange={setPurpose}>
           <SelectTrigger 
-            className={`w-full sm:w-40 border-none ${radiusClass}`}
+            className={`w-full lg:w-36 border-none ${radiusClass}`}
             style={{ backgroundColor: barBgColor, color: inputTextColor }}
           >
             <SelectValue placeholder="Finalidade" />
@@ -76,6 +98,33 @@ const HomeHero: React.FC<HomeHeroProps> = ({ settings, loading = false }) => {
             <SelectItem value="both" style={{ color: inputTextColor }} className="focus:bg-black/10">Venda e Aluguel</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Cidade */}
+        <div className="w-full lg:w-40">
+          <LocationAutocomplete
+            type="city"
+            value={city}
+            onChange={handleCityChange}
+            tenantId={currentTenant?.id}
+            placeholder="Cidade"
+            customStyles={autocompleteStyles}
+          />
+        </div>
+
+        {/* Bairro */}
+        <div className="w-full lg:w-40">
+          <LocationAutocomplete
+            type="neighborhood"
+            value={neighborhood}
+            onChange={setNeighborhood}
+            tenantId={currentTenant?.id}
+            cityFilter={city}
+            placeholder="Bairro"
+            customStyles={autocompleteStyles}
+          />
+        </div>
+
+        {/* Campo de busca */}
         <Input
           type="text"
           placeholder={t('home.search.placeholder')}
@@ -89,9 +138,11 @@ const HomeHero: React.FC<HomeHeroProps> = ({ settings, loading = false }) => {
             borderWidth: '2px',
           }}
         />
+
+        {/* Botão Buscar */}
         <Button 
           type="submit" 
-          className={`px-8 ${radiusClass} hover:opacity-90`}
+          className={`px-6 ${radiusClass} hover:opacity-90`}
           style={{ 
             backgroundColor: buttonColor, 
             color: buttonTextColor,
