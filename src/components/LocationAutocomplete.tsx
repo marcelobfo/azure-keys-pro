@@ -14,6 +14,11 @@ interface LocationAutocompleteProps {
   tenantId?: string | null;
   cityFilter?: string; // Para filtrar bairros por cidade
   disabled?: boolean;
+  customStyles?: {
+    backgroundColor?: string;
+    color?: string;
+    borderColor?: string;
+  };
 }
 
 // Função para normalizar nomes de localização
@@ -44,6 +49,7 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   tenantId,
   cityFilter,
   disabled = false,
+  customStyles,
 }) => {
   const [open, setOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -134,6 +140,12 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const showAddOption = inputValue.trim() && 
     !filteredSuggestions.some(s => s.toLowerCase() === inputValue.toLowerCase());
 
+  const buttonStyle = customStyles ? {
+    backgroundColor: customStyles.backgroundColor,
+    color: customStyles.color,
+    borderColor: customStyles.borderColor,
+  } : undefined;
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -142,15 +154,16 @@ const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className="w-full justify-between font-normal bg-background hover:bg-background"
+          className="w-full justify-between font-normal hover:opacity-90"
+          style={buttonStyle}
         >
-          <span className={cn(!value && "text-muted-foreground")}>
+          <span className={cn(!value && "opacity-70")} style={customStyles ? { color: customStyles.color } : undefined}>
             {value || placeholder || defaultPlaceholder}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0 bg-popover border shadow-lg z-50" align="start">
+      <PopoverContent className="w-full p-0 bg-popover border shadow-lg z-[100]" align="start">
         <Command shouldFilter={false}>
           <CommandInput
             ref={inputRef}
