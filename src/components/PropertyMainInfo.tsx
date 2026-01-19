@@ -15,6 +15,7 @@ interface Property {
   title: string;
   location: string;
   city: string;
+  neighborhood?: string;
   property_type: string;
   price: number;
   rental_price?: number;
@@ -49,13 +50,33 @@ const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
   // Mostrar indicador "Endereço oculto" sempre que a propriedade estiver marcada (para admin saber que está configurado)
   const showHiddenIndicator = property.hide_address === true;
   
-  // Extrair apenas o bairro/região da localização (primeira parte antes da vírgula ou o próprio valor)
+  // Mostrar apenas bairro e cidade para endereço simplificado
   const getSimplifiedLocation = () => {
+    const parts = [];
+    if (property.neighborhood) {
+      parts.push(property.neighborhood);
+    }
+    if (property.city) {
+      parts.push(property.city);
+    }
+    if (parts.length > 0) {
+      return parts.join(', ');
+    }
+    // Fallback: extrair bairro do location se não houver campo separado
     if (!property.location) return property.city;
-    const parts = property.location.split(',');
-    // Pegar a última parte que geralmente é o bairro
-    const neighborhood = parts.length > 1 ? parts[parts.length - 1].trim() : parts[0].trim();
+    const locationParts = property.location.split(',');
+    const neighborhood = locationParts.length > 1 ? locationParts[locationParts.length - 1].trim() : locationParts[0].trim();
     return `${neighborhood}, ${property.city}`;
+  };
+
+  // Mostrar endereço completo incluindo bairro
+  const getFullLocation = () => {
+    const parts = [property.location];
+    if (property.neighborhood) {
+      parts.push(property.neighborhood);
+    }
+    parts.push(property.city);
+    return parts.filter(Boolean).join(', ');
   };
 
   const formatDescription = (description: string) => {
@@ -81,7 +102,7 @@ const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
             <div className="flex items-center text-gray-600 dark:text-gray-300 mb-3">
               <MapPin className="w-4 h-4 md:w-5 md:h-5 mr-2 text-blue-600" />
               <span className="text-base md:text-lg">
-                {shouldHideAddress ? getSimplifiedLocation() : `${property.location}, ${property.city}`}
+                {shouldHideAddress ? getSimplifiedLocation() : getFullLocation()}
               </span>
               {showHiddenIndicator && (
                 <span className="ml-2 flex items-center text-sm text-amber-600 dark:text-amber-400">

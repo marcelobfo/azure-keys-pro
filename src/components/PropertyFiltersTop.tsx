@@ -13,6 +13,7 @@ interface PropertyFilters {
   search: string;
   type: string;
   city: string;
+  neighborhood: string;
   purpose: string;
   priceMin: number;
   priceMax: number;
@@ -66,6 +67,7 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
   const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
   
   const [cities, setCities] = useState<string[]>([]);
+  const [neighborhoods, setNeighborhoods] = useState<string[]>([]);
   const [typeCounts, setTypeCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -105,6 +107,23 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
           setCities(uniqueCities.sort());
         }
 
+        // Buscar bairros únicos
+        const { data: neighborhoodsData } = await supabase
+          .from('properties')
+          .select('neighborhood')
+          .eq('status', 'active')
+          .eq('tenant_id', effectiveTenantId)
+          .not('neighborhood', 'is', null);
+
+        if (neighborhoodsData) {
+          const uniqueNeighborhoods = [...new Set(
+            (neighborhoodsData as any[])
+              .map(n => n.neighborhood?.trim())
+              .filter(Boolean)
+          )];
+          setNeighborhoods(uniqueNeighborhoods.sort());
+        }
+
       } catch (error) {
         console.error('Erro ao buscar opções de filtro:', error);
       }
@@ -133,6 +152,7 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
     if (filters.search) count++;
     if (filters.type) count++;
     if (filters.city) count++;
+    if (filters.neighborhood) count++;
     if (filters.purpose) count++;
     if (filters.priceMin > 0 || filters.priceMax < 100000000) count++;
     if (filters.areaMin > 0 || filters.areaMax < 2000) count++;
@@ -275,6 +295,24 @@ const PropertyFiltersTop: React.FC<PropertyFiltersTopProps> = ({
                   {cities.map((city) => (
                     <SelectItem key={city} value={city}>
                       {city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Neighborhood */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Bairro</label>
+              <Select value={filters.neighborhood || 'all'} onValueChange={(value) => updateFilter('neighborhood', value === 'all' ? '' : value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o bairro" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Bairros</SelectItem>
+                  {neighborhoods.map((neighborhood) => (
+                    <SelectItem key={neighborhood} value={neighborhood}>
+                      {neighborhood}
                     </SelectItem>
                   ))}
                 </SelectContent>

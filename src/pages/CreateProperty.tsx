@@ -17,6 +17,8 @@ import { useProfile } from '@/hooks/useProfile';
 import DashboardLayout from '@/components/DashboardLayout';
 import ImageUpload from '@/components/ImageUpload';
 import PropertyTagSelector from '@/components/PropertyTagSelector';
+import LocationAutocomplete from '@/components/LocationAutocomplete';
+import { useTenantContext } from '@/contexts/TenantContext';
 
 const CreateProperty = () => {
   const navigate = useNavigate();
@@ -29,12 +31,16 @@ const CreateProperty = () => {
   
   const dashboardRole = profile?.role === 'master' ? 'admin' : (profile?.role || 'user');
 
+  const { currentTenant, selectedTenantId } = useTenantContext();
+  const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     price: '',
     rental_price: '',
     location: '',
+    neighborhood: '',
     city: '',
     state: '',
     property_type: '',
@@ -169,6 +175,7 @@ const CreateProperty = () => {
           price: parseFloat(formData.price) || 0,
           rental_price: formData.rental_price ? parseFloat(formData.rental_price) : null,
           location: formData.location,
+          neighborhood: formData.neighborhood || null,
           city: formData.city,
           state: formData.state,
           property_type: formData.property_type,
@@ -305,26 +312,41 @@ const CreateProperty = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="location">Endereço Completo *</Label>
+                <Label htmlFor="location">Endereço (Rua, Número) *</Label>
                 <Input
                   id="location"
                   required
                   value={formData.location}
                   onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  placeholder="Rua, número, bairro"
+                  placeholder="Ex: Rua das Flores, 123"
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="city">Cidade *</Label>
-                  <Input
-                    id="city"
-                    required
-                    value={formData.city}
-                    onChange={(e) => setFormData({...formData, city: e.target.value})}
-                    placeholder="Ex: Florianópolis"
+                  <Label htmlFor="neighborhood">Bairro *</Label>
+                  <LocationAutocomplete
+                    type="neighborhood"
+                    value={formData.neighborhood}
+                    onChange={(value) => setFormData({...formData, neighborhood: value})}
+                    placeholder="Digite ou selecione o bairro"
+                    tenantId={effectiveTenantId}
+                    cityFilter={formData.city}
                   />
                 </div>
+                <div>
+                  <Label htmlFor="city">Cidade *</Label>
+                  <LocationAutocomplete
+                    type="city"
+                    value={formData.city}
+                    onChange={(value) => setFormData({...formData, city: value})}
+                    placeholder="Digite ou selecione a cidade"
+                    tenantId={effectiveTenantId}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="state">Estado</Label>
                   <Input

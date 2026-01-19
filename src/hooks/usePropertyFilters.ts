@@ -4,6 +4,7 @@ interface PropertyFilters {
   search: string;
   type: string;
   city: string;
+  neighborhood: string;
   purpose: string;
   priceMin: number;
   priceMax: number;
@@ -27,6 +28,7 @@ interface Property {
   location: string;
   city: string;
   state: string;
+  neighborhood?: string;
   area: number;
   bedrooms: number;
   bathrooms: number;
@@ -51,6 +53,7 @@ export const usePropertyFilters = (properties: Property[]) => {
     search: '',
     type: '',
     city: '',
+    neighborhood: '',
     purpose: '',
     priceMin: 0,
     priceMax: 100000000,
@@ -141,6 +144,16 @@ export const usePropertyFilters = (properties: Property[]) => {
         }
       }
 
+      // Neighborhood filter
+      if (filters.neighborhood && filters.neighborhood !== 'all' && filters.neighborhood !== '') {
+        const neighborhoodFilter = filters.neighborhood.toLowerCase();
+        const propertyNeighborhood = (property.neighborhood || '').toLowerCase();
+        
+        if (!propertyNeighborhood.includes(neighborhoodFilter)) {
+          return false;
+        }
+      }
+
       // Price filter
       const relevantPrice = filters.purpose === 'rent' ? (property.rental_price || property.price) : property.price;
       if (relevantPrice < filters.priceMin || relevantPrice > filters.priceMax) {
@@ -208,6 +221,7 @@ export const usePropertyFilters = (properties: Property[]) => {
       search: '',
       type: '',
       city: '',
+      neighborhood: '',
       purpose: '',
       priceMin: 0,
       priceMax: 100000000,

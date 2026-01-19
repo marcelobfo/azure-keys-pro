@@ -15,6 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ImageUpload from '@/components/ImageUpload';
 import PropertyTagSelector from '@/components/PropertyTagSelector';
+import LocationAutocomplete from '@/components/LocationAutocomplete';
+import { useTenantContext } from '@/contexts/TenantContext';
 
 const EditProperty = () => {
   const { id } = useParams();
@@ -25,6 +27,8 @@ const EditProperty = () => {
   const [loading, setLoading] = useState(true);
   const [currentTag, setCurrentTag] = useState('');
   const [currentFeature, setCurrentFeature] = useState('');
+  const { currentTenant, selectedTenantId } = useTenantContext();
+  const effectiveTenantId = selectedTenantId || currentTenant?.id || null;
 
   const [formData, setFormData] = useState({
     title: '',
@@ -32,6 +36,7 @@ const EditProperty = () => {
     price: '',
     rental_price: '',
     location: '',
+    neighborhood: '',
     city: '',
     state: '',
     zipcode: '',
@@ -107,6 +112,7 @@ const EditProperty = () => {
           price: data.price ? String(data.price) : '',
           rental_price: data.rental_price ? String(data.rental_price) : '',
           location: data.location ?? '',
+          neighborhood: (data as any).neighborhood ?? '',
           city: data.city ?? '',
           state: data.state ?? '',
           zipcode: data.zipcode ?? '',
@@ -252,6 +258,7 @@ const EditProperty = () => {
           price: parseFloat(formData.price) || 0,
           rental_price: formData.rental_price ? parseFloat(formData.rental_price) : null,
           location: formData.location,
+          neighborhood: formData.neighborhood || null,
           city: formData.city,
           state: formData.state,
           zipcode: formData.zipcode || null,
@@ -410,26 +417,41 @@ const EditProperty = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="location">Endereço Completo *</Label>
+                <Label htmlFor="location">Endereço (Rua, Número) *</Label>
                 <Input
                   id="location"
                   required
                   value={formData.location}
                   onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  placeholder="Rua, número, bairro"
+                  placeholder="Ex: Rua das Flores, 123"
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="city">Cidade *</Label>
-                  <Input
-                    id="city"
-                    required
-                    value={formData.city}
-                    onChange={(e) => setFormData({...formData, city: e.target.value})}
-                    placeholder="Ex: Florianópolis"
+                  <Label htmlFor="neighborhood">Bairro *</Label>
+                  <LocationAutocomplete
+                    type="neighborhood"
+                    value={formData.neighborhood}
+                    onChange={(value) => setFormData({...formData, neighborhood: value})}
+                    placeholder="Digite ou selecione o bairro"
+                    tenantId={effectiveTenantId}
+                    cityFilter={formData.city}
                   />
                 </div>
+                <div>
+                  <Label htmlFor="city">Cidade *</Label>
+                  <LocationAutocomplete
+                    type="city"
+                    value={formData.city}
+                    onChange={(value) => setFormData({...formData, city: value})}
+                    placeholder="Digite ou selecione a cidade"
+                    tenantId={effectiveTenantId}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="state">Estado</Label>
                   <Input
@@ -437,6 +459,15 @@ const EditProperty = () => {
                     value={formData.state}
                     onChange={(e) => setFormData({...formData, state: e.target.value})}
                     placeholder="Ex: SC"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="zipcode">CEP</Label>
+                  <Input
+                    id="zipcode"
+                    value={formData.zipcode}
+                    onChange={(e) => setFormData({...formData, zipcode: e.target.value})}
+                    placeholder="Ex: 88000-000"
                   />
                 </div>
                 <div>

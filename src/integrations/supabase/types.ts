@@ -1008,6 +1008,7 @@ export type Database = {
           location: string
           longitude: number | null
           negotiation_notes: string | null
+          neighborhood: string | null
           olx_ad_id: string | null
           olx_error_message: string | null
           olx_last_sync: string | null
@@ -1064,6 +1065,7 @@ export type Database = {
           location: string
           longitude?: number | null
           negotiation_notes?: string | null
+          neighborhood?: string | null
           olx_ad_id?: string | null
           olx_error_message?: string | null
           olx_last_sync?: string | null
@@ -1120,6 +1122,7 @@ export type Database = {
           location?: string
           longitude?: number | null
           negotiation_notes?: string | null
+          neighborhood?: string | null
           olx_ad_id?: string | null
           olx_error_message?: string | null
           olx_last_sync?: string | null
