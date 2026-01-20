@@ -17,8 +17,9 @@ import { Separator } from '@/components/ui/separator';
 import HomeSectionManager from '@/components/HomeSectionManager';
 import TagManager from '@/components/TagManager';
 import BrandColorPreview from '@/components/BrandColorPreview';
+import LocationNormalizer from '@/components/LocationNormalizer';
 import { COLOR_PRESETS, DEFAULT_BRAND_COLORS } from '@/hooks/useBrandColors';
-import { Palette, Check, Search } from 'lucide-react';
+import { Palette, Check, Search, MapPin } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Configurações das seções da home
@@ -642,13 +643,17 @@ const AdminSiteSettings = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="home">
-              <TabsList className="mb-4 grid grid-cols-7 w-full">
+              <TabsList className="mb-4 grid grid-cols-8 w-full">
                 <TabsTrigger value="home">Home</TabsTrigger>
                 <TabsTrigger value="cores" className="flex items-center gap-1">
                   <Palette className="w-3 h-3" />
                   Cores
                 </TabsTrigger>
                 <TabsTrigger value="tags">Tags</TabsTrigger>
+                <TabsTrigger value="locations" className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  Local
+                </TabsTrigger>
                 <TabsTrigger value="footer">Rodapé</TabsTrigger>
                 <TabsTrigger value="contact">Contato</TabsTrigger>
                 <TabsTrigger value="site">Site</TabsTrigger>
@@ -1024,6 +1029,11 @@ const AdminSiteSettings = () => {
               {/* TAGS TAB */}
               <TabsContent value="tags">
                 <TagManager />
+              </TabsContent>
+
+              {/* LOCATIONS TAB */}
+              <TabsContent value="locations">
+                <LocationNormalizer />
               </TabsContent>
 
               {/* FOOTER TAB */}

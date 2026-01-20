@@ -113,7 +113,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
         </h3>
         <p className="text-gray-600 dark:text-gray-300 mb-4 flex items-center">
           <MapPin className="w-4 h-4 mr-1" />
-          {property.hide_address && property.city ? property.city : property.location}
+          {property.city || property.location}
         </p>
         
         <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400 mb-4">

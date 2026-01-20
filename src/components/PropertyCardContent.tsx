@@ -61,7 +61,7 @@ const PropertyCardContent: React.FC<PropertyCardContentProps> = ({ property }) =
       <p className="text-gray-600 dark:text-gray-300 mb-4 flex items-center">
         <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
         <span className="truncate">
-          {property.hide_address && property.city ? property.city : property.location}
+          {property.city || property.location}
         </span>
       </p>
       

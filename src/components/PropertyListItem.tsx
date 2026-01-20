@@ -164,7 +164,7 @@ const PropertyListItem: React.FC<PropertyListItemProps> = ({ property }) => {
             <p className="text-muted-foreground mb-4 flex items-center text-sm">
               <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
               <span className="truncate">
-                {property.hide_address && property.city ? property.city : property.location}
+                {property.city || property.location}
               </span>
             </p>
 
