@@ -41,32 +41,18 @@ interface PropertyMainInfoProps {
 const PropertyMainInfo: React.FC<PropertyMainInfoProps> = ({ property }) => {
   const { profile } = useProfile();
   
-  // Verificar se o usuário é corretor, admin ou master
-  const isAuthorized = profile && ['corretor', 'admin', 'master'].includes(profile.role);
+  // Verificar se o usuário é admin ou master (somente eles podem ver endereço completo)
+  const isAuthorized = profile && ['admin', 'master'].includes(profile.role);
   
-  // Se hide_address estiver ativo e o usuário não for autorizado, mostrar apenas cidade
-  const shouldHideAddress = property.hide_address && !isAuthorized;
+  // Ocultar endereço para todos exceto admin/master
+  const shouldHideAddress = !isAuthorized;
   
-  // Mostrar indicador "Endereço oculto" sempre que a propriedade estiver marcada (para admin saber que está configurado)
-  const showHiddenIndicator = property.hide_address === true;
+  // Mostrar indicador "Endereço oculto" para admin/master saberem que está configurado
+  const showHiddenIndicator = property.hide_address === true && isAuthorized;
   
-  // Mostrar apenas bairro e cidade para endereço simplificado
+  // Mostrar apenas a cidade para usuários não autorizados
   const getSimplifiedLocation = () => {
-    const parts = [];
-    if (property.neighborhood) {
-      parts.push(property.neighborhood);
-    }
-    if (property.city) {
-      parts.push(property.city);
-    }
-    if (parts.length > 0) {
-      return parts.join(', ');
-    }
-    // Fallback: extrair bairro do location se não houver campo separado
-    if (!property.location) return property.city;
-    const locationParts = property.location.split(',');
-    const neighborhood = locationParts.length > 1 ? locationParts[locationParts.length - 1].trim() : locationParts[0].trim();
-    return `${neighborhood}, ${property.city}`;
+    return property.city || '';
   };
 
   // Mostrar endereço completo incluindo bairro
