@@ -253,6 +253,13 @@ const SITE_FIELDS = [
     type: 'image',
     help: 'Indique a URL da imagem PNG/JPG para ser usada como favicon do site.',
   },
+  {
+    key: 'og_image',
+    label: 'Imagem de Compartilhamento (Redes Sociais)',
+    placeholder: 'https://exemplo.com/imagem-compartilhamento.png',
+    type: 'og_image',
+    help: 'Imagem exibida quando o link do site é compartilhado em redes sociais e aplicativos de chat (WhatsApp, Facebook, etc). Tamanho recomendado: 1200x630 pixels.',
+  },
 ];
 
 const ANALYTICS_FIELDS = [
@@ -1135,7 +1142,7 @@ const AdminSiteSettings = () => {
                       ) : (
                         <Input
                           id={field.key}
-                          type={field.type === 'image' ? 'url' : 'text'}
+                          type={field.type === 'image' || field.type === 'og_image' ? 'url' : 'text'}
                           value={values[field.key] || ''}
                           onChange={e => handleChange(field.key, e.target.value)}
                           placeholder={field.placeholder}
@@ -1144,6 +1151,7 @@ const AdminSiteSettings = () => {
                       {field.help && (
                         <div className="text-xs text-muted-foreground">{field.help}</div>
                       )}
+                      {/* Preview do Favicon */}
                       {field.type === 'image' && values[field.key] && (
                         <img
                           src={values[field.key]}
@@ -1153,6 +1161,33 @@ const AdminSiteSettings = () => {
                             (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'
                           }}
                         />
+                      )}
+                      {/* Preview da imagem de compartilhamento (OG Image) */}
+                      {field.type === 'og_image' && values[field.key] && (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-xs text-muted-foreground">Preview da imagem de compartilhamento:</p>
+                          <div className="relative rounded-lg overflow-hidden border bg-slate-100 dark:bg-slate-800 max-w-md">
+                            <img
+                              src={values[field.key]}
+                              alt="Preview de Compartilhamento"
+                              className="w-full h-auto object-contain"
+                              onError={e => {
+                                (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'
+                              }}
+                            />
+                          </div>
+                          <p className="text-xs text-green-600 dark:text-green-400">
+                            ✓ Esta imagem aparecerá quando o link do site for compartilhado no WhatsApp, Facebook, etc.
+                          </p>
+                        </div>
+                      )}
+                      {/* Placeholder visual se não tiver imagem OG */}
+                      {field.type === 'og_image' && !values[field.key] && (
+                        <div className="mt-3 p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800/50 max-w-md">
+                          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                            Cole a URL da imagem acima para visualizar o preview
+                          </p>
+                        </div>
                       )}
                     </div>
                   ))}

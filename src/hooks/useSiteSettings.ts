@@ -7,6 +7,7 @@ export interface SiteSettings {
   site_title: string;
   site_description: string;
   site_favicon_url: string;
+  og_image: string;
   footer_logo: string;
   header_logo_light: string;
   header_logo_dark: string;
@@ -37,6 +38,7 @@ const defaultSettings: SiteSettings = {
   site_title: '',
   site_description: '',
   site_favicon_url: '/favicon.svg',
+  og_image: '',
   footer_logo: '',
   header_logo_light: '',
   header_logo_dark: '',
@@ -106,6 +108,7 @@ export const useSiteSettings = () => {
         site_title: settingsMap.site_title || (tenantName ? `${tenantName} - Imóveis` : defaultSettings.site_title),
         site_description: settingsMap.site_description || defaultSettings.site_description,
         site_favicon_url: settingsMap.site_favicon_url || defaultSettings.site_favicon_url,
+        og_image: settingsMap.og_image || defaultSettings.og_image,
         footer_logo: settingsMap.footer_logo || defaultSettings.footer_logo,
         header_logo_light: settingsMap.header_logo_light || defaultSettings.header_logo_light,
         header_logo_dark: settingsMap.header_logo_dark || defaultSettings.header_logo_dark,

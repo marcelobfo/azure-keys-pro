@@ -18,6 +18,7 @@ const SEOUpdater = () => {
     const siteDescription = settings.site_description || 
       (currentTenant?.name ? `Encontre o imóvel ideal com ${currentTenant.name}` : '');
     const siteName = settings.site_name || currentTenant?.name || '';
+    const ogImage = settings.og_image || settings.header_logo_light || currentTenant?.logo_url || '';
     
     if (!isSpecificPage) {
       // Atualizar título da página
@@ -49,6 +50,19 @@ const SEOUpdater = () => {
         }
       }
 
+      // Atualizar Open Graph image
+      if (ogImage) {
+        let ogImageMeta = document.querySelector('meta[property="og:image"]');
+        if (ogImageMeta) {
+          ogImageMeta.setAttribute('content', ogImage);
+        } else {
+          ogImageMeta = document.createElement('meta');
+          ogImageMeta.setAttribute('property', 'og:image');
+          ogImageMeta.setAttribute('content', ogImage);
+          document.head.appendChild(ogImageMeta);
+        }
+      }
+
       // Atualizar Twitter Card title
       if (siteTitle) {
         const twitterTitle = document.querySelector('meta[name="twitter:title"]');
@@ -62,6 +76,19 @@ const SEOUpdater = () => {
         const twitterDescription = document.querySelector('meta[name="twitter:description"]');
         if (twitterDescription) {
           twitterDescription.setAttribute('content', siteDescription);
+        }
+      }
+
+      // Atualizar Twitter Card image
+      if (ogImage) {
+        let twitterImage = document.querySelector('meta[name="twitter:image"]');
+        if (twitterImage) {
+          twitterImage.setAttribute('content', ogImage);
+        } else {
+          twitterImage = document.createElement('meta');
+          twitterImage.setAttribute('name', 'twitter:image');
+          twitterImage.setAttribute('content', ogImage);
+          document.head.appendChild(twitterImage);
         }
       }
     }
@@ -92,6 +119,9 @@ const SEOUpdater = () => {
           data.name = siteName;
           if (siteDescription) {
             data.description = siteDescription;
+          }
+          if (ogImage) {
+            data.image = ogImage;
           }
           structuredDataScript.textContent = JSON.stringify(data, null, 2);
         } catch (error) {
