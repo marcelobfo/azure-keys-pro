@@ -498,6 +498,7 @@ export type Database = {
           corretor_id: string
           created_at: string | null
           id: string
+          lead_id: string | null
           notes: string | null
           payment_date: string | null
           property_id: string | null
@@ -513,6 +514,7 @@ export type Database = {
           corretor_id: string
           created_at?: string | null
           id?: string
+          lead_id?: string | null
           notes?: string | null
           payment_date?: string | null
           property_id?: string | null
@@ -528,6 +530,7 @@ export type Database = {
           corretor_id?: string
           created_at?: string | null
           id?: string
+          lead_id?: string | null
           notes?: string | null
           payment_date?: string | null
           property_id?: string | null
@@ -538,6 +541,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "commissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "commissions_property_id_fkey"
             columns: ["property_id"]
@@ -560,6 +570,7 @@ export type Database = {
           created_at: string | null
           default_rate: number
           id: string
+          tenant_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -567,6 +578,7 @@ export type Database = {
           created_at?: string | null
           default_rate?: number
           id?: string
+          tenant_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -574,9 +586,18 @@ export type Database = {
           created_at?: string | null
           default_rate?: number
           id?: string
+          tenant_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "corretor_commission_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       favorites: {
         Row: {
