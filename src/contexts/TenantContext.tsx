@@ -129,6 +129,20 @@ const detectTenantFromUrl = async (): Promise<Tenant | null> => {
     }
   }
 
+  // 4. Fallback: Use first tenant for development/preview environments
+  if (hostname.includes('lovableproject.com') || 
+      hostname.includes('lovable.app') || 
+      hostname.includes('localhost')) {
+    const { data } = await supabase
+      .from('tenants')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single();
+
+    if (data) return data;
+  }
+
   return null;
 };
 
