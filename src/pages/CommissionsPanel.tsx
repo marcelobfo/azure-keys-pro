@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
+import { useTenantContext } from '@/contexts/TenantContext';
 import { Navigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,13 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { formatCurrency, maskCurrency, parseCurrency } from '@/utils/priceUtils';
-import { DollarSign, Users, TrendingUp, Clock, Plus, Edit, Check, X } from 'lucide-react';
+import { formatCurrency } from '@/utils/priceUtils';
+import { DollarSign, Users, Clock, Edit, Check, User, FileText, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface Corretor {
   id: string;
@@ -22,10 +24,12 @@ interface Corretor {
   email: string;
   phone: string | null;
   default_rate: number;
+  tenant_id: string | null;
 }
 
 interface Commission {
   id: string;
+  lead_id: string | null;
   property_id: string | null;
   corretor_id: string;
   sale_price: number;
@@ -36,56 +40,46 @@ interface Commission {
   payment_date: string | null;
   notes: string | null;
   created_at: string;
+  tenant_id: string | null;
+  lead_name?: string;
+  lead_email?: string;
   property_title?: string;
   corretor_name?: string;
-}
-
-interface Property {
-  id: string;
-  title: string;
-  price: number;
 }
 
 const CommissionsPanel = () => {
   const { user } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
+  const { selectedTenantId } = useTenantContext();
   const { toast } = useToast();
 
   const [corretores, setCorretores] = useState<Corretor[]>([]);
   const [commissions, setCommissions] = useState<Commission[]>([]);
-  const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Dialog states
-  const [isAddCommissionOpen, setIsAddCommissionOpen] = useState(false);
   const [isEditRateOpen, setIsEditRateOpen] = useState(false);
   const [selectedCorretor, setSelectedCorretor] = useState<Corretor | null>(null);
-  
-  // Form states
-  const [newCommission, setNewCommission] = useState({
-    corretor_id: '',
-    property_id: '',
-    sale_price: '',
-    commission_rate: '5',
-    sale_date: new Date().toISOString().split('T')[0],
-    notes: ''
-  });
   const [editRate, setEditRate] = useState('5');
 
   useEffect(() => {
     if (user && profile) {
       fetchData();
     }
-  }, [user, profile]);
+  }, [user, profile, selectedTenantId]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Buscar corretores
-      const { data: profilesData, error: profilesError } = await supabase
+      // Buscar corretores do tenant
+      const profilesQuery = supabase
         .from('profiles')
-        .select('id, full_name, email, phone')
+        .select('id, full_name, email, phone, tenant_id')
         .eq('role', 'corretor');
+
+      const { data: profilesData, error: profilesError } = selectedTenantId 
+        ? await profilesQuery.eq('tenant_id', selectedTenantId)
+        : await profilesQuery;
 
       if (profilesError) throw profilesError;
 
@@ -106,31 +100,92 @@ const CommissionsPanel = () => {
       setCorretores(corretoresWithRates);
 
       // Buscar comissões
-      const { data: commissionsData, error: commissionsError } = await supabase
+      let commissionsQuery = supabase
         .from('commissions')
         .select('*')
         .order('created_at', { ascending: false });
 
+      if (selectedTenantId) {
+        commissionsQuery = commissionsQuery.eq('tenant_id', selectedTenantId);
+      }
+
+      const { data: commissionsData, error: commissionsError } = await commissionsQuery;
       if (commissionsError) throw commissionsError;
 
+      // Cast para acessar lead_id que foi adicionado via migration
+      const commissionsRaw = commissionsData as unknown as Array<{
+        id: string;
+        lead_id: string | null;
+        property_id: string | null;
+        corretor_id: string;
+        sale_price: number;
+        commission_rate: number;
+        commission_value: number | null;
+        status: string;
+        sale_date: string;
+        payment_date: string | null;
+        notes: string | null;
+        created_at: string;
+        tenant_id: string | null;
+      }>;
+
+      // Buscar leads e properties separadamente para enriquecer os dados
+      const leadIds = (commissionsRaw || []).map(c => c.lead_id).filter(Boolean) as string[];
+      const propertyIds = (commissionsRaw || []).map(c => c.property_id).filter(Boolean) as string[];
+
+      let leadsMap: Record<string, { name: string; email: string }> = {};
+      let propertiesMap: Record<string, { title: string }> = {};
+
+      if (leadIds.length > 0) {
+        const { data: leadsData } = await supabase
+          .from('leads')
+          .select('id, name, email')
+          .in('id', leadIds);
+        
+        leadsData?.forEach(l => {
+          leadsMap[l.id] = { name: l.name, email: l.email || '' };
+        });
+      }
+
+      if (propertyIds.length > 0) {
+        const { data: propertiesData } = await supabase
+          .from('properties')
+          .select('id, title')
+          .in('id', propertyIds);
+        
+        propertiesData?.forEach(p => {
+          propertiesMap[p.id] = { title: p.title };
+        });
+      }
+
       // Adicionar nomes aos dados
-      const commissionsWithNames = (commissionsData || []).map(c => {
+      const commissionsWithNames: Commission[] = (commissionsRaw || []).map(c => {
         const corretor = corretoresWithRates.find(cor => cor.id === c.corretor_id);
+        const lead = c.lead_id ? leadsMap[c.lead_id] : null;
+        const property = c.property_id ? propertiesMap[c.property_id] : null;
+        
         return {
-          ...c,
-          corretor_name: corretor?.full_name || 'Desconhecido'
+          id: c.id,
+          lead_id: c.lead_id,
+          property_id: c.property_id,
+          corretor_id: c.corretor_id,
+          sale_price: c.sale_price,
+          commission_rate: c.commission_rate,
+          commission_value: c.commission_value || 0,
+          status: c.status,
+          sale_date: c.sale_date,
+          payment_date: c.payment_date,
+          notes: c.notes,
+          created_at: c.created_at,
+          tenant_id: c.tenant_id,
+          corretor_name: corretor?.full_name || 'Desconhecido',
+          lead_name: lead?.name || undefined,
+          lead_email: lead?.email || undefined,
+          property_title: property?.title || undefined
         };
       });
 
       setCommissions(commissionsWithNames);
-
-      // Buscar imóveis vendidos ou todos
-      const { data: propertiesData } = await supabase
-        .from('properties')
-        .select('id, title, price')
-        .order('title');
-
-      setProperties(propertiesData || []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast({
@@ -143,54 +198,6 @@ const CommissionsPanel = () => {
     }
   };
 
-  const handleAddCommission = async () => {
-    try {
-      const salePrice = parseCurrency(newCommission.sale_price);
-      if (!newCommission.corretor_id || salePrice <= 0) {
-        toast({
-          title: 'Erro',
-          description: 'Preencha todos os campos obrigatórios',
-          variant: 'destructive'
-        });
-        return;
-      }
-
-      const { error } = await supabase.from('commissions').insert({
-        corretor_id: newCommission.corretor_id,
-        property_id: newCommission.property_id || null,
-        sale_price: salePrice,
-        commission_rate: parseFloat(newCommission.commission_rate),
-        sale_date: newCommission.sale_date,
-        notes: newCommission.notes || null
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Sucesso',
-        description: 'Comissão registrada com sucesso'
-      });
-
-      setIsAddCommissionOpen(false);
-      setNewCommission({
-        corretor_id: '',
-        property_id: '',
-        sale_price: '',
-        commission_rate: '5',
-        sale_date: new Date().toISOString().split('T')[0],
-        notes: ''
-      });
-      fetchData();
-    } catch (error) {
-      console.error('Erro ao adicionar comissão:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao registrar comissão',
-        variant: 'destructive'
-      });
-    }
-  };
-
   const handleUpdateRate = async () => {
     if (!selectedCorretor) return;
 
@@ -199,7 +206,8 @@ const CommissionsPanel = () => {
         .from('corretor_commission_settings')
         .upsert({
           corretor_id: selectedCorretor.id,
-          default_rate: parseFloat(editRate)
+          default_rate: parseFloat(editRate),
+          tenant_id: selectedTenantId
         }, { onConflict: 'corretor_id' });
 
       if (error) throw error;
@@ -275,6 +283,16 @@ const CommissionsPanel = () => {
   return (
     <DashboardLayout title="Painel de Comissões" userRole={profile?.role || 'master'}>
       <div className="space-y-6">
+        {/* Info Alert */}
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Comissões Automáticas</AlertTitle>
+          <AlertDescription>
+            As comissões são geradas automaticamente quando um lead é convertido (status = "Convertido").
+            Para gerar uma comissão, o lead precisa ter um corretor atribuído e um imóvel vinculado.
+          </AlertDescription>
+        </Alert>
+
         {/* Cards de Resumo */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
@@ -294,9 +312,9 @@ const CommissionsPanel = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Pendente</p>
-                  <p className="text-2xl font-bold text-yellow-600">{formatCurrency(pendingCommissions)}</p>
+                  <p className="text-2xl font-bold text-amber-500">{formatCurrency(pendingCommissions)}</p>
                 </div>
-                <Clock className="h-8 w-8 text-yellow-600 opacity-70" />
+                <Clock className="h-8 w-8 text-amber-500 opacity-70" />
               </div>
             </CardContent>
           </Card>
@@ -306,9 +324,9 @@ const CommissionsPanel = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Pago</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(paidCommissions)}</p>
+                  <p className="text-2xl font-bold text-emerald-500">{formatCurrency(paidCommissions)}</p>
                 </div>
-                <Check className="h-8 w-8 text-green-600 opacity-70" />
+                <Check className="h-8 w-8 text-emerald-500 opacity-70" />
               </div>
             </CardContent>
           </Card>
@@ -328,185 +346,60 @@ const CommissionsPanel = () => {
 
         {/* Lista de Corretores */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Corretores e Taxas</CardTitle>
-              <CardDescription>Gerencie as taxas de comissão por corretor</CardDescription>
-            </div>
-            <Dialog open={isAddCommissionOpen} onOpenChange={setIsAddCommissionOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Registrar Venda
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Registrar Nova Venda</DialogTitle>
-                  <DialogDescription>
-                    Registre uma venda e calcule a comissão do corretor
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <Label>Corretor *</Label>
-                    <Select
-                      value={newCommission.corretor_id}
-                      onValueChange={(value) => {
-                        const corretor = corretores.find(c => c.id === value);
-                        setNewCommission(prev => ({
-                          ...prev,
-                          corretor_id: value,
-                          commission_rate: String(corretor?.default_rate || 5)
-                        }));
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o corretor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {corretores.map(c => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.full_name} ({c.default_rate}%)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label>Imóvel (opcional)</Label>
-                    <Select
-                      value={newCommission.property_id}
-                      onValueChange={(value) => setNewCommission(prev => ({ ...prev, property_id: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o imóvel" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {properties.map(p => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label>Valor da Venda *</Label>
-                    <Input
-                      placeholder="R$ 0,00"
-                      value={newCommission.sale_price}
-                      onChange={(e) => setNewCommission(prev => ({
-                        ...prev,
-                        sale_price: maskCurrency(e.target.value)
-                      }))}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Taxa de Comissão (%)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.5"
-                      value={newCommission.commission_rate}
-                      onChange={(e) => setNewCommission(prev => ({
-                        ...prev,
-                        commission_rate: e.target.value
-                      }))}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Data da Venda</Label>
-                    <Input
-                      type="date"
-                      value={newCommission.sale_date}
-                      onChange={(e) => setNewCommission(prev => ({
-                        ...prev,
-                        sale_date: e.target.value
-                      }))}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label>Observações</Label>
-                    <Input
-                      placeholder="Observações sobre a venda..."
-                      value={newCommission.notes}
-                      onChange={(e) => setNewCommission(prev => ({
-                        ...prev,
-                        notes: e.target.value
-                      }))}
-                    />
-                  </div>
-                  
-                  {newCommission.sale_price && newCommission.commission_rate && (
-                    <div className="p-3 bg-muted rounded-lg">
-                      <p className="text-sm text-muted-foreground">Valor da Comissão:</p>
-                      <p className="text-xl font-bold text-primary">
-                        {formatCurrency(parseCurrency(newCommission.sale_price) * parseFloat(newCommission.commission_rate) / 100)}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddCommissionOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleAddCommission}>
-                    Registrar Venda
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+          <CardHeader>
+            <CardTitle>Corretores e Taxas</CardTitle>
+            <CardDescription>Gerencie as taxas de comissão por corretor</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Corretor</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Taxa Padrão</TableHead>
-                  <TableHead>Total Comissões</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {corretores.map(corretor => {
-                  const corretorCommissions = commissions.filter(c => c.corretor_id === corretor.id);
-                  const totalCorretorCommissions = corretorCommissions.reduce((sum, c) => sum + (c.commission_value || 0), 0);
-                  
-                  return (
-                    <TableRow key={corretor.id}>
-                      <TableCell className="font-medium">{corretor.full_name}</TableCell>
-                      <TableCell>{corretor.email}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{corretor.default_rate}%</Badge>
-                      </TableCell>
-                      <TableCell>{formatCurrency(totalCorretorCommissions)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedCorretor(corretor);
-                            setEditRate(String(corretor.default_rate));
-                            setIsEditRateOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Editar Taxa
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            {corretores.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhum corretor encontrado neste tenant</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Corretor</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Taxa Padrão</TableHead>
+                    <TableHead>Total Comissões</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {corretores.map(corretor => {
+                    const corretorCommissions = commissions.filter(c => c.corretor_id === corretor.id);
+                    const totalCorretorCommissions = corretorCommissions.reduce((sum, c) => sum + (c.commission_value || 0), 0);
+                    
+                    return (
+                      <TableRow key={corretor.id}>
+                        <TableCell className="font-medium">{corretor.full_name}</TableCell>
+                        <TableCell>{corretor.email}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{corretor.default_rate}%</Badge>
+                        </TableCell>
+                        <TableCell>{formatCurrency(totalCorretorCommissions)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCorretor(corretor);
+                              setEditRate(String(corretor.default_rate));
+                              setIsEditRateOpen(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Editar Taxa
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
@@ -514,20 +407,23 @@ const CommissionsPanel = () => {
         <Card>
           <CardHeader>
             <CardTitle>Histórico de Comissões</CardTitle>
-            <CardDescription>Todas as vendas e comissões registradas</CardDescription>
+            <CardDescription>Comissões geradas a partir de leads convertidos</CardDescription>
           </CardHeader>
           <CardContent>
             {commissions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Nenhuma comissão registrada ainda</p>
+                <p className="text-sm mt-2">Converta leads para gerar comissões automaticamente</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Data</TableHead>
+                    <TableHead>Lead</TableHead>
                     <TableHead>Corretor</TableHead>
+                    <TableHead>Imóvel</TableHead>
                     <TableHead>Valor Venda</TableHead>
                     <TableHead>Taxa</TableHead>
                     <TableHead>Comissão</TableHead>
@@ -541,7 +437,45 @@ const CommissionsPanel = () => {
                       <TableCell>
                         {new Date(commission.sale_date).toLocaleDateString('pt-BR')}
                       </TableCell>
+                      <TableCell>
+                        {commission.lead_name ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1 cursor-help">
+                                  <User className="h-4 w-4 text-muted-foreground" />
+                                  <span>{commission.lead_name}</span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{commission.lead_email}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell className="font-medium">{commission.corretor_name}</TableCell>
+                      <TableCell>
+                        {commission.property_title ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1 cursor-help max-w-[150px] truncate">
+                                  <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                  <span className="truncate">{commission.property_title}</span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{commission.property_title}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>{formatCurrency(commission.sale_price)}</TableCell>
                       <TableCell>{commission.commission_rate}%</TableCell>
                       <TableCell className="font-bold text-primary">

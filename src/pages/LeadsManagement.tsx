@@ -333,7 +333,12 @@ const LeadsManagement = () => {
                           <SelectItem value="new">Novo</SelectItem>
                           <SelectItem value="contacted">Contatado</SelectItem>
                           <SelectItem value="qualified">Qualificado</SelectItem>
-                          <SelectItem value="converted">Convertido</SelectItem>
+                          <SelectItem value="converted">
+                            <span className="flex items-center gap-1">
+                              Convertido
+                              <span className="text-xs text-muted-foreground">(gera comissão)</span>
+                            </span>
+                          </SelectItem>
                           <SelectItem value="lost">Perdido</SelectItem>
                         </SelectContent>
                       </Select>
