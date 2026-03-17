@@ -198,6 +198,24 @@ export type Database = {
           },
         ]
       }
+      atualizar: {
+        Row: {
+          created_at: string
+          id: number
+          numero: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          numero?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          numero?: number | null
+        }
+        Relationships: []
+      }
       business_hours: {
         Row: {
           created_at: string
@@ -1004,16 +1022,20 @@ export type Database = {
       properties: {
         Row: {
           accepts_exchange: boolean | null
+          apartment_number: string | null
           area: number | null
           bathrooms: number | null
           bedrooms: number | null
           broker_creci: string | null
           broker_name: string | null
+          building_features: string[] | null
           built_area: number | null
           city: string
           condo_fee: number | null
           created_at: string | null
           description: string | null
+          development_description: string | null
+          development_name: string | null
           features: string[] | null
           garage_spaces: number | null
           hide_address: boolean | null
@@ -1025,7 +1047,9 @@ export type Database = {
           is_development: boolean | null
           is_featured: boolean | null
           is_near_beach: boolean | null
+          is_pre_launch: boolean | null
           latitude: number | null
+          lavabos: number | null
           location: string
           longitude: number | null
           negotiation_notes: string | null
@@ -1044,6 +1068,7 @@ export type Database = {
           purpose: string | null
           reference_point: string | null
           rental_price: number | null
+          show_apartment_details: boolean | null
           slug: string | null
           state: string | null
           status: string | null
@@ -1052,6 +1077,7 @@ export type Database = {
           tenant_id: string | null
           title: string
           total_area: number | null
+          unit_features: string[] | null
           updated_at: string | null
           user_id: string | null
           video_url: string | null
@@ -1061,16 +1087,20 @@ export type Database = {
         }
         Insert: {
           accepts_exchange?: boolean | null
+          apartment_number?: string | null
           area?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
           broker_creci?: string | null
           broker_name?: string | null
+          building_features?: string[] | null
           built_area?: number | null
           city: string
           condo_fee?: number | null
           created_at?: string | null
           description?: string | null
+          development_description?: string | null
+          development_name?: string | null
           features?: string[] | null
           garage_spaces?: number | null
           hide_address?: boolean | null
@@ -1082,7 +1112,9 @@ export type Database = {
           is_development?: boolean | null
           is_featured?: boolean | null
           is_near_beach?: boolean | null
+          is_pre_launch?: boolean | null
           latitude?: number | null
+          lavabos?: number | null
           location: string
           longitude?: number | null
           negotiation_notes?: string | null
@@ -1101,6 +1133,7 @@ export type Database = {
           purpose?: string | null
           reference_point?: string | null
           rental_price?: number | null
+          show_apartment_details?: boolean | null
           slug?: string | null
           state?: string | null
           status?: string | null
@@ -1109,6 +1142,7 @@ export type Database = {
           tenant_id?: string | null
           title: string
           total_area?: number | null
+          unit_features?: string[] | null
           updated_at?: string | null
           user_id?: string | null
           video_url?: string | null
@@ -1118,16 +1152,20 @@ export type Database = {
         }
         Update: {
           accepts_exchange?: boolean | null
+          apartment_number?: string | null
           area?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
           broker_creci?: string | null
           broker_name?: string | null
+          building_features?: string[] | null
           built_area?: number | null
           city?: string
           condo_fee?: number | null
           created_at?: string | null
           description?: string | null
+          development_description?: string | null
+          development_name?: string | null
           features?: string[] | null
           garage_spaces?: number | null
           hide_address?: boolean | null
@@ -1139,7 +1177,9 @@ export type Database = {
           is_development?: boolean | null
           is_featured?: boolean | null
           is_near_beach?: boolean | null
+          is_pre_launch?: boolean | null
           latitude?: number | null
+          lavabos?: number | null
           location?: string
           longitude?: number | null
           negotiation_notes?: string | null
@@ -1158,6 +1198,7 @@ export type Database = {
           purpose?: string | null
           reference_point?: string | null
           rental_price?: number | null
+          show_apartment_details?: boolean | null
           slug?: string | null
           state?: string | null
           status?: string | null
@@ -1166,6 +1207,7 @@ export type Database = {
           tenant_id?: string | null
           title?: string
           total_area?: number | null
+          unit_features?: string[] | null
           updated_at?: string | null
           user_id?: string | null
           video_url?: string | null
